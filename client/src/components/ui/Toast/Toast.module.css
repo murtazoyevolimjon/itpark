@@ -1,0 +1,65 @@
+.container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  background-color: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 400px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.success {
+  border-left: 4px solid var(--success-text);
+}
+
+.error {
+  border-left: 4px solid var(--danger-text);
+}
+
+.info {
+  border-left: 4px solid var(--primary);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+}
+
+.iconSuccess { color: var(--success-text); }
+.iconError { color: var(--danger-text); }
+.iconInfo { color: var(--primary); }
+
+.message {
+  flex: 1;
+}
+
+.closeBtn {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

@@ -1,0 +1,77 @@
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.dottedCard {
+  background-color: var(--card);
+  border-radius: var(--radius);
+  border: 2px dashed var(--border);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+
+.dottedCard:hover {
+  border-color: var(--primary);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: var(--card-subtle);
+  flex-shrink: 0;
+}
+
+.cardAmount {
+  font-size: clamp(20px, 2vw, 24px);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.negative {
+  color: var(--danger-text) !important;
+}
+
+.positive {
+  color: var(--success-text) !important;
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+  }
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}

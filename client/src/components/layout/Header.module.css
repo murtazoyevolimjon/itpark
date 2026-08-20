@@ -1,0 +1,217 @@
+.header {
+  height: 64px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background-color: var(--card-subtle);
+  transition: background-color 0.2s;
+}
+
+.hamburger:hover {
+  background-color: var(--border);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--card-subtle);
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.themeToggle:hover {
+  transform: scale(1.05);
+  background-color: var(--border);
+  color: var(--primary);
+}
+
+.langSelector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--card-subtle);
+  padding: 3px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.langBtn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 16px;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.langBtnActive {
+  background-color: var(--primary);
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(43, 127, 255, 0.3);
+}
+
+.userMenu {
+  position: relative;
+}
+
+.userTrigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 24px;
+  background-color: var(--card-subtle);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.userTrigger:hover {
+  background-color: var(--border);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-grad);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 8px 0;
+  z-index: 100;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: background-color 0.15s;
+}
+
+.dropdownItem:hover {
+  background-color: var(--card-subtle);
+  color: var(--primary);
+}
+
+.dropdownItemDanger {
+  color: var(--danger-text);
+}
+
+.dropdownItemDanger:hover {
+  background-color: var(--danger-bg);
+}
+
+@media (max-width: 1023px) {
+  .hamburger {
+    display: flex;
+  }
+  .userInfo {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .right {
+    gap: 8px;
+  }
+  .langBtn {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header {
+    padding: 0 8px;
+  }
+  .userTrigger {
+    padding: 2px;
+  }
+}
