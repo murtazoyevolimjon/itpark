@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   BookOpen,
@@ -26,14 +29,14 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const location = useLocation();
+  const pathname = usePathname() || '/';
 
   const [isFinanceOpen, setIsFinanceOpen] = useState(
-    location.pathname.startsWith('/finance'),
+    pathname.startsWith('/finance'),
   );
 
   const mainNavItems = [
-    { path: '/', label: t('dashboard'), icon: LayoutDashboard },
+    { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/courses', label: t('courses'), icon: BookOpen },
     { path: '/groups', label: t('groups'), icon: Users },
     { path: '/teachers', label: t('teachers'), icon: GraduationCap },
@@ -64,21 +67,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className={styles.sectionTitle}>{t('mainSection')}</div>
             {mainNavItems.map((item) => {
               const Icon = item.icon;
+              const isActive = item.path === '/dashboard' 
+                ? (pathname === '/' || pathname === '/dashboard')
+                : pathname.startsWith(item.path);
+
               return (
-                <NavLink
+                <Link
                   key={item.path}
-                  to={item.path}
-                  end={item.path === '/'}
-                  className={({ isActive }) =>
-                    `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-                  }
+                  href={item.path}
+                  className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   onClick={onClose}
                 >
                   <div className={styles.navItemLeft}>
                     <Icon size={18} />
                     <span>{item.label}</span>
                   </div>
-                </NavLink>
+                </Link>
               );
             })}
           </div>
@@ -90,7 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             {/* Finance Accordion */}
             <div
               className={`${styles.navItem} ${
-                location.pathname.startsWith('/finance') ? styles.navItemActive : ''
+                pathname.startsWith('/finance') ? styles.navItemActive : ''
               }`}
               onClick={() => setIsFinanceOpen(!isFinanceOpen)}
             >
@@ -103,50 +107,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
             {isFinanceOpen && (
               <div className={styles.dropdownSubMenu}>
-                <NavLink
-                  to="/finance"
-                  end
-                  className={({ isActive }) =>
-                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
-                  }
+                <Link
+                  href="/finance"
+                  className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
                   onClick={onClose}
                 >
                   • {t('financeSummary')}
-                </NavLink>
-                <NavLink
-                  to="/finance/expenses"
-                  className={({ isActive }) =>
-                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
-                  }
+                </Link>
+                <Link
+                  href="/finance/expenses"
+                  className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
                   onClick={onClose}
                 >
                   • {t('financeExpenses')}
-                </NavLink>
-                <NavLink
-                  to="/finance/payments"
-                  className={({ isActive }) =>
-                    `${styles.subNavItem} ${isActive ? styles.subNavItemActive : ''}`
-                  }
+                </Link>
+                <Link
+                  href="/finance/payments"
+                  className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
                   onClick={onClose}
                 >
                   • {t('financePayments')}
-                </NavLink>
+                </Link>
               </div>
             )}
 
             {/* Profile */}
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-              }
+            <Link
+              href="/profile"
+              className={`${styles.navItem} ${pathname === '/profile' ? styles.navItemActive : ''}`}
               onClick={onClose}
             >
               <div className={styles.navItemLeft}>
                 <User size={18} />
                 <span>{t('profile')}</span>
               </div>
-            </NavLink>
+            </Link>
           </div>
         </div>
       </aside>

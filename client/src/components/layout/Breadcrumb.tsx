@@ -1,16 +1,20 @@
+'use client';
+
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ChevronRight, Home } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 import styles from './Breadcrumb.module.css';
 
 export const Breadcrumb: React.FC = () => {
-  const location = useLocation();
+  const pathname = usePathname() || '/';
   const { t } = useLanguage();
 
-  const pathnames = location.pathname.split('/').filter((x) => x);
+  const pathnames = pathname.split('/').filter((x) => x);
 
   const getBreadcrumbLabel = (segment: string) => {
+    if (segment === 'dashboard') return t('dashboard');
     if (segment === 'courses') return t('courses');
     if (segment === 'groups') return t('groups');
     if (segment === 'teachers') return t('teachers');
@@ -29,10 +33,10 @@ export const Breadcrumb: React.FC = () => {
 
   return (
     <nav className={styles.breadcrumb}>
-      <Link to="/" className={styles.item}>
+      <Link href="/dashboard" className={styles.item}>
         <Home size={16} />
       </Link>
-      {pathnames.length === 0 ? (
+      {pathnames.length === 0 || (pathnames.length === 1 && pathnames[0] === 'dashboard') ? (
         <>
           <ChevronRight size={14} className={styles.separator} />
           <span className={styles.active}>{t('dashboard')}</span>
@@ -48,7 +52,7 @@ export const Breadcrumb: React.FC = () => {
               {isLast ? (
                 <span className={styles.active}>{getBreadcrumbLabel(name)}</span>
               ) : (
-                <Link to={routeTo} className={styles.item}>
+                <Link href={routeTo} className={styles.item}>
                   {getBreadcrumbLabel(name)}
                 </Link>
               )}

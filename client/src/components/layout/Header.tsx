@@ -1,10 +1,12 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Sun, Moon, LogOut, User, ChevronDown } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { useLanguage, Language } from '../../hooks/useLanguage';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -15,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -32,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    router.push('/login');
   };
 
   const getInitials = (name?: string) => {
@@ -54,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         <button
           className={styles.themeToggle}
           onClick={toggleTheme}
-          title={theme === 'light' ? 'Tungi rejimga o\'tish' : 'Kunduzgi rejimga o\'tish'}
+          title={theme === 'light' ? "Tungi rejimga o'tish" : "Kunduzgi rejimga o'tish"}
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
@@ -89,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                 className={styles.dropdownItem}
                 onClick={() => {
                   setIsDropdownOpen(false);
-                  navigate('/profile');
+                  router.push('/profile');
                 }}
               >
                 <User size={16} />

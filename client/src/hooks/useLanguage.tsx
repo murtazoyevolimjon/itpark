@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { uz } from '../locales/uz';
 import { en } from '../locales/en';
@@ -17,15 +19,22 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lang, setLangState] = useState<Language>(() => {
-    const saved = localStorage.getItem('lang') as Language;
-    if (saved === 'uz' || saved === 'en' || saved === 'ru') return saved;
-    return 'uz';
-  });
+  const [lang, setLangState] = useState<Language>('uz');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lang') as Language;
+      if (saved === 'uz' || saved === 'en' || saved === 'ru') {
+        setLangState(saved);
+      }
+    }
+  }, []);
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
-    localStorage.setItem('lang', newLang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lang', newLang);
+    }
   };
 
   const currentDict = dictionaries[lang] || uz;
