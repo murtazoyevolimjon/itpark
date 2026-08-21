@@ -221,7 +221,7 @@ CREATE TABLE IF NOT EXISTS "certificates" (
     CONSTRAINT "certificates_centerId_serialNumber_key" UNIQUE ("centerId", "serialNumber")
 );
 
--- 3. RLS XAVFSIZLIK CHEKLOVLARINI BEKOR QILISH (API ULANISHI UCHUN)
+-- 3. RLS XAVFSIZLIK CHEKLOVLARINI BEKOR QILISH VA HUQUQLARNI BERISH
 ALTER TABLE "centers" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE "users" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE "courses" DISABLE ROW LEVEL SECURITY;
@@ -235,6 +235,15 @@ ALTER TABLE "employees" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE "payments" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE "expenses" DISABLE ROW LEVEL SECURITY;
 ALTER TABLE "certificates" DISABLE ROW LEVEL SECURITY;
+
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
 
 -- 4. STANDART ADMIN FOYDALANUVCHISI VA MARKAZ
 INSERT INTO "centers" ("id", "name", "email", "phone", "password")
