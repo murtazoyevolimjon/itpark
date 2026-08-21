@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Building, Mail, Phone, Lock, UserPlus, Sun, Moon } from 'lucide-react';
+import { Building, Mail, Phone, Lock, UserPlus, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { Input } from '../components/ui/Input/Input';
 import { Button } from '../components/ui/Button/Button';
 import { useAuth } from '../hooks/useAuth';
@@ -24,6 +24,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,9 +130,28 @@ export const Register: React.FC = () => {
 
           <Input
             label={t('password')}
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             icon={<Lock size={18} />}
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                }}
+                title={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
