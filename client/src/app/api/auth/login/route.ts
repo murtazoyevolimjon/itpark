@@ -17,6 +17,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
+    // Auto-seed if database is freshly empty
+    if (email === 'admin@itpark.uz') {
+      const { seedSupabaseIfNeeded } = await import('@/lib/seed');
+      await seedSupabaseIfNeeded();
+    }
+
     // Fetch user
     const { data: userRecord, error } = await supabase
       .from('users')
