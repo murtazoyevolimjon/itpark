@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: typeof window !== 'undefined' 
-    ? (process.env.NEXT_PUBLIC_API_URL || '/api')
-    : 'http://127.0.0.1:5000/api',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },

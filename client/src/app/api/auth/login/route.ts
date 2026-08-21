@@ -30,7 +30,15 @@ export async function POST(req: NextRequest) {
       .eq('email', email)
       .maybeSingle();
 
-    if (error || !userRecord) {
+    if (error) {
+      console.error('[LOGIN] Supabase error:', error);
+      return NextResponse.json(
+        { message: `Ma'lumotlar bazasi xatosi: ${error.message}`, code: error.code },
+        { status: 500 }
+      );
+    }
+
+    if (!userRecord) {
       return NextResponse.json(
         { message: "Email yoki parol noto'g'ri" },
         { status: 401 }
