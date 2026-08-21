@@ -3,13 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n API,WEB -c blue,green \"npm --prefix server run start:dev\" \"npm --prefix client run dev\"",
-    "install:all": "npm install && npm install --prefix client && npm install --prefix server",
+    "dev": "npm --prefix client run dev",
+    "build": "npm run build --prefix client",
     "build:client": "npm run build --prefix client",
-    "build:server": "npm run build --prefix server",
-    "prisma:generate": "npm run prisma:generate --prefix server",
-    "prisma:migrate": "npm run prisma:migrate --prefix server",
-    "prisma:seed": "npm run prisma:seed --prefix server"
+    "build:server": "npm run build --prefix server"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
