@@ -16,6 +16,7 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -27,7 +28,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useLanguage();
   const pathname = usePathname() || '/';
 
@@ -142,6 +143,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{t('profile')}</span>
               </div>
             </Link>
+
+            {/* Chiqish (Log out) */}
+            <button
+              onClick={() => {
+                logout();
+                onClose();
+              }}
+              className={styles.logoutBtn}
+            >
+              <LogOut size={18} />
+              <span>{t('logout')}</span>
+            </button>
           </div>
         </div>
       </aside>

@@ -57,6 +57,7 @@ export const ru = {
   financeExpenses: 'Расходы',
   financePayments: 'Платежи',
   profile: 'Профиль',
+  logout: 'Выйти',
 
   // Sections
   mainSection: 'ГЛАВНОЕ',
