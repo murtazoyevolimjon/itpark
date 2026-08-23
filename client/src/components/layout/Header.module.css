@@ -11,12 +11,15 @@
   z-index: 40;
   backdrop-filter: blur(8px);
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  max-width: 100%;
 }
 
 .left {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .hamburger {
@@ -29,6 +32,7 @@
   color: var(--text);
   background-color: var(--card-subtle);
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .hamburger:hover {
@@ -38,7 +42,8 @@
 .right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .themeToggle {
@@ -52,6 +57,7 @@
   color: var(--text);
   border: 1px solid var(--border);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .themeToggle:hover {
@@ -63,17 +69,18 @@
 .langSelector {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   background-color: var(--card-subtle);
   padding: 3px;
   border-radius: 20px;
   border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .langBtn {
   font-size: 11px;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 16px;
   color: var(--text-muted);
   transition: all 0.2s ease;
@@ -87,6 +94,7 @@
 
 .userMenu {
   position: relative;
+  flex-shrink: 0;
 }
 
 .userTrigger {
@@ -116,6 +124,7 @@
   justify-content: center;
   font-weight: 700;
   font-size: 13px;
+  flex-shrink: 0;
 }
 
 .userInfo {
@@ -195,23 +204,42 @@
 
 @media (max-width: 639px) {
   .header {
-    padding: 0 12px;
+    padding: 0 10px;
+    height: 56px;
+  }
+  .left {
     gap: 8px;
   }
   .right {
-    gap: 8px;
+    gap: 6px;
+  }
+  .themeToggle {
+    width: 32px;
+    height: 32px;
+  }
+  .langSelector {
+    padding: 2px;
   }
   .langBtn {
-    padding: 3px 6px;
-    font-size: 10px;
+    padding: 3px 5px;
+    font-size: 9px;
   }
-}
-
-@media (max-width: 400px) {
-  .header {
-    padding: 0 8px;
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
   }
   .userTrigger {
     padding: 2px;
+  }
+}
+
+@media (max-width: 380px) {
+  .header {
+    padding: 0 6px;
+  }
+  .hamburger {
+    width: 32px;
+    height: 32px;
   }
 }

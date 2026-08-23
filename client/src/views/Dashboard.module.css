@@ -1,6 +1,6 @@
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
   width: 100%;
 }
@@ -27,12 +27,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .statIcon {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -51,22 +51,24 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bottomSection {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
+  gap: 20px;
   width: 100%;
 }
 
 .tabHeaders {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
@@ -74,7 +76,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
@@ -91,11 +93,57 @@
   box-shadow: 0 4px 12px rgba(43, 127, 255, 0.3);
 }
 
-@media (max-width: 480px) {
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 640px) {
   .statsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
+  
+  .statCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .statIcon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .statValue {
+    font-size: 19px;
+  }
+
+  .statLabel {
+    font-size: 11px;
+  }
+
   .bottomSection {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .tabBtn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .statCard {
+    padding: 10px 8px;
+  }
+
+  .statValue {
+    font-size: 17px;
+  }
+
+  .statLabel {
+    font-size: 10px;
   }
 }

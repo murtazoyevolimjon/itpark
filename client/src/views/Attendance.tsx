@@ -88,7 +88,7 @@ export const Attendance: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards: O'quvchilar, O'qituvchilar, Xodimlar, Guruhlar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '12px' }}>
         {/* O'quvchilar */}
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -381,11 +381,11 @@ export const Dashboard: React.FC = () => {
               {t('tagline')}. Barcha kurslar, guruhlar, talabalar davomati hamda moliya amallarini bitta joyda boshqaring.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <div style={{ padding: '8px 16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', fontWeight: 700, fontSize: '13px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '20px', flexWrap: 'wrap' }}>
+            <div style={{ padding: '6px 12px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', fontWeight: 700, fontSize: '12px' }}>
               24/7 Monitoring
             </div>
-            <div style={{ padding: '8px 16px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', fontWeight: 700, fontSize: '13px' }}>
+            <div style={{ padding: '6px 12px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', fontWeight: 700, fontSize: '12px' }}>
               Multi-tenant
             </div>
           </div>
