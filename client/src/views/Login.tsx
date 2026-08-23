@@ -19,8 +19,8 @@ export const Login: React.FC = () => {
   const { lang, setLang, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
-  const [email, setEmail] = useState('admin@itpark.uz');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -52,40 +52,21 @@ export const Login: React.FC = () => {
   return (
     <div className={styles.container}>
       {/* Top right language & theme bar */}
-      <div style={{ position: 'absolute', top: 20, right: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className={styles.topBar}>
         <button
           onClick={toggleTheme}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            backgroundColor: 'var(--card)',
-            border: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--text)',
-            cursor: 'pointer',
-          }}
+          className={styles.themeBtn}
+          aria-label="Toggle theme"
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
-        <div style={{ display: 'flex', gap: 4, background: 'var(--card)', padding: 3, borderRadius: 20, border: '1px solid var(--border)' }}>
+        <div className={styles.langBar}>
           {(['uz', 'en', 'ru'] as Language[]).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                padding: '4px 10px',
-                borderRadius: 16,
-                border: 'none',
-                cursor: 'pointer',
-                background: lang === l ? 'var(--primary)' : 'transparent',
-                color: lang === l ? '#ffffff' : 'var(--text-muted)',
-              }}
+              className={`${styles.langBtn} ${lang === l ? styles.langBtnActive : ''}`}
             >
               {l.toUpperCase()}
             </button>
@@ -94,7 +75,6 @@ export const Login: React.FC = () => {
       </div>
 
       <div className={styles.card}>
-        <div className={styles.logoBadge}>M</div>
         <h1 className={styles.title}>{t('appName')}</h1>
         <p className={styles.subtitle}>{t('loginSub')}</p>
 
@@ -142,10 +122,6 @@ export const Login: React.FC = () => {
             {t('loginBtn')}
           </Button>
         </form>
-
-        <div className={styles.footer}>
-          <span>{t('noAccount')}</span> <Link href="/register">{t('registerBtn')}</Link>
-        </div>
       </div>
     </div>
   );

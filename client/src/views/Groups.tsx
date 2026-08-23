@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
@@ -79,6 +79,18 @@ export const Groups: React.FC = () => {
     queryFn: () => roomsApi.getAll({ limit: 100 }),
   });
 
+  // Auto-sync select options if they arrive after modal opens
+  useEffect(() => {
+    if (isModalOpen && !selectedGroup) {
+      setFormData((prev) => ({
+        ...prev,
+        courseId: prev.courseId || courses?.data?.[0]?.id || '',
+        teacherId: prev.teacherId || teachers?.data?.[0]?.id || '',
+        roomId: prev.roomId || rooms?.data?.[0]?.id || '',
+      }));
+    }
+  }, [isModalOpen, selectedGroup, courses?.data, teachers?.data, rooms?.data]);
+
   const saveMutation = useMutation({
     mutationFn: (payload: any) =>
       selectedGroup
@@ -152,15 +164,38 @@ export const Groups: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.courseId || !formData.teacherId || !formData.roomId) {
-      error('Barcha majburiy maydonlarni to\'ldiring');
+
+    const courseId = formData.courseId || courses?.data?.[0]?.id || '';
+    const teacherId = formData.teacherId || teachers?.data?.[0]?.id || '';
+    const roomId = formData.roomId || rooms?.data?.[0]?.id || '';
+
+    if (!formData.name.trim()) {
+      error('Guruh nomi yoki raqamini kiriting');
+      return;
+    }
+    if (!courseId) {
+      error("Kursni tanlang (agar kurs mavjud bo'lmasa, Kurslar bo'limida kurs yarating)");
+      return;
+    }
+    if (!teacherId) {
+      error("Ustozni tanlang (agar ustoz mavjud bo'lmasa, Ustozlar bo'limida ustoz qo'shing)");
+      return;
+    }
+    if (!roomId) {
+      error("Xonani tanlang (agar xona mavjud bo'lmasa, Xonalar bo'limida xona qo'shing)");
       return;
     }
     if (formData.days.length === 0) {
       error('Kamida bitta dars kunini tanlang');
       return;
     }
-    saveMutation.mutate(formData);
+
+    saveMutation.mutate({
+      ...formData,
+      courseId,
+      teacherId,
+      roomId,
+    });
   };
 
   const columns: Column<Group>[] = [

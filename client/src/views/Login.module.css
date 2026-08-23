@@ -1,69 +1,192 @@
 .container {
   min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(7, 13, 26, 0.82) 0%, rgba(11, 20, 38, 0.88) 100%), url('/login-bg.png') center center / cover no-repeat fixed;
+  padding: 80px 16px 32px 16px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Light theme overlay support */
+[data-theme='light'] .container {
+  background: linear-gradient(135deg, rgba(240, 246, 255, 0.86) 0%, rgba(224, 238, 255, 0.92) 100%), url('/login-bg.png') center center / cover no-repeat fixed;
+}
+
+.topBar {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.themeBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg);
-  padding: 16px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme='light'] .themeBtn {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.themeBtn:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.langBar {
+  display: flex;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 4px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+[data-theme='light'] .langBar {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.langBtn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 18px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.langBtnActive {
+  background: var(--primary-grad) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(43, 127, 255, 0.35);
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
-  background-color: var(--card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
-  padding: 36px 32px;
-  border: 1px solid var(--border);
+  max-width: 440px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 35px rgba(43, 127, 255, 0.15);
+  padding: 42px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   gap: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+[data-theme='light'] .card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 25px 50px -12px rgba(43, 127, 255, 0.18), 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .header {
   text-align: center;
 }
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: var(--primary-grad);
-  color: #ffffff;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 24px;
-  margin-bottom: 12px;
-}
-
 .title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--text);
+  letter-spacing: -0.5px;
+  text-align: center;
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--text-muted);
-  margin-top: 4px;
+  margin-top: 6px;
+  text-align: center;
+  line-height: 1.5;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
-.footer {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
+/* Responsiveness */
+@media (max-width: 640px) {
+  .container {
+    padding: 70px 16px 24px 16px;
+  }
+
+  .topBar {
+    top: 16px;
+    right: 16px;
+  }
+
+  .card {
+    padding: 32px 24px;
+    border-radius: 20px;
+    gap: 20px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .subtitle {
+    font-size: 12.5px;
+  }
 }
 
-.link {
-  color: var(--primary);
-  font-weight: 600;
-  margin-left: 4px;
+@media (max-width: 380px) {
+  .topBar {
+    gap: 8px;
+  }
+
+  .langBtn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .themeBtn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .card {
+    padding: 26px 18px;
+  }
 }
