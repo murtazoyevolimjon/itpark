@@ -225,7 +225,7 @@ export const Attendance: React.FC = () => {
         </div>
       </Card>
 
-      {/* Absent Students Section (Darsga kelmaganlar) */}
+      {/* Absent and Late Students Section */}
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -234,16 +234,21 @@ export const Attendance: React.FC = () => {
             </div>
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>
-                Darsga kelmagan o'quvchilar ro'yxati (Oxirgi {daysFilter} kun)
+                Darsga kelmagan va kechikkan o'quvchilar ro'yxati (Oxirgi {daysFilter} kun)
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Qoldirilgan darslar, o'quvchi va ota-onaning bog'lanish ma'lumotlari
+                Qoldirilgan va kech qolingan darslar, o'quvchi va ota-onaning bog'lanish ma'lumotlari
               </p>
             </div>
           </div>
-          <Badge variant="danger">
-            {absentStudents.length} ta kelmagan
-          </Badge>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Badge variant="danger">
+              {absentStudents.filter((s: any) => s.status === 'KELMAGAN').length} ta kelmagan
+            </Badge>
+            <Badge variant="warning">
+              {absentStudents.filter((s: any) => s.status === 'KECHIKKAN').length} ta kechikkan
+            </Badge>
+          </div>
         </div>
 
         {isLoading ? (
@@ -255,8 +260,8 @@ export const Attendance: React.FC = () => {
         ) : absentStudents.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
             <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>Oxirgi {daysFilter} kun ichida dars qoldirgan o'quvchilar yo'q</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>Barcha talabalar darslarga to'liq qatnashmoqda 🎉</div>
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>Oxirgi {daysFilter} kun ichida dars qoldirgan yoki kechikkan o'quvchilar yo'q</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>Barcha talabalar darslarga to'liq va o'z vaqtida qatnashmoqda 🎉</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -282,7 +287,7 @@ export const Attendance: React.FC = () => {
                     {/* Ism Familiya */}
                     <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--primary-grad)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: item.status === 'KECHIKKAN' ? 'rgba(245, 158, 11, 0.2)' : 'var(--primary-grad)', color: item.status === 'KECHIKKAN' ? '#f59e0b' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
                           {item.studentName.charAt(0)}
                         </div>
                         <span>{item.studentName}</span>
@@ -338,9 +343,11 @@ export const Attendance: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Izoh */}
+                    {/* Holat / Izoh */}
                     <td style={{ padding: '14px' }}>
-                      <Badge variant="danger">KELMAGAN</Badge>
+                      <Badge variant={item.status === 'KECHIKKAN' ? 'warning' : 'danger'}>
+                        {item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN'}
+                      </Badge>
                       {item.note && (
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
                           {item.note}

@@ -9,7 +9,7 @@ export async function GET(
   try {
     const authUser = getAuthUser(req);
     if (!authUser) {
-      return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -23,7 +23,10 @@ export async function GET(
       .eq('centerId', authUser.centerId);
 
     if (date) {
-      query = query.eq('date', new Date(date).toISOString());
+      const cleanDate = date.split('T')[0];
+      const startOfDay = `${cleanDate}T00:00:00.000Z`;
+      const endOfDay = `${cleanDate}T23:59:59.999Z`;
+      query = query.gte('date', startOfDay).lte('date', endOfDay);
     }
 
     const { data, error } = await query;

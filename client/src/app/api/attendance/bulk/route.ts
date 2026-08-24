@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const authUser = getAuthUser(req);
     if (!authUser) {
-      return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -18,16 +18,19 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createServerSupabaseClient();
-    const attendanceDate = new Date(date).toISOString();
+    const cleanDate = date.split('T')[0];
+    const startOfDay = `${cleanDate}T00:00:00.000Z`;
+    const endOfDay = `${cleanDate}T23:59:59.999Z`;
 
     for (const rec of records) {
-      // Upsert attendance record
+      // Find existing attendance record for that student, group and date
       const { data: existing } = await supabase
         .from('attendances')
         .select('id')
         .eq('studentId', rec.studentId)
         .eq('groupId', groupId)
-        .eq('date', attendanceDate)
+        .gte('date', startOfDay)
+        .lte('date', endOfDay)
         .maybeSingle();
 
       if (existing) {
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
           id: crypto.randomUUID(),
           studentId: rec.studentId,
           groupId,
-          date: attendanceDate,
+          date: startOfDay,
           status: rec.status,
           note: rec.note || null,
           centerId: authUser.centerId,

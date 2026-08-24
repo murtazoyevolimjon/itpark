@@ -158,11 +158,12 @@ export async function GET(req: NextRequest) {
       else if (r.status === 'KELMAGAN') groupMap[gId].KELMAGAN += 1;
       else if (r.status === 'KECHIKKAN') groupMap[gId].KECHIKKAN += 1;
 
-      // Absent students
-      if (r.status === 'KELMAGAN') {
+      // Absent and Late students list
+      if (r.status === 'KELMAGAN' || r.status === 'KECHIKKAN') {
         absentStudents.push({
           id: r.id,
           date: d,
+          status: r.status,
           studentName: `${r.student?.firstName || ''} ${r.student?.lastName || ''}`.trim() || "Noma'lum talaba",
           studentPhone: r.student?.phone || '-',
           fatherPhone: r.student?.fatherPhone || null,

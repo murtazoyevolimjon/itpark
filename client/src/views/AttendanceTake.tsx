@@ -49,7 +49,14 @@ export const AttendanceTake: React.FC = () => {
     enabled: !!selectedGroupId,
   });
 
-  // Initialize student statuses to 'KELGAN' by default when groupDetail loads
+  // Fetch existing attendance records for the selected group and date
+  const { data: existingAttendance, isLoading: isAttendanceLoading } = useQuery({
+    queryKey: ['existingAttendance', selectedGroupId, attendanceDate],
+    queryFn: () => attendanceApi.getByGroup(selectedGroupId, attendanceDate),
+    enabled: !!selectedGroupId && !!attendanceDate,
+  });
+
+  // Sync student statuses with default 'KELGAN' OR existing saved statuses
   useEffect(() => {
     if (groupDetail?.studentGroups) {
       const initialMap: Record<string, AttendanceStatus> = {};
@@ -58,9 +65,19 @@ export const AttendanceTake: React.FC = () => {
           initialMap[sg.student.id] = 'KELGAN';
         }
       });
+
+      // Override with existing saved attendance if available
+      if (Array.isArray(existingAttendance) && existingAttendance.length > 0) {
+        existingAttendance.forEach((att: any) => {
+          if (att.studentId && att.status) {
+            initialMap[att.studentId] = att.status;
+          }
+        });
+      }
+
       setStudentStatuses(initialMap);
     }
-  }, [groupDetail]);
+  }, [groupDetail, existingAttendance]);
 
   const bulkMutation = useMutation({
     mutationFn: (payload: any) => attendanceApi.bulkSave(payload),
