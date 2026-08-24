@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { Modal } from '../components/ui/Modal/Modal';
@@ -70,6 +70,7 @@ export const Students: React.FC = () => {
       success(selectedStudent ? 'Talaba tahrirlandi' : 'Yangi talaba qo\'shildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -82,6 +83,7 @@ export const Students: React.FC = () => {
       success('Talaba o\'chirildi');
       setDeleteStudentId(null);
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');
@@ -157,17 +159,56 @@ export const Students: React.FC = () => {
     },
     {
       key: 'birthDate',
-      header: 'TUG\'ILGAN YIL',
+      header: "TUG'ILGAN YIL",
       render: (row) => formatDate(row.birthDate),
     },
     {
       key: 'phone',
-      header: 'TELEFON',
-      render: (row) => formatPhone(row.phone),
+      header: "O'QUVCHI TELEFONI",
+      render: (row) => (
+        <a
+          href={`tel:${row.phone}`}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}
+        >
+          <Phone size={14} />
+          {formatPhone(row.phone)}
+        </a>
+      ),
+    },
+    {
+      key: 'parentsPhone',
+      header: 'OTA-ONASINING TELEFONI',
+      render: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {row.fatherPhone && (
+            <a
+              href={`tel:${row.fatherPhone}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+            >
+              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+              <Phone size={12} color="var(--primary)" />
+              {formatPhone(row.fatherPhone)}
+            </a>
+          )}
+          {row.motherPhone && (
+            <a
+              href={`tel:${row.motherPhone}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+            >
+              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+              <Phone size={12} color="#ec4899" />
+              {formatPhone(row.motherPhone)}
+            </a>
+          )}
+          {!row.fatherPhone && !row.motherPhone && (
+            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'paymentStatus',
-      header: 'TO\'LOV HOLATI',
+      header: "TO'LOV HOLATI",
       render: (row) => (
         <Badge
           variant={
@@ -178,7 +219,11 @@ export const Students: React.FC = () => {
               : 'danger'
           }
         >
-          {row.paymentStatus === 'TOLANGAN' ? 'TO\'LANGAN' : 'TO\'LANMAGAN'}
+          {row.paymentStatus === 'TOLANGAN'
+            ? "TO'LANGAN"
+            : row.paymentStatus === 'QISMAN'
+            ? 'QISMAN'
+            : "TO'LANMAGAN"}
         </Badge>
       ),
     },
