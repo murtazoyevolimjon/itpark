@@ -11,21 +11,15 @@ import {
   FileCheck,
   UserPlus,
   DollarSign,
+  CreditCard,
+  Phone,
+  CheckCircle2,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  CartesianGrid,
-} from 'recharts';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { Button } from '../components/ui/Button/Button';
+import { Badge } from '../components/ui/Badge/Badge';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useToast } from '../components/ui/Toast/Toast';
 import { useLanguage } from '../hooks/useLanguage';
@@ -35,6 +29,7 @@ import { groupsApi } from '../api/groups.api';
 import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
+import { formatMoney } from '../utils/formatMoney';
 import styles from './Dashboard.module.css';
 
 export const Dashboard: React.FC = () => {
@@ -45,47 +40,39 @@ export const Dashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'student' | 'payment'>('student');
 
-  // Stats query
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: dashboardApi.getStats,
-  });
-
-  // Attendance chart query
-  const { data: attendanceData, isLoading: isAttendanceLoading } = useQuery({
-    queryKey: ['dashboardAttendance'],
-    queryFn: () => dashboardApi.getAttendance(30),
-  });
-
-  // Groups list for dropdowns
-  const { data: groupsData } = useQuery({
-    queryKey: ['groupsSelect'],
-    queryFn: () => groupsApi.getAll({ limit: 100 }),
-  });
-
-  // Students list for payment form dropdown
-  const { data: studentsData } = useQuery({
-    queryKey: ['studentsSelect'],
-    queryFn: () => studentsApi.getAll({ limit: 100 }),
-  });
-
-  // Quick Student Form
+  // Forms state
   const [studentForm, setStudentForm] = useState({
     groupId: '',
     firstName: '',
     lastName: '',
     phone: '',
     birthDate: '2005-01-01',
-    gender: 'MALE' as any,
+    gender: 'MALE',
   });
 
-  // Quick Payment Form
   const [paymentForm, setPaymentForm] = useState({
     studentId: '',
     amount: '',
     paymentDate: new Date().toISOString().split('T')[0],
   });
 
+  // Queries
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: dashboardApi.getStats,
+  });
+
+  const { data: groupsData } = useQuery({
+    queryKey: ['groupsSelect'],
+    queryFn: () => groupsApi.getAll({ limit: 100 }),
+  });
+
+  const { data: studentsData } = useQuery({
+    queryKey: ['studentsSelect'],
+    queryFn: () => studentsApi.getAll({ limit: 100 }),
+  });
+
+  // Mutations
   const createStudentMutation = useMutation({
     mutationFn: (payload: any) => studentsApi.create(payload),
     onSuccess: () => {
@@ -194,8 +181,7 @@ export const Dashboard: React.FC = () => {
     },
   ];
 
-  const tooltipBg = theme === 'dark' ? '#151c2c' : '#ffffff';
-  const tooltipBorder = theme === 'dark' ? '#232d42' : '#e2e8f0';
+  const unpaidStudents = stats?.unpaidStudents || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -221,57 +207,137 @@ export const Dashboard: React.FC = () => {
         })}
       </div>
 
-      {/* Main 30-Day Attendance Chart */}
+      {/* Unpaid / Debtor Students Section */}
       <Card>
-        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '20px' }}>
-          {t('attendanceStats')} ({t('last30days')})
-        </h3>
-        <div style={{ width: '100%', height: 320 }}>
-          {isAttendanceLoading ? (
-            <Skeleton height="100%" />
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={Array.isArray(attendanceData) ? attendanceData : []}>
-                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#232d42' : '#e2e8f0'} />
-                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={11} />
-                <YAxis stroke="var(--text-muted)" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: tooltipBg,
-                    borderColor: tooltipBorder,
-                    borderRadius: '12px',
-                    color: 'var(--text)',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="present"
-                  name={t('present')}
-                  stroke="#2b7fff"
-                  strokeWidth={2.5}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="absent"
-                  name={t('absent')}
-                  stroke="#dc2626"
-                  strokeWidth={2.5}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="late"
-                  name={t('late')}
-                  stroke="#ca8a04"
-                  strokeWidth={2.5}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+              <CreditCard size={18} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>
+                To'lov qilmagan o'quvchilar ro'yxati (Qarzdorlar)
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                To'lovni amalga oshirmagan yoki qisman to'lagan o'quvchilar va ularning bog'lanish ma'lumotlari
+              </p>
+            </div>
+          </div>
+          <Badge variant="warning">
+            {unpaidStudents.length} ta qarzdor
+          </Badge>
         </div>
+
+        {isStatsLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Skeleton height="40px" />
+            <Skeleton height="40px" />
+            <Skeleton height="40px" />
+          </div>
+        ) : unpaidStudents.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
+            <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>Barcha o'quvchilar to'lovlarni to'liq amalga oshirgan</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>Hozirda qarzdor o'quvchilar mavjud emas 🎉</div>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>KURS NARXI</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>QARZDORLIK</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>TO'LOV HOLATI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unpaidStudents.map((item: any) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.15s' }}>
+                    {/* Ism Familiya */}
+                    <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
+                          {item.studentName.charAt(0)}
+                        </div>
+                        <span>{item.studentName}</span>
+                      </div>
+                    </td>
+
+                    {/* Guruh */}
+                    <td style={{ padding: '14px' }}>
+                      <Badge variant="primary">{item.groupName}</Badge>
+                    </td>
+
+                    {/* Talaba telefoni */}
+                    <td style={{ padding: '14px' }}>
+                      {item.studentPhone && item.studentPhone !== '-' ? (
+                        <a
+                          href={`tel:${item.studentPhone}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          <Phone size={14} />
+                          {formatPhone(item.studentPhone)}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                      )}
+                    </td>
+
+                    {/* Ota-onasi telefoni */}
+                    <td style={{ padding: '14px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {item.fatherPhone && (
+                          <a
+                            href={`tel:${item.fatherPhone}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                          >
+                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                            <Phone size={12} color="var(--primary)" />
+                            {formatPhone(item.fatherPhone)}
+                          </a>
+                        )}
+                        {item.motherPhone && (
+                          <a
+                            href={`tel:${item.motherPhone}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                          >
+                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                            <Phone size={12} color="#ec4899" />
+                            {formatPhone(item.motherPhone)}
+                          </a>
+                        )}
+                        {!item.fatherPhone && !item.motherPhone && (
+                          <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Kurs narxi */}
+                    <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
+                      {formatMoney(item.coursePrice)}
+                    </td>
+
+                    {/* Qarz summasi */}
+                    <td style={{ padding: '14px', fontWeight: 700, color: '#ef4444' }}>
+                      {formatMoney(item.debtAmount)}
+                    </td>
+
+                    {/* To'lov holati */}
+                    <td style={{ padding: '14px' }}>
+                      <Badge variant={item.paymentStatus === 'QISMAN' ? 'warning' : 'danger'}>
+                        {item.paymentStatus === 'QISMAN' ? "QISMAN TO'LANGAN" : "TO'LANMAGAN"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {/* Quick Actions & Recent Data */}

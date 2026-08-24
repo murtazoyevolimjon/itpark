@@ -188,6 +188,7 @@ export interface DashboardStats {
   groupsCount: number;
   graduatesCount: number;
   certificatesCount: number;
+  unpaidStudents?: any[];
 }
 
 export interface FinanceSummary {
