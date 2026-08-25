@@ -14,20 +14,18 @@ export async function GET(req: NextRequest) {
     const [
       { count: studentsCount },
       { count: teachersCount },
-      { count: employeesCount },
       { count: coursesCount },
       { count: groupsCount },
-      { count: graduatesCount },
-      { count: certificatesCount },
+      { count: roomsCount },
+      { count: employeesCount },
       { data: allStudents },
     ] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
-      supabase.from('employees').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('courses').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('groups').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
-      supabase.from('students').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId).eq('status', 'BITIRGAN'),
-      supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
+      supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
+      supabase.from('employees').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase
         .from('students')
         .select(`
@@ -110,11 +108,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       studentsCount: studentsCount || 0,
       teachersCount: teachersCount || 0,
-      employeesCount: employeesCount || 0,
       coursesCount: coursesCount || 0,
       groupsCount: groupsCount || 0,
-      graduatesCount: graduatesCount || 0,
-      certificatesCount: certificatesCount || 0,
+      roomsCount: roomsCount || 0,
+      employeesCount: employeesCount || 0,
       unpaidStudents,
     });
   } catch (error: any) {

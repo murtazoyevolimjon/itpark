@@ -183,11 +183,10 @@ export interface PaginatedResponse<T> {
 export interface DashboardStats {
   studentsCount: number;
   teachersCount: number;
-  employeesCount?: number;
   coursesCount: number;
   groupsCount: number;
-  graduatesCount: number;
-  certificatesCount: number;
+  roomsCount?: number;
+  employeesCount?: number;
   unpaidStudents?: any[];
 }
 

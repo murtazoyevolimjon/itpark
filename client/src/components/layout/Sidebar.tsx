@@ -146,18 +146,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{t('profile')}</span>
               </div>
             </Link>
-
-            {/* Chiqish (Log out) */}
-            <button
-              onClick={() => {
-                logout();
-                onClose();
-              }}
-              className={styles.logoutBtn}
-            >
-              <LogOut size={18} />
-              <span>{t('logout')}</span>
-            </button>
           </div>
         </div>
       </aside>
