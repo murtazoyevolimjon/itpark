@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, FileSpreadsheet, FileText } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
+import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
@@ -16,6 +17,7 @@ import { teachersApi } from '../api/teachers.api';
 import { Teacher } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
+import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Teachers: React.FC = () => {
   const queryClient = useQueryClient();
@@ -189,13 +191,92 @@ export const Teachers: React.FC = () => {
     },
   ];
 
+  const handleExportExcel = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Ism Familya', key: 'name' },
+      { header: 'Telefon', key: 'phone' },
+      { header: 'Passport seriya', key: 'passportSeries' },
+      { header: 'Maosh turi', key: 'salaryType' },
+      { header: 'Maosh miqdori / foizi', key: 'salary' },
+      { header: 'Guruhlar soni', key: 'groupsCount' },
+      { header: 'Holati', key: 'status' },
+    ];
+
+    const exportRows = data.data.map((t) => ({
+      name: `${t.firstName} ${t.lastName}`,
+      phone: formatPhone(t.phone),
+      passportSeries: t.passportSeries || '-',
+      salaryType: t.salaryType === 'FIXED' ? 'Fikslangan' : 'Foiz',
+      salary: t.salaryType === 'FIXED' ? formatMoney(t.salaryValue) : `${t.salaryValue}%`,
+      groupsCount: `${t._count?.groups || 0} ta`,
+      status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
+    }));
+
+    exportToExcel({
+      filename: `Oqituvchilar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Oqituvchilar',
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('Excel fayl yuklab olindi!');
+  };
+
+  const handleExportPdf = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Ism Familya', key: 'name' },
+      { header: 'Telefon', key: 'phone' },
+      { header: 'Maosh turi', key: 'salaryType' },
+      { header: 'Maosh / Foiz', key: 'salary' },
+      { header: 'Guruhlar', key: 'groupsCount' },
+      { header: 'Holat', key: 'status' },
+    ];
+
+    const exportRows = data.data.map((t) => ({
+      name: `${t.firstName} ${t.lastName}`,
+      phone: formatPhone(t.phone),
+      salaryType: t.salaryType === 'FIXED' ? 'Fikslangan' : 'Foiz',
+      salary: t.salaryType === 'FIXED' ? formatMoney(t.salaryValue) : `${t.salaryValue}%`,
+      groupsCount: `${t._count?.groups || 0} ta`,
+      status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
+    }));
+
+    exportToPdf({
+      filename: `Oqituvchilar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      title: "O'QITUVCHILAR (USTOZLAR) RO'YXATI",
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('PDF fayl yuklab olindi!');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Ustozlar</h2>
-        <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          YANGI USTOZ
-        </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Ustozlar</h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            O'quv markazining barcha o'qituvchilari ro'yxati
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <ExportDropdown
+            onExportExcel={handleExportExcel}
+            onExportPdf={handleExportPdf}
+          />
+          <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
+            YANGI USTOZ
+          </Button>
+        </div>
       </div>
 
       <Table

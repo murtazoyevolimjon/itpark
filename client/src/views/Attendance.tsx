@@ -18,6 +18,7 @@ import {
   UserCheck,
   CreditCard,
   AlertTriangle,
+  Calendar,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -33,21 +34,32 @@ import {
 } from 'recharts';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
-import { Select } from '../components/ui/Select/Select';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
+import { useToast } from '../components/ui/Toast/Toast';
 import { attendanceApi } from '../api/attendance.api';
 import { dashboardApi } from '../api/dashboard.api';
 import { formatPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
+import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Attendance: React.FC = () => {
   const router = useRouter();
+  const { success, error } = useToast();
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  const [filterType, setFilterType] = useState<'custom_date' | 'days'>('days');
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [daysFilter, setDaysFilter] = useState<number>(7);
 
+  const queryParams = filterType === 'custom_date' ? { date: selectedDate } : { days: daysFilter };
+
   const { data, isLoading } = useQuery({
-    queryKey: ['attendanceStats', daysFilter],
-    queryFn: () => attendanceApi.getStats(daysFilter),
+    queryKey: ['attendanceStats', filterType, selectedDate, daysFilter],
+    queryFn: () => attendanceApi.getStats(queryParams),
   });
 
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
@@ -57,8 +69,84 @@ export const Attendance: React.FC = () => {
 
   const dailyChart = data?.dailyChart || [];
   const absentStudents = data?.absentStudents || [];
-  const unpaidStudents = data?.unpaidStudents || [];
   const groupStats = data?.groupStats || [];
+
+  const handleExportAttendanceExcel = () => {
+    if (!absentStudents || absentStudents.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Sana', key: 'date' },
+      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Guruhi', key: 'groupName' },
+      { header: "O'quvchi telefoni", key: 'studentPhone' },
+      { header: 'Otasining telefoni', key: 'fatherPhone' },
+      { header: 'Onasining telefoni', key: 'motherPhone' },
+      { header: 'Holati', key: 'status' },
+      { header: 'Izoh', key: 'note' },
+    ];
+
+    const exportRows = absentStudents.map((item: any) => ({
+      date: item.date,
+      studentName: item.studentName,
+      groupName: item.groupName,
+      studentPhone: formatPhone(item.studentPhone),
+      fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
+      motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
+      status: item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN',
+      note: item.note || '-',
+    }));
+
+    exportToExcel({
+      filename: `Davomat_Kelmaganlar_${filterType === 'custom_date' ? selectedDate : `Oxirgi_${daysFilter}_kun`}`,
+      sheetName: 'Kelmaganlar',
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('Excel fayl yuklab olindi!');
+  };
+
+  const handleExportAttendancePdf = () => {
+    if (!absentStudents || absentStudents.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Sana', key: 'date' },
+      { header: 'Talaba', key: 'studentName' },
+      { header: 'Guruhi', key: 'groupName' },
+      { header: "O'quvchi tel", key: 'studentPhone' },
+      { header: 'Otasi tel', key: 'fatherPhone' },
+      { header: 'Onasi tel', key: 'motherPhone' },
+      { header: 'Holat', key: 'status' },
+    ];
+
+    const exportRows = absentStudents.map((item: any) => ({
+      date: item.date,
+      studentName: item.studentName,
+      groupName: item.groupName,
+      studentPhone: formatPhone(item.studentPhone),
+      fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
+      motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
+      status: item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN',
+    }));
+
+    exportToPdf({
+      filename: `Davomat_Kelmaganlar_${filterType === 'custom_date' ? selectedDate : `Oxirgi_${daysFilter}_kun`}`,
+      title: "DARSGA KELMAGAN VA KECHIKKAN O'QUVCHILAR RO'YXATI",
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('PDF fayl yuklab olindi!');
+  };
+
+  const periodTitle =
+    filterType === 'custom_date'
+      ? `${selectedDate} sanasi`
+      : `Oxirgi ${daysFilter} kun`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -67,20 +155,121 @@ export const Attendance: React.FC = () => {
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Davomat ko'rsatgichlari</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            O'quv markazidagi umumiy davomat statistikasi, dars qoldirganlar va to'lov qilmaganlar
+            O'quv markazidagi umumiy davomat statistikasi va dars qoldirganlar tahlili
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Select
-            options={[
-              { label: 'Oxirgi 7 kun', value: 7 },
-              { label: 'Oxirgi 15 kun', value: 15 },
-              { label: 'Oxirgi 30 kun', value: 30 },
-            ]}
-            value={daysFilter}
-            onChange={(e) => setDaysFilter(Number(e.target.value))}
-            style={{ width: '160px' }}
-          />
+
+        {/* Date Filters Toolbar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Quick Date Chips */}
+          <div style={{ display: 'flex', background: 'var(--card-subtle, rgba(255,255,255,0.05))', padding: '3px', borderRadius: '10px', border: '1px solid var(--border)', gap: '4px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(todayStr);
+                setFilterType('custom_date');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: filterType === 'custom_date' && selectedDate === todayStr ? 'var(--primary, #2b7fff)' : 'transparent',
+                color: filterType === 'custom_date' && selectedDate === todayStr ? '#ffffff' : 'var(--text-muted)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Bugun
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(yesterdayStr);
+                setFilterType('custom_date');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: filterType === 'custom_date' && selectedDate === yesterdayStr ? 'var(--primary, #2b7fff)' : 'transparent',
+                color: filterType === 'custom_date' && selectedDate === yesterdayStr ? '#ffffff' : 'var(--text-muted)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Kecha
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDaysFilter(7);
+                setFilterType('days');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: filterType === 'days' && daysFilter === 7 ? 'var(--primary, #2b7fff)' : 'transparent',
+                color: filterType === 'days' && daysFilter === 7 ? '#ffffff' : 'var(--text-muted)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              7 kun
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDaysFilter(30);
+                setFilterType('days');
+              }}
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: filterType === 'days' && daysFilter === 30 ? 'var(--primary, #2b7fff)' : 'transparent',
+                color: filterType === 'days' && daysFilter === 30 ? '#ffffff' : 'var(--text-muted)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              30 kun
+            </button>
+          </div>
+
+          {/* Direct Date Picker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--input-bg, #1a2234)', border: '1px solid var(--border)', borderRadius: '10px', padding: '4px 10px' }}>
+            <Calendar size={15} color="var(--primary, #2b7fff)" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedDate(e.target.value);
+                  setFilterType('custom_date');
+                }
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            />
+          </div>
+
           <Button icon={<Plus size={16} />} onClick={() => router.push('/attendance/take')}>
             Davomat olish
           </Button>
@@ -158,90 +347,28 @@ export const Attendance: React.FC = () => {
         </Card>
       </div>
 
-      {/* Main Line Chart */}
+      {/* 1. Absent and Late Students Table (PLACED FIRST AS REQUESTED) */}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-            Oxirgi {daysFilter} kunlik davomat grafigi
-          </h3>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Jami qaydlar: <strong>{data?.totalRecords || 0} ta</strong>
-          </div>
-        </div>
-        <div style={{ width: '100%', height: 320 }}>
-          {isLoading ? (
-            <Skeleton height="100%" />
-          ) : dailyChart.length === 0 ? (
-            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--text-muted)' }}>
-              <AlertCircle size={32} />
-              <span>Oxirgi {daysFilter} kun ichida davomat qaydlari topilmadi</span>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyChart} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'var(--card)',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="KELGAN"
-                  name="🔵 Kelgan"
-                  stroke="#2b7fff"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#2b7fff' }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="KELMAGAN"
-                  name="🔴 Kelmagan"
-                  stroke="#ef4444"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#ef4444' }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="KECHIKKAN"
-                  name="🟡 Kechikkan"
-                  stroke="#f59e0b"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#f59e0b' }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </Card>
-
-      {/* Absent and Late Students Section */}
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
               <UserX size={18} />
             </div>
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>
-                Darsga kelmagan va kechikkan o'quvchilar ro'yxati (Oxirgi {daysFilter} kun)
+                Darsga kelmagan va kechikkan o'quvchilar ro'yxati ({periodTitle})
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                 Qoldirilgan va kech qolingan darslar, o'quvchi va ota-onaning bog'lanish ma'lumotlari
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <ExportDropdown
+              size="sm"
+              onExportExcel={handleExportAttendanceExcel}
+              onExportPdf={handleExportAttendancePdf}
+            />
             <Badge variant="danger">
               {absentStudents.filter((s: any) => s.status === 'KELMAGAN').length} ta kelmagan
             </Badge>
@@ -260,7 +387,7 @@ export const Attendance: React.FC = () => {
         ) : absentStudents.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
             <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>Oxirgi {daysFilter} kun ichida dars qoldirgan yoki kechikkan o'quvchilar yo'q</div>
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{periodTitle} bo'yicha dars qoldirgan yoki kechikkan o'quvchilar yo'q</div>
             <div style={{ fontSize: '12px', marginTop: '4px' }}>Barcha talabalar darslarga to'liq va o'z vaqtida qatnashmoqda 🎉</div>
           </div>
         ) : (
@@ -362,9 +489,74 @@ export const Attendance: React.FC = () => {
         )}
       </Card>
 
+      {/* 2. Main Line Chart (PLACED AFTER TABLE AS REQUESTED) */}
+      <Card>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
+            Davomat dinamikasi grafigi ({periodTitle})
+          </h3>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            Jami qaydlar: <strong>{data?.totalRecords || 0} ta</strong>
+          </div>
+        </div>
+        <div style={{ width: '100%', height: 300 }}>
+          {isLoading ? (
+            <Skeleton height="100%" />
+          ) : dailyChart.length === 0 ? (
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--text-muted)' }}>
+              <AlertCircle size={32} />
+              <span>Tanlangan davr bo'yicha davomat qaydlari topilmadi</span>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyChart} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={11} />
+                <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="KELGAN"
+                  name="🔵 Kelgan"
+                  stroke="#2b7fff"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#2b7fff' }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="KELMAGAN"
+                  name="🔴 Kelmagan"
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#ef4444' }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="KECHIKKAN"
+                  name="🟡 Kechikkan"
+                  stroke="#f59e0b"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#f59e0b' }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
 
-
-      {/* Per Group Attendance Cards Grid */}
+      {/* 3. Per Group Attendance Cards Grid */}
       {groupStats.length > 0 && (
         <>
           <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Guruhlar kesimidagi davomat</h3>

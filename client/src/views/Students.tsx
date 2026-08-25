@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, FileSpreadsheet, FileText } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
+import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
@@ -19,6 +20,7 @@ import { groupsApi } from '../api/groups.api';
 import { Student } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatDate } from '../utils/formatDate';
+import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Students: React.FC = () => {
   const router = useRouter();
@@ -257,13 +259,96 @@ export const Students: React.FC = () => {
     },
   ];
 
+  const handleExportExcel = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Ism Familya', key: 'name' },
+      { header: "Tug'ilgan sana", key: 'birthDate' },
+      { header: "O'quvchi telefoni", key: 'phone' },
+      { header: 'Otasining telefoni', key: 'fatherPhone' },
+      { header: 'Onasining telefoni', key: 'motherPhone' },
+      { header: 'Passport seriya', key: 'passportSeries' },
+      { header: 'Jinsi', key: 'gender' },
+      { header: "To'lov holati", key: 'paymentStatus' },
+    ];
+
+    const exportRows = data.data.map((s) => ({
+      name: `${s.firstName} ${s.lastName}`,
+      birthDate: formatDate(s.birthDate),
+      phone: formatPhone(s.phone),
+      fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
+      motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
+      passportSeries: s.passportSeries || '-',
+      gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
+      paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
+    }));
+
+    exportToExcel({
+      filename: `Talabalar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Talabalar',
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('Excel fayl yuklab olindi!');
+  };
+
+  const handleExportPdf = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Ism Familya', key: 'name' },
+      { header: "Tug'ilgan sana", key: 'birthDate' },
+      { header: "O'quvchi tel", key: 'phone' },
+      { header: 'Otasi tel', key: 'fatherPhone' },
+      { header: 'Onasi tel', key: 'motherPhone' },
+      { header: 'Jinsi', key: 'gender' },
+      { header: "To'lov holati", key: 'paymentStatus' },
+    ];
+
+    const exportRows = data.data.map((s) => ({
+      name: `${s.firstName} ${s.lastName}`,
+      birthDate: formatDate(s.birthDate),
+      phone: formatPhone(s.phone),
+      fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
+      motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
+      gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
+      paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
+    }));
+
+    exportToPdf({
+      filename: `Talabalar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      title: "TALABALAR RO'YXATI",
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('PDF fayl yuklab olindi!');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Talabalar</h2>
-        <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          YANGI TALABA
-        </Button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Talabalar</h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            O'quv markazidagi barcha ro'yxatdan o'tgan talabalar
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <ExportDropdown
+            onExportExcel={handleExportExcel}
+            onExportPdf={handleExportPdf}
+          />
+          <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
+            YANGI TALABA
+          </Button>
+        </div>
       </div>
 
       <Table

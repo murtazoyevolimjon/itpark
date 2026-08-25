@@ -9,8 +9,9 @@ export const attendanceApi = {
     const res = await api.get(`/attendance/group/${groupId}`, { params: { from, to } });
     return res.data;
   },
-  getStats: async (days: number = 30) => {
-    const res = await api.get('/attendance/stats', { params: { days } });
+  getStats: async (params?: number | { days?: number; date?: string }) => {
+    const queryParams = typeof params === 'number' ? { days: params } : params || { days: 7 };
+    const res = await api.get('/attendance/stats', { params: queryParams });
     return res.data;
   },
 };

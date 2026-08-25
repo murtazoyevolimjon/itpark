@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CreditCard, DollarSign } from 'lucide-react';
+import { Plus, CreditCard, DollarSign, FileSpreadsheet, FileText } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
+import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
@@ -17,6 +18,7 @@ import { studentsApi } from '../api/students.api';
 import { Payment } from '../types';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
+import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const FinancePayments: React.FC = () => {
   const queryClient = useQueryClient();
@@ -64,7 +66,7 @@ export const FinancePayments: React.FC = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
-      queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (err: any) => {
@@ -85,6 +87,76 @@ export const FinancePayments: React.FC = () => {
       studentId,
       amount: Number(formData.amount),
     });
+  };
+
+  const handleExportExcel = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Qabul qildi', key: 'receivedByName' },
+      { header: 'Summa', key: 'amount' },
+      { header: "To'lov sanasi", key: 'paymentDate' },
+      { header: "To'lov usuli", key: 'method' },
+      { header: 'Kurs / Guruh', key: 'courseName' },
+      { header: 'Holati', key: 'status' },
+    ];
+
+    const exportRows = data.data.map((p) => ({
+      studentName: p.student ? `${p.student.firstName} ${p.student.lastName}` : '-',
+      receivedByName: p.receivedBy?.fullName || 'Administrator',
+      amount: formatMoney(p.amount),
+      paymentDate: formatDate(p.paymentDate),
+      method: p.method || 'NAQD',
+      courseName: p.course?.name || p.group?.name || '-',
+      status: p.status === 'TOLANGAN' ? "TO'LANGAN" : p.status === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
+    }));
+
+    exportToExcel({
+      filename: `Tolovlar_Tarixi_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Tolovlar',
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('Excel fayl yuklab olindi!');
+  };
+
+  const handleExportPdf = () => {
+    if (!data?.data || data.data.length === 0) {
+      error("Yuklab olish uchun ma'lumot mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Talaba', key: 'studentName' },
+      { header: 'Qabul qildi', key: 'receivedByName' },
+      { header: 'Summa', key: 'amount' },
+      { header: 'Sana', key: 'paymentDate' },
+      { header: 'Usul', key: 'method' },
+      { header: 'Kurs/Guruh', key: 'courseName' },
+      { header: 'Holat', key: 'status' },
+    ];
+
+    const exportRows = data.data.map((p) => ({
+      studentName: p.student ? `${p.student.firstName} ${p.student.lastName}` : '-',
+      receivedByName: p.receivedBy?.fullName || 'Admin',
+      amount: formatMoney(p.amount),
+      paymentDate: formatDate(p.paymentDate),
+      method: p.method || 'NAQD',
+      courseName: p.course?.name || p.group?.name || '-',
+      status: p.status === 'TOLANGAN' ? "TO'LANGAN" : p.status === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
+    }));
+
+    exportToPdf({
+      filename: `Tolovlar_Tarixi_${new Date().toISOString().split('T')[0]}`,
+      title: "TO'LOVLAR TARIXI JURNALI",
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('PDF fayl yuklab olindi!');
   };
 
   const columns: Column<Payment>[] = [
@@ -164,9 +236,15 @@ export const FinancePayments: React.FC = () => {
             O'quv markaziga amalga oshirilgan barcha to'lovlar jurnali
           </p>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setIsModalOpen(true)}>
-          To'lov qabul qilish
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <ExportDropdown
+            onExportExcel={handleExportExcel}
+            onExportPdf={handleExportPdf}
+          />
+          <Button icon={<Plus size={16} />} onClick={() => setIsModalOpen(true)}>
+            To'lov qabul qilish
+          </Button>
+        </div>
       </div>
 
       <Table

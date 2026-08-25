@@ -14,11 +14,14 @@ import {
   CreditCard,
   Phone,
   CheckCircle2,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { Button } from '../components/ui/Button/Button';
+import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -30,6 +33,7 @@ import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
+import { exportToExcel, exportToPdf } from '../utils/exportData';
 import styles from './Dashboard.module.css';
 
 export const Dashboard: React.FC = () => {
@@ -183,6 +187,80 @@ export const Dashboard: React.FC = () => {
 
   const unpaidStudents = stats?.unpaidStudents || [];
 
+  const handleExportDebtorsExcel = () => {
+    if (!unpaidStudents || unpaidStudents.length === 0) {
+      error("Yuklab olish uchun qarzdorlar mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Guruhi', key: 'groupName' },
+      { header: "O'quvchi telefoni", key: 'studentPhone' },
+      { header: 'Otasining telefoni', key: 'fatherPhone' },
+      { header: 'Onasining telefoni', key: 'motherPhone' },
+      { header: 'Kurs narxi', key: 'coursePrice' },
+      { header: 'Qarzdorlik summasi', key: 'debtAmount' },
+      { header: "To'lov holati", key: 'paymentStatus' },
+    ];
+
+    const exportRows = unpaidStudents.map((item: any) => ({
+      studentName: item.studentName,
+      groupName: item.groupName,
+      studentPhone: formatPhone(item.studentPhone),
+      fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
+      motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
+      coursePrice: formatMoney(item.coursePrice),
+      debtAmount: formatMoney(item.debtAmount),
+      paymentStatus: item.paymentStatus === 'QISMAN' ? "QISMAN TO'LANGAN" : "TO'LANMAGAN",
+    }));
+
+    exportToExcel({
+      filename: `Qarzdorlar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Qarzdorlar',
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('Excel fayl yuklab olindi!');
+  };
+
+  const handleExportDebtorsPdf = () => {
+    if (!unpaidStudents || unpaidStudents.length === 0) {
+      error("Yuklab olish uchun qarzdorlar mavjud emas");
+      return;
+    }
+
+    const exportColumns = [
+      { header: 'Talaba', key: 'studentName' },
+      { header: 'Guruhi', key: 'groupName' },
+      { header: "O'quvchi tel", key: 'studentPhone' },
+      { header: 'Otasi tel', key: 'fatherPhone' },
+      { header: 'Onasi tel', key: 'motherPhone' },
+      { header: 'Kurs narxi', key: 'coursePrice' },
+      { header: 'Qarzdorlik', key: 'debtAmount' },
+      { header: 'Holat', key: 'paymentStatus' },
+    ];
+
+    const exportRows = unpaidStudents.map((item: any) => ({
+      studentName: item.studentName,
+      groupName: item.groupName,
+      studentPhone: formatPhone(item.studentPhone),
+      fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
+      motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
+      coursePrice: formatMoney(item.coursePrice),
+      debtAmount: formatMoney(item.debtAmount),
+      paymentStatus: item.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
+    }));
+
+    exportToPdf({
+      filename: `Qarzdorlar_Royxati_${new Date().toISOString().split('T')[0]}`,
+      title: "TO'LOV QILMAGAN O'QUVCHILAR RO'YXATI (QARZDORLAR)",
+      columns: exportColumns,
+      data: exportRows,
+    });
+    success('PDF fayl yuklab olindi!');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* 2x3 Stat Cards */}
@@ -209,7 +287,7 @@ export const Dashboard: React.FC = () => {
 
       {/* Unpaid / Debtor Students Section */}
       <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
               <CreditCard size={18} />
@@ -223,9 +301,16 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <Badge variant="warning">
-            {unpaidStudents.length} ta qarzdor
-          </Badge>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <ExportDropdown
+              size="sm"
+              onExportExcel={handleExportDebtorsExcel}
+              onExportPdf={handleExportDebtorsPdf}
+            />
+            <Badge variant="warning">
+              {unpaidStudents.length} ta qarzdor
+            </Badge>
+          </div>
         </div>
 
         {isStatsLoading ? (

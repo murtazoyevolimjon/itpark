@@ -55,10 +55,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       />
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.logoArea}>
-          <div className={styles.logoIcon}>M</div>
+          <img
+            src="/itpark-logo.png"
+            alt="IT Park"
+            className={styles.logoImg}
+          />
           <div>
-            <div className={styles.logoTitle}>{t('appName')}</div>
-            <div className={styles.logoCenter}>{user?.centerName || 'IT-Park Academy'}</div>
+            <div className={styles.logoTitle}>IT PARK</div>
           </div>
         </div>
 

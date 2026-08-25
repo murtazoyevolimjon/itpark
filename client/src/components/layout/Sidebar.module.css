@@ -21,6 +21,13 @@
   border-bottom: 1px solid var(--border);
 }
 
+.logoImg {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(128, 195, 34, 0.35));
+}
+
 .logoIcon {
   width: 36px;
   height: 36px;
@@ -36,11 +43,11 @@
 }
 
 .logoTitle {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
   color: var(--text);
   line-height: 1.1;
-  letter-spacing: -0.3px;
+  letter-spacing: 0.5px;
 }
 
 .logoCenter {

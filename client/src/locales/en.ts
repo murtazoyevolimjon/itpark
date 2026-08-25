@@ -1,5 +1,5 @@
 export const en = {
-  appName: 'MARKAZ CRM',
+  appName: 'IT PARK',
   tagline: 'Modern SaaS CRM system for educational centers',
 
   // Common

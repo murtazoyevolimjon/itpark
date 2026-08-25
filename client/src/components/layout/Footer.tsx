@@ -7,7 +7,7 @@ export const Footer: React.FC = () => {
   return (
     <footer className={styles.footer}>
       <span>
-        © 2026 <strong>{t('appName')}</strong>. Powered by MARKAZ all rights reserved.
+        © 2026 <strong>{t('appName')}</strong>. Barcha huquqlar himoyalangan.
       </span>
     </footer>
   );

@@ -10,40 +10,52 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const days = parseInt(searchParams.get('days') || '30', 10);
+    const dateParam = searchParams.get('date');
+    const daysParam = searchParams.get('days');
 
     const supabase = createServerSupabaseClient();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+
+    let attendanceQuery = supabase
+      .from('attendances')
+      .select(`
+        id,
+        date,
+        status,
+        note,
+        student:students (
+          id,
+          firstName,
+          lastName,
+          phone,
+          fatherPhone,
+          motherPhone
+        ),
+        group:groups (
+          id,
+          name
+        )
+      `)
+      .eq('centerId', authUser.centerId);
+
+    if (dateParam) {
+      const startOfDay = `${dateParam}T00:00:00.000Z`;
+      const endOfDay = `${dateParam}T23:59:59.999Z`;
+      attendanceQuery = attendanceQuery.gte('date', startOfDay).lte('date', endOfDay);
+    } else {
+      const days = parseInt(daysParam || '7', 10);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+      attendanceQuery = attendanceQuery.gte('date', startDate.toISOString());
+    }
+
+    attendanceQuery = attendanceQuery.order('date', { ascending: true });
 
     const [
       { data: records, error },
       { data: allStudents, error: studentsError },
     ] = await Promise.all([
-      supabase
-        .from('attendances')
-        .select(`
-          id,
-          date,
-          status,
-          note,
-          student:students (
-            id,
-            firstName,
-            lastName,
-            phone,
-            fatherPhone,
-            motherPhone
-          ),
-          group:groups (
-            id,
-            name
-          )
-        `)
-        .eq('centerId', authUser.centerId)
-        .gte('date', startDate.toISOString())
-        .order('date', { ascending: true }),
+      attendanceQuery,
 
       supabase
         .from('students')
