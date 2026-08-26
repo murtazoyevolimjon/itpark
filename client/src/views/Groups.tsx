@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, CalendarCheck } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { Modal } from '../components/ui/Modal/Modal';
@@ -257,10 +257,22 @@ export const Groups: React.FC = () => {
       key: 'action',
       header: 'ACTION',
       render: (row) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
           <Button
             size="sm"
             variant="outline"
+            title="Guruh davomati va talabalari"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/groups/${row.id}`);
+            }}
+          >
+            <CalendarCheck size={14} color="var(--primary)" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            title="Tahrirlash"
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
@@ -271,6 +283,7 @@ export const Groups: React.FC = () => {
           <Button
             size="sm"
             variant="danger"
+            title="O'chirish"
             onClick={(e) => {
               e.stopPropagation();
               setDeleteGroupId(row.id);
