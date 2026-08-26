@@ -105,7 +105,7 @@ export const Students: React.FC = () => {
         passportSeries: student.passportSeries || '',
         gender: student.gender,
         isSchoolStudent: student.isSchoolStudent,
-        groupId: '',
+        groupId: (student.studentGroups && student.studentGroups[0]?.groupId) || (student.studentGroups && student.studentGroups[0]?.group?.id) || '',
       });
     } else {
       setSelectedStudent(null);

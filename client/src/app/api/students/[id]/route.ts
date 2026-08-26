@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 
@@ -80,6 +81,25 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    if (body.groupId) {
+      const { data: existingSg } = await supabase
+        .from('student_groups')
+        .select('id')
+        .eq('studentId', params.id)
+        .eq('groupId', body.groupId)
+        .maybeSingle();
+
+      if (!existingSg) {
+        await supabase.from('student_groups').insert({
+          id: crypto.randomUUID(),
+          studentId: params.id,
+          groupId: body.groupId,
+          centerId: authUser.centerId,
+          updatedAt: new Date().toISOString(),
+        });
+      }
     }
 
     return NextResponse.json(data);
