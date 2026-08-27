@@ -4,9 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix client run dev",
-    "build": "npm run build --prefix client",
-    "build:client": "npm run build --prefix client",
-    "build:server": "npm run build --prefix server"
+    "build": "cd client && npm install && npm run build",
+    "build:client": "cd client && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
