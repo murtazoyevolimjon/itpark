@@ -19,6 +19,7 @@ import {
   Plus,
   Calendar as CalendarIcon,
   CheckCheck,
+  Trash2,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -126,6 +127,21 @@ export const GroupDetail: React.FC = () => {
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Talaba qo\'shishda xatolik yuz berdi');
+    },
+  });
+
+  // Remove student from group mutation
+  const removeStudentMutation = useMutation({
+    mutationFn: (studentId: string) => groupsApi.removeStudent(id, studentId),
+    onSuccess: () => {
+      success('Talaba guruhdan muvaffaqiyatli chiqarildi');
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || 'Guruhdan chiqarishda xatolik yuz berdi');
     },
   });
 
@@ -251,6 +267,32 @@ export const GroupDetail: React.FC = () => {
       key: 'joinedAt',
       header: 'QO\'SHILGAN SANA',
       render: (row) => formatDate(row.joinedAt || row.createdAt),
+    },
+    {
+      key: 'action',
+      header: 'ACTION',
+      render: (row) => {
+        const studentId = row.student?.id || row.studentId;
+        const studentName = `${row.student?.firstName || ''} ${row.student?.lastName || ''}`.trim() || 'Ushbu talaba';
+        return (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              size="sm"
+              variant="danger"
+              title="Guruhdan chiqarish"
+              isLoading={removeStudentMutation.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`${studentName}ni ushbu guruhdan chiqarishni tasdiqlaysizmi?`)) {
+                  removeStudentMutation.mutate(studentId);
+                }
+              }}
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 

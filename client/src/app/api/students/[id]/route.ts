@@ -97,7 +97,6 @@ export async function PATCH(
           .from('student_groups')
           .delete()
           .eq('studentId', params.id)
-          .eq('centerId', authUser.centerId)
           .neq('groupId', body.groupId);
 
         // Check if student is already in the target group
@@ -106,7 +105,6 @@ export async function PATCH(
           .select('id')
           .eq('studentId', params.id)
           .eq('groupId', body.groupId)
-          .eq('centerId', authUser.centerId)
           .maybeSingle();
 
         if (!existingSg) {
@@ -123,8 +121,7 @@ export async function PATCH(
         await supabase
           .from('student_groups')
           .delete()
-          .eq('studentId', params.id)
-          .eq('centerId', authUser.centerId);
+          .eq('studentId', params.id);
       }
     }
 

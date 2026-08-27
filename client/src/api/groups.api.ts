@@ -22,4 +22,8 @@ export const groupsApi = {
     const res = await api.delete(`/groups/${id}`);
     return res.data;
   },
+  removeStudent: async (groupId: string, studentId: string) => {
+    const res = await api.delete(`/groups/${groupId}/students/${studentId}`);
+    return res.data;
+  },
 };
