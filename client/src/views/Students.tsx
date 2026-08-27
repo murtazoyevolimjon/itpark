@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Phone, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -60,7 +60,7 @@ export const Students: React.FC = () => {
 
   const { data: groups } = useQuery({
     queryKey: ['groupsSelect'],
-    queryFn: () => groupsApi.getAll({ limit: 100 }),
+    queryFn: () => groupsApi.getAll({ limit: 1000 }),
   });
 
   const saveMutation = useMutation({
@@ -72,7 +72,11 @@ export const Students: React.FC = () => {
       success(selectedStudent ? 'Talaba tahrirlandi' : 'Yangi talaba qo\'shildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -85,7 +89,10 @@ export const Students: React.FC = () => {
       success('Talaba o\'chirildi');
       setDeleteStudentId(null);
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');
@@ -95,17 +102,25 @@ export const Students: React.FC = () => {
   const handleOpenModal = (student?: Student) => {
     if (student) {
       setSelectedStudent(student);
+      const studentGroupsList = student.studentGroups || (student as any).student_groups || [];
+      const currentGroupId =
+        (studentGroupsList.length > 0
+          ? studentGroupsList[0]?.groupId || (studentGroupsList[0] as any)?.group?.id
+          : '') ||
+        (student as any)?.groupId ||
+        '';
+
       setFormData({
-        firstName: student.firstName,
-        lastName: student.lastName,
+        firstName: student.firstName || '',
+        lastName: student.lastName || '',
         birthDate: student.birthDate ? student.birthDate.split('T')[0] : '2005-01-01',
-        phone: student.phone,
+        phone: student.phone || '',
         fatherPhone: student.fatherPhone || '',
         motherPhone: student.motherPhone || '',
         passportSeries: student.passportSeries || '',
-        gender: student.gender,
-        isSchoolStudent: student.isSchoolStudent,
-        groupId: (student.studentGroups && student.studentGroups[0]?.groupId) || (student.studentGroups && student.studentGroups[0]?.group?.id) || '',
+        gender: student.gender || 'ERKAK',
+        isSchoolStudent: !!student.isSchoolStudent,
+        groupId: currentGroupId,
       });
     } else {
       setSelectedStudent(null);
@@ -141,7 +156,7 @@ export const Students: React.FC = () => {
       phone: unmaskPhone(formData.phone),
       fatherPhone: formData.fatherPhone ? unmaskPhone(formData.fatherPhone) : undefined,
       motherPhone: formData.motherPhone ? unmaskPhone(formData.motherPhone) : undefined,
-      groupId: formData.groupId || undefined,
+      groupId: formData.groupId || '',
     });
   };
 
@@ -158,6 +173,49 @@ export const Students: React.FC = () => {
           {row.firstName} {row.lastName}
         </span>
       ),
+    },
+    {
+      key: 'group',
+      header: 'GURUH',
+      render: (row) => {
+        const sgList = row.studentGroups || (row as any).student_groups || [];
+        const group = sgList[0]?.group;
+        if (!group) {
+          return <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>-</span>;
+        }
+        return (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              backgroundColor: 'rgba(43, 127, 255, 0.1)',
+              color: 'var(--primary)',
+              fontWeight: 600,
+              fontSize: '12px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              border: '1px solid rgba(43, 127, 255, 0.2)',
+              transition: 'all 0.2s',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/groups/${group.id}`);
+            }}
+            title={group.name}
+          >
+            <Users size={13} />
+            {group.name}
+            {sgList.length > 1 && (
+              <span style={{ fontSize: '10px', opacity: 0.8, background: 'rgba(43,127,255,0.2)', padding: '1px 4px', borderRadius: '4px' }}>
+                +{sgList.length - 1}
+              </span>
+            )}
+          </span>
+        );
+      },
     },
     {
       key: 'birthDate',
@@ -267,6 +325,7 @@ export const Students: React.FC = () => {
 
     const exportColumns = [
       { header: 'Ism Familya', key: 'name' },
+      { header: 'Guruh', key: 'group' },
       { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
@@ -278,6 +337,10 @@ export const Students: React.FC = () => {
 
     const exportRows = data.data.map((s) => ({
       name: `${s.firstName} ${s.lastName}`,
+      group: (s.studentGroups || (s as any).student_groups || [])
+        .map((sg: any) => sg.group?.name)
+        .filter(Boolean)
+        .join(', ') || '-',
       birthDate: formatDate(s.birthDate),
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
@@ -304,6 +367,7 @@ export const Students: React.FC = () => {
 
     const exportColumns = [
       { header: 'Ism Familya', key: 'name' },
+      { header: 'Guruh', key: 'group' },
       { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi tel", key: 'phone' },
       { header: 'Otasi tel', key: 'fatherPhone' },
@@ -314,6 +378,10 @@ export const Students: React.FC = () => {
 
     const exportRows = data.data.map((s) => ({
       name: `${s.firstName} ${s.lastName}`,
+      group: (s.studentGroups || (s as any).student_groups || [])
+        .map((sg: any) => sg.group?.name)
+        .filter(Boolean)
+        .join(', ') || '-',
       birthDate: formatDate(s.birthDate),
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',

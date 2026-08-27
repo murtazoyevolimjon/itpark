@@ -30,6 +30,12 @@ export async function GET(
       return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
     }
 
+    const sgList = (student.studentGroups || (student as any).student_groups || []).sort((a: any, b: any) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || a.joinedAt || 0).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt || b.joinedAt || 0).getTime();
+      return dateB - dateA;
+    });
+
     const attendances = student.attendances || [];
     const totalAttendances = attendances.length;
     const presentCount = attendances.filter((a: any) => a.status === 'KELGAN').length;
@@ -37,6 +43,7 @@ export async function GET(
 
     return NextResponse.json({
       ...student,
+      studentGroups: sgList,
       totalAttendances,
       presentCount,
       attendancePercentage,
@@ -64,9 +71,9 @@ export async function PATCH(
     if (body.lastName !== undefined) updatePayload.lastName = body.lastName;
     if (body.birthDate !== undefined) updatePayload.birthDate = new Date(body.birthDate).toISOString();
     if (body.phone !== undefined) updatePayload.phone = body.phone;
-    if (body.fatherPhone !== undefined) updatePayload.fatherPhone = body.fatherPhone;
-    if (body.motherPhone !== undefined) updatePayload.motherPhone = body.motherPhone;
-    if (body.passportSeries !== undefined) updatePayload.passportSeries = body.passportSeries;
+    if (body.fatherPhone !== undefined) updatePayload.fatherPhone = body.fatherPhone || null;
+    if (body.motherPhone !== undefined) updatePayload.motherPhone = body.motherPhone || null;
+    if (body.passportSeries !== undefined) updatePayload.passportSeries = body.passportSeries || null;
     if (body.gender !== undefined) updatePayload.gender = body.gender;
     if (body.isSchoolStudent !== undefined) updatePayload.isSchoolStudent = body.isSchoolStudent;
     if (body.status !== undefined) updatePayload.status = body.status;
@@ -83,22 +90,41 @@ export async function PATCH(
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    if (body.groupId) {
-      const { data: existingSg } = await supabase
-        .from('student_groups')
-        .select('id')
-        .eq('studentId', params.id)
-        .eq('groupId', body.groupId)
-        .maybeSingle();
+    if (body.groupId !== undefined) {
+      if (body.groupId) {
+        // Remove previous group memberships that are not the selected group
+        await supabase
+          .from('student_groups')
+          .delete()
+          .eq('studentId', params.id)
+          .eq('centerId', authUser.centerId)
+          .neq('groupId', body.groupId);
 
-      if (!existingSg) {
-        await supabase.from('student_groups').insert({
-          id: crypto.randomUUID(),
-          studentId: params.id,
-          groupId: body.groupId,
-          centerId: authUser.centerId,
-          updatedAt: new Date().toISOString(),
-        });
+        // Check if student is already in the target group
+        const { data: existingSg } = await supabase
+          .from('student_groups')
+          .select('id')
+          .eq('studentId', params.id)
+          .eq('groupId', body.groupId)
+          .eq('centerId', authUser.centerId)
+          .maybeSingle();
+
+        if (!existingSg) {
+          await supabase.from('student_groups').insert({
+            id: crypto.randomUUID(),
+            studentId: params.id,
+            groupId: body.groupId,
+            centerId: authUser.centerId,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        // If groupId is empty or null, remove student from groups
+        await supabase
+          .from('student_groups')
+          .delete()
+          .eq('studentId', params.id)
+          .eq('centerId', authUser.centerId);
       }
     }
 

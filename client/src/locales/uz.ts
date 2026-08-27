@@ -57,7 +57,6 @@ export const uz = {
   financeExpenses: 'Chiqimlar',
   financePayments: 'To\'lovlar',
   profile: 'Profil',
-  logout: 'Chiqish',
 
   // Sections
   mainSection: 'ASOSIY',

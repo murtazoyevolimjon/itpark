@@ -10,7 +10,7 @@ interface ExportDropdownProps {
   onExportPdf: () => void;
   label?: string;
   size?: 'sm' | 'md' | 'lg';
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger';
 }
 
 export const ExportDropdown: React.FC<ExportDropdownProps> = ({

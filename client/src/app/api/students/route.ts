@@ -46,8 +46,15 @@ export async function GET(req: NextRequest) {
 
       const paymentStatus = hasPaid ? 'TOLANGAN' : hasPartial ? 'QISMAN' : 'TOLANMAGAN';
 
+      const sgList = (student.studentGroups || (student as any).student_groups || []).sort((a: any, b: any) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || a.joinedAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt || b.joinedAt || 0).getTime();
+        return dateB - dateA;
+      });
+
       return {
         ...student,
+        studentGroups: sgList,
         paymentStatus,
       };
     });

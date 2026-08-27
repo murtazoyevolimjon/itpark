@@ -57,7 +57,6 @@ export const en = {
   financeExpenses: 'Expenses',
   financePayments: 'Payments',
   profile: 'Profile',
-  logout: 'Log Out',
 
   // Sections
   mainSection: 'MAIN',
