@@ -59,7 +59,58 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { studentId, groupId, courseId, amount, paymentDate, method, status } = body;
 
+    if (!studentId) {
+      return NextResponse.json({ message: 'Talaba tanlanishi shart' }, { status: 400 });
+    }
+    if (!amount || Number(amount) <= 0) {
+      return NextResponse.json({ message: 'To\'g\'ri to\'lov summasini kiriting' }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
+    const payDate = paymentDate ? new Date(paymentDate) : new Date();
+
+    // Check month boundary: 1st of month 00:00:00 to last day 23:59:59
+    const year = payDate.getFullYear();
+    const month = payDate.getMonth();
+    const startOfMonth = new Date(Date.UTC(year, month, 1, 0, 0, 0)).toISOString();
+    const endOfMonth = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999)).toISOString();
+
+    // Strict Rule: A student can only pay once per course/group in the same calendar month
+    let duplicateCheckQuery = supabase
+      .from('payments')
+      .select('id, amount, paymentDate, status, group:groups(name)')
+      .eq('centerId', authUser.centerId)
+      .eq('studentId', studentId)
+      .gte('paymentDate', startOfMonth)
+      .lte('paymentDate', endOfMonth)
+      .neq('status', 'TOLANMAGAN');
+
+    if (groupId) {
+      duplicateCheckQuery = duplicateCheckQuery.eq('groupId', groupId);
+    }
+
+    const { data: existingPayments, error: checkError } = await duplicateCheckQuery;
+
+    if (checkError) {
+      return NextResponse.json({ message: checkError.message }, { status: 500 });
+    }
+
+    if (existingPayments && existingPayments.length > 0) {
+      const monthNames = [
+        'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+        'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
+      ];
+      const monthName = `${monthNames[month]} ${year}`;
+      const groupName = (existingPayments[0] as any)?.group?.name || 'ushbu guruh';
+
+      return NextResponse.json(
+        {
+          message: `Bu talaba ${groupName} uchun ${monthName} oyida allaqachon to'lov qilgan! Bir oyda bitta fandan faqat 1 marta to'lov qilinishi mumkin. Qolib ketgan oy uchun to'lamoqchi bo'lsangiz, o'sha oy sanasini tanlang.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const id = crypto.randomUUID();
 
     const { data, error } = await supabase
@@ -70,7 +121,7 @@ export async function POST(req: NextRequest) {
         groupId: groupId || null,
         courseId: courseId || null,
         amount: Number(amount) || 0,
-        paymentDate: paymentDate ? new Date(paymentDate).toISOString() : new Date().toISOString(),
+        paymentDate: payDate.toISOString(),
         method: method || 'NAQD',
         status: status || 'TOLANGAN',
         receivedById: authUser.sub,

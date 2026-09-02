@@ -18,6 +18,8 @@ import {
   Info,
   Calendar,
   Layers,
+  CheckCircle,
+  Ban,
 } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
@@ -71,7 +73,6 @@ export const FinancePayments: React.FC = () => {
     paymentDate: new Date().toISOString().split('T')[0],
     method: 'NAQD',
     status: 'TOLANGAN',
-    allowOverride: false,
   });
 
   // Edit Payment Form State
@@ -119,7 +120,7 @@ export const FinancePayments: React.FC = () => {
     enabled: !!formData.studentId,
   });
 
-  // Month options generator (past 6 months, current month, next 2 months)
+  // Base Month options generator (past 6 months, current month, next 2 months)
   const monthOptions = useMemo(() => {
     const options: { value: string; label: string; year: number; month: number }[] = [];
     const now = new Date();
@@ -148,7 +149,7 @@ export const FinancePayments: React.FC = () => {
           groupsCount === 1
             ? s.studentGroups?.[0]?.group?.name
             : groupsCount > 1
-            ? `${groupsCount} ta guruh/kurs`
+            ? `${groupsCount} ta fanga qatnashadi`
             : undefined;
 
         return {
@@ -187,6 +188,37 @@ export const FinancePayments: React.FC = () => {
     return studentEnrolledGroups[0] || null;
   }, [formData.groupId, studentEnrolledGroups, allGroups]);
 
+  // Enriched Month options with live [✓ TO'LANGAN] or [⚠️ TO'LANMAGAN] labels
+  const enrichedMonthOptions = useMemo(() => {
+    const payments = studentPaymentsData?.data || [];
+    return monthOptions.map((m) => {
+      const [y, mon] = m.value.split('-').map(Number);
+      const existing = payments.find((p) => {
+        if (!p.paymentDate || p.status === 'TOLANMAGAN') return false;
+        const pDate = new Date(p.paymentDate);
+        const isMonthMatch = pDate.getFullYear() === y && pDate.getMonth() + 1 === mon;
+        const isGroupMatch = !formData.groupId || !p.groupId || p.groupId === formData.groupId;
+        return isMonthMatch && isGroupMatch;
+      });
+
+      let statusTag = '';
+      if (formData.studentId) {
+        if (existing) {
+          statusTag = ` — [✓ TO'LANGAN: ${formatMoney(existing.amount)}]`;
+        } else {
+          statusTag = ` — [⚠️ TO'LANMAGAN]`;
+        }
+      }
+
+      return {
+        value: m.value,
+        label: `${m.label}${statusTag}`,
+        isPaid: !!existing,
+        paidAmount: existing?.amount,
+      };
+    });
+  }, [monthOptions, studentPaymentsData, formData.groupId, formData.studentId]);
+
   // When student changes, automatically set first group & default price
   const handleStudentChange = (studentId: string) => {
     const st = students?.data?.find((s) => s.id === studentId);
@@ -198,7 +230,6 @@ export const FinancePayments: React.FC = () => {
       studentId,
       groupId: firstGroup?.id || '',
       amount: price ? String(price) : prev.amount,
-      allowOverride: false,
     }));
   };
 
@@ -213,7 +244,6 @@ export const FinancePayments: React.FC = () => {
       ...prev,
       groupId,
       amount: price ? String(price) : prev.amount,
-      allowOverride: false,
     }));
   };
 
@@ -233,7 +263,6 @@ export const FinancePayments: React.FC = () => {
       ...prev,
       selectedMonth: monthStr,
       paymentDate,
-      allowOverride: false,
     }));
   };
 
@@ -245,40 +274,27 @@ export const FinancePayments: React.FC = () => {
     const payments = studentPaymentsData?.data || [];
 
     const matchingPayments = payments.filter((p) => {
-      if (!p.paymentDate) return false;
+      if (!p.paymentDate || p.status === 'TOLANMAGAN') return false;
       const pDate = new Date(p.paymentDate);
       const isMonthMatch = pDate.getFullYear() === year && pDate.getMonth() + 1 === month;
       const isGroupMatch = !formData.groupId || !p.groupId || p.groupId === formData.groupId;
       return isMonthMatch && isGroupMatch;
     });
 
+    const isAlreadyPaid = matchingPayments.length > 0;
     const totalPaid = matchingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const coursePrice = currentGroup?.course?.price || 0;
-    const isFullyPaid = coursePrice > 0 && totalPaid >= coursePrice;
-    const isPartiallyPaid = totalPaid > 0 && totalPaid < coursePrice;
-    const remainingDebt = Math.max(0, coursePrice - totalPaid);
 
     const monthObj = monthOptions.find((m) => m.value === formData.selectedMonth);
 
     return {
       monthLabel: monthObj?.label || `${MONTH_NAMES[month - 1]} ${year}`,
+      isAlreadyPaid,
       matchingPayments,
       totalPaid,
       coursePrice,
-      isFullyPaid,
-      isPartiallyPaid,
-      remainingDebt,
     };
   }, [formData.studentId, formData.selectedMonth, formData.groupId, studentPaymentsData, currentGroup, monthOptions]);
-
-  // Adjust amount recommendation when month/payment analysis updates
-  useEffect(() => {
-    if (monthPaymentAnalysis) {
-      if (monthPaymentAnalysis.isPartiallyPaid && monthPaymentAnalysis.remainingDebt > 0) {
-        setFormData((prev) => ({ ...prev, amount: String(monthPaymentAnalysis.remainingDebt) }));
-      }
-    }
-  }, [monthPaymentAnalysis?.remainingDebt, monthPaymentAnalysis?.isPartiallyPaid]);
 
   // CREATE MUTATION
   const createMutation = useMutation({
@@ -294,7 +310,6 @@ export const FinancePayments: React.FC = () => {
         paymentDate: new Date().toISOString().split('T')[0],
         method: 'NAQD',
         status: 'TOLANGAN',
-        allowOverride: false,
       });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
@@ -354,8 +369,8 @@ export const FinancePayments: React.FC = () => {
       return;
     }
 
-    if (monthPaymentAnalysis?.isFullyPaid && !formData.allowOverride) {
-      error(`Ushbu talaba ${monthPaymentAnalysis.monthLabel} oyi uchun to'lovni to'liq to'lagan. Tasdiqlash belgisini yoqing yoki boshqa oyni tanlang.`);
+    if (monthPaymentAnalysis?.isAlreadyPaid) {
+      error(`Bu talaba ushbu guruh uchun ${monthPaymentAnalysis.monthLabel} oyida allaqachon to'lov qilgan! Bir oyda bitta fandan faqat 1 marta to'lov qilinadi.`);
       return;
     }
 
@@ -722,7 +737,7 @@ export const FinancePayments: React.FC = () => {
                   To'lov oyi / Davri
                 </label>
                 <Select
-                  options={monthOptions.map((m) => ({
+                  options={enrichedMonthOptions.map((m) => ({
                     label: m.label,
                     value: m.value,
                   }))}
@@ -731,17 +746,17 @@ export const FinancePayments: React.FC = () => {
                 />
               </div>
 
-              {/* Oylik to'lov tahlili va ogohlantirishlar */}
+              {/* Oylik to'lov holati va bloklash ogohlantirishi */}
               {monthPaymentAnalysis && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                  {/* Holat 1: Ushbu oyda allaqachon to'liq to'langan */}
-                  {monthPaymentAnalysis.isFullyPaid && (
+                  {/* Holat 1: Ushbu oyda allaqachon to'langan -> BLOKLASH */}
+                  {monthPaymentAnalysis.isAlreadyPaid ? (
                     <div
                       style={{
                         padding: '12px',
                         borderRadius: '8px',
-                        background: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        background: 'rgba(239, 68, 68, 0.12)',
+                        border: '1.5px solid rgba(239, 68, 68, 0.4)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '6px',
@@ -749,39 +764,29 @@ export const FinancePayments: React.FC = () => {
                         color: 'var(--text)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 700 }}>
-                        <AlertTriangle size={16} />
-                        <span>Diqqat: Ushbu oy uchun to'lov to'liq amalga oshirilgan!</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 700, fontSize: '13px' }}>
+                        <Ban size={18} />
+                        <span>To'lov qabul qilib bo'lmaydi: Ushbu oy uchun to'lov mavjud!</span>
                       </div>
-                      <p style={{ margin: 0, lineHeight: 1.5, color: 'var(--text-muted)' }}>
-                        <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong> ushbu guruh uchun{' '}
-                        <strong style={{ color: 'var(--text)' }}>{monthPaymentAnalysis.monthLabel}</strong> oyida jami{' '}
-                        <strong style={{ color: '#10b981' }}>{formatMoney(monthPaymentAnalysis.totalPaid)} so'm</strong> to'lagan (Kurs oylik narxi:{' '}
-                        {formatMoney(monthPaymentAnalysis.coursePrice)} so'm).
+                      <p style={{ margin: 0, lineHeight: 1.5, color: 'var(--text)' }}>
+                        <strong>{selectedStudent.firstName} {selectedStudent.lastName}</strong> ushbu fan/guruh uchun{' '}
+                        <strong style={{ color: 'var(--primary)' }}>{monthPaymentAnalysis.monthLabel}</strong> oyida allaqachon{' '}
+                        <strong style={{ color: '#10b981' }}>{formatMoney(monthPaymentAnalysis.totalPaid)} so'm</strong> to'lov qilgan.
                       </p>
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        💡 Agar o'tgan oylardan qarzdorlik bo'lsa, yuqoridagi <strong>"To'lov oyi"</strong> bo'limidan o'sha oyni (masalan, Avgust) tanlang.
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                        🔒 <strong>Qoida:</strong> Bir o'quvchi bir oyda bitta fandan faqat <strong>1 marta</strong> to'lov qilishi mumkin.
+                        <br />
+                        💡 Agar o'tgan oydan qarzini to'lamoqchi bo'lsangiz, yuqoridagi <strong>"To'lov oyi / Davri"</strong> menyusidan to'lanmagan o'tgan oyni tanlang.
                       </div>
-
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: 'var(--text)' }}>
-                        <input
-                          type="checkbox"
-                          checked={formData.allowOverride}
-                          onChange={(e) => setFormData({ ...formData, allowOverride: e.target.checked })}
-                        />
-                        Shunga qaramay qo'shimcha to'lov kiritish
-                      </label>
                     </div>
-                  )}
-
-                  {/* Holat 2: Ushbu oy uchun qisman to'langan */}
-                  {monthPaymentAnalysis.isPartiallyPaid && (
+                  ) : (
+                    /* Holat 2: Ushbu oyda to'lov qilinmagan -> RUXSAT BERISH */
                     <div
                       style={{
                         padding: '10px 12px',
                         borderRadius: '8px',
-                        background: 'rgba(245, 158, 11, 0.1)',
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -789,48 +794,8 @@ export const FinancePayments: React.FC = () => {
                         fontSize: '12.5px',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f59e0b', fontWeight: 600 }}>
-                        <Clock size={16} />
-                        <span>
-                          {monthPaymentAnalysis.monthLabel}: To'langan {formatMoney(monthPaymentAnalysis.totalPaid)} so'm • Qolgan qarz: {formatMoney(monthPaymentAnalysis.remainingDebt)} so'm
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #f59e0b',
-                          background: 'rgba(245, 158, 11, 0.15)',
-                          color: '#f59e0b',
-                          cursor: 'pointer',
-                          fontWeight: 700,
-                          fontSize: '11px',
-                        }}
-                        onClick={() => setFormData({ ...formData, amount: String(monthPaymentAnalysis.remainingDebt) })}
-                      >
-                        Qarzni qo'yish
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Holat 3: Ushbu oyda to'lov qilinmagan */}
-                  {!monthPaymentAnalysis.isFullyPaid && !monthPaymentAnalysis.isPartiallyPaid && monthPaymentAnalysis.coursePrice > 0 && (
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        background: 'rgba(59, 130, 246, 0.08)',
-                        border: '1px solid rgba(59, 130, 246, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '8px',
-                        fontSize: '12.5px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600 }}>
-                        <Info size={16} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontWeight: 600 }}>
+                        <CheckCircle size={16} />
                         <span>
                           {monthPaymentAnalysis.monthLabel}: Oylik to'lov summasi: {formatMoney(monthPaymentAnalysis.coursePrice)} so'm
                         </span>
@@ -840,9 +805,9 @@ export const FinancePayments: React.FC = () => {
                         style={{
                           padding: '3px 8px',
                           borderRadius: '6px',
-                          border: '1px solid var(--primary)',
-                          background: 'rgba(59, 130, 246, 0.15)',
-                          color: 'var(--primary)',
+                          border: '1px solid #10b981',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
                           cursor: 'pointer',
                           fontWeight: 700,
                           fontSize: '11px',
@@ -865,6 +830,7 @@ export const FinancePayments: React.FC = () => {
             required
             placeholder="500000"
             value={formData.amount}
+            disabled={monthPaymentAnalysis?.isAlreadyPaid}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           />
 
@@ -877,6 +843,7 @@ export const FinancePayments: React.FC = () => {
               { label: "Bank o'tkazmasi", value: 'OTKAZMA' },
             ]}
             value={formData.method}
+            disabled={monthPaymentAnalysis?.isAlreadyPaid}
             onChange={(e) => setFormData({ ...formData, method: e.target.value })}
           />
 
@@ -886,6 +853,7 @@ export const FinancePayments: React.FC = () => {
             type="date"
             required
             value={formData.paymentDate}
+            disabled={monthPaymentAnalysis?.isAlreadyPaid}
             onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
           />
 
@@ -897,9 +865,9 @@ export const FinancePayments: React.FC = () => {
             <Button
               type="submit"
               isLoading={createMutation.isPending}
-              disabled={monthPaymentAnalysis?.isFullyPaid && !formData.allowOverride}
+              disabled={monthPaymentAnalysis?.isAlreadyPaid}
             >
-              Saqlash
+              {monthPaymentAnalysis?.isAlreadyPaid ? "Ushbu oy uchun to'langan" : "Saqlash"}
             </Button>
           </div>
         </form>

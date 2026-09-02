@@ -129,8 +129,13 @@ export const Dashboard: React.FC = () => {
       error('Talaba va summani kiriting');
       return;
     }
+    const selectedSt = studentsData?.data?.find((s) => s.id === paymentForm.studentId);
+    const firstGrp = selectedSt?.studentGroups?.[0];
+
     createPaymentMutation.mutate({
       ...paymentForm,
+      groupId: firstGrp?.groupId || null,
+      courseId: firstGrp?.group?.courseId || null,
       amount: Number(paymentForm.amount),
     });
   };
