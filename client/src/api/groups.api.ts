@@ -26,4 +26,8 @@ export const groupsApi = {
     const res = await api.delete(`/groups/${groupId}/students/${studentId}`);
     return res.data;
   },
+  addStudent: async (groupId: string, studentId: string) => {
+    const res = await api.post(`/groups/${groupId}/students`, { studentId });
+    return res.data;
+  },
 };

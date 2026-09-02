@@ -32,11 +32,18 @@ export async function GET(req: NextRequest) {
           id,
           firstName,
           lastName,
+          birthDate,
           phone,
           fatherPhone,
           motherPhone,
+          passportSeries,
+          gender,
+          isSchoolStudent,
           status,
+          createdAt,
           studentGroups:student_groups(
+            id,
+            groupId,
             group:groups(
               id,
               name,
@@ -55,13 +62,37 @@ export async function GET(req: NextRequest) {
           )
         `)
         .eq('centerId', authUser.centerId)
-        .eq('status', 'FAOL'),
+        .eq('status', 'FAOL')
+        .order('createdAt', { ascending: false }),
     ]);
 
-    // Calculate Unpaid / Debtor Students
+    const probaStudents: any[] = [];
     const unpaidStudents: any[] = [];
 
     (allStudents || []).forEach((st: any) => {
+      const activeGroups = (st.studentGroups || []).filter((sg: any) => sg.group);
+
+      // If student has NO active group -> Proba / Sinov darsiga keladigan talaba
+      if (activeGroups.length === 0) {
+        probaStudents.push({
+          id: st.id,
+          studentName: `${st.firstName || ''} ${st.lastName || ''}`.trim() || "Noma'lum talaba",
+          firstName: st.firstName,
+          lastName: st.lastName,
+          birthDate: st.birthDate,
+          phone: st.phone || '-',
+          fatherPhone: st.fatherPhone || null,
+          motherPhone: st.motherPhone || null,
+          passportSeries: st.passportSeries || null,
+          gender: st.gender || 'ERKAK',
+          isSchoolStudent: !!st.isSchoolStudent,
+          createdAt: st.createdAt,
+          status: st.status,
+        });
+        return;
+      }
+
+      // If student HAS active groups -> Calculate payment and debt status
       const payments = st.payments || [];
       const totalPaid = payments
         .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
@@ -69,12 +100,10 @@ export async function GET(req: NextRequest) {
 
       let totalDue = 0;
       const groupNames: string[] = [];
-      (st.studentGroups || []).forEach((sg: any) => {
-        if (sg.group) {
-          if (sg.group.name) groupNames.push(sg.group.name);
-          if (sg.group.course?.price) {
-            totalDue += Number(sg.group.course.price);
-          }
+      activeGroups.forEach((sg: any) => {
+        if (sg.group?.name) groupNames.push(sg.group.name);
+        if (sg.group?.course?.price) {
+          totalDue += Number(sg.group.course.price);
         }
       });
 
@@ -82,13 +111,14 @@ export async function GET(req: NextRequest) {
       const hasPaidFull = payments.some((p: any) => p.status === 'TOLANGAN');
       const hasPartial = totalPaid > 0 && debt > 0;
 
-      const paymentStatus = (totalPaid >= totalDue && totalDue > 0) || hasPaidFull
-        ? 'TOLANGAN'
-        : hasPartial
-        ? 'QISMAN'
-        : 'TOLANMAGAN';
+      const paymentStatus =
+        (totalPaid >= totalDue && totalDue > 0) || hasPaidFull
+          ? 'TOLANGAN'
+          : hasPartial
+          ? 'QISMAN'
+          : 'TOLANMAGAN';
 
-      if (paymentStatus !== 'TOLANGAN') {
+      if (paymentStatus !== 'TOLANGAN' && totalDue > 0) {
         unpaidStudents.push({
           id: st.id,
           studentName: `${st.firstName || ''} ${st.lastName || ''}`.trim() || "Noma'lum talaba",
@@ -98,7 +128,7 @@ export async function GET(req: NextRequest) {
           groupName: groupNames.join(', ') || '-',
           coursePrice: totalDue,
           totalPaid,
-          debtAmount: totalDue > 0 ? debt : 0,
+          debtAmount: debt,
           paymentStatus,
           lastPaymentDate: payments[0]?.paymentDate ? payments[0].paymentDate.split('T')[0] : null,
         });
@@ -112,6 +142,8 @@ export async function GET(req: NextRequest) {
       groupsCount: groupsCount || 0,
       roomsCount: roomsCount || 0,
       employeesCount: employeesCount || 0,
+      probaStudents,
+      probaStudentsCount: probaStudents.length,
       unpaidStudents,
     });
   } catch (error: any) {

@@ -188,6 +188,8 @@ export interface DashboardStats {
   roomsCount?: number;
   employeesCount?: number;
   unpaidStudents?: any[];
+  probaStudents?: any[];
+  probaStudentsCount?: number;
 }
 
 export interface FinanceSummary {

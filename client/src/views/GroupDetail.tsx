@@ -25,6 +25,7 @@ import {
   CreditCard,
   UserCheck,
   CheckCircle,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -33,11 +34,13 @@ import { Input } from '../components/ui/Input/Input';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Select } from '../components/ui/Select/Select';
 import { Table, Column } from '../components/ui/Table/Table';
+import { Toggle } from '../components/ui/Toggle/Toggle';
 import { useToast } from '../components/ui/Toast/Toast';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
+import { dashboardApi } from '../api/dashboard.api';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
@@ -71,12 +74,17 @@ export const GroupDetail: React.FC = () => {
 
   // Add student modal state
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [selectedProbaId, setSelectedProbaId] = useState<string>('');
   const [studentForm, setStudentForm] = useState({
     firstName: '',
     lastName: '',
     phone: '',
+    fatherPhone: '',
+    motherPhone: '',
+    passportSeries: '',
     birthDate: '2005-01-01',
     gender: 'ERKAK' as 'ERKAK' | 'AYOL',
+    isSchoolStudent: false,
     status: 'FAOL',
   });
 
@@ -115,6 +123,15 @@ export const GroupDetail: React.FC = () => {
     queryFn: () => paymentsApi.getAll({ limit: 1000 }),
     enabled: !!id,
   });
+
+  const { data: dashboardStats } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: dashboardApi.getStats,
+  });
+
+  const probaStudents = useMemo(() => {
+    return dashboardStats?.probaStudents || [];
+  }, [dashboardStats?.probaStudents]);
 
   // Month options generator (past 6 months, current month, next 2 months)
   const monthOptions = useMemo(() => {
@@ -268,25 +285,63 @@ export const GroupDetail: React.FC = () => {
     },
   });
 
-  // Add student mutation
+  // Add brand new student mutation
   const addStudentMutation = useMutation({
     mutationFn: (payload: any) => studentsApi.create(payload),
     onSuccess: () => {
-      success('Talaba guruhga muvaffaqiyatli qo\'shildi!');
+      success('Yangi talaba guruhga muvaffaqiyatli qo\'shildi!');
       setIsAddStudentModalOpen(false);
+      setSelectedProbaId('');
       setStudentForm({
         firstName: '',
         lastName: '',
         phone: '',
+        fatherPhone: '',
+        motherPhone: '',
+        passportSeries: '',
         birthDate: '2005-01-01',
         gender: 'ERKAK',
+        isSchoolStudent: false,
         status: 'FAOL',
       });
       queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Talaba qo\'shishda xatolik yuz berdi');
+    },
+  });
+
+  // Attach existing proba student to group mutation
+  const addExistingStudentMutation = useMutation({
+    mutationFn: (studentId: string) => groupsApi.addStudent(id, studentId),
+    onSuccess: () => {
+      success('Talaba guruhga muvaffaqiyatli biriktirildi va proba ro\'yxatidan chiqarildi!');
+      setIsAddStudentModalOpen(false);
+      setSelectedProbaId('');
+      setStudentForm({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        fatherPhone: '',
+        motherPhone: '',
+        passportSeries: '',
+        birthDate: '2005-01-01',
+        gender: 'ERKAK',
+        isSchoolStudent: false,
+        status: 'FAOL',
+      });
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || 'Guruhga biriktirishda xatolik yuz berdi');
     },
   });
 
@@ -415,18 +470,77 @@ export const GroupDetail: React.FC = () => {
     }));
   };
 
-  const handleAddStudentSubmit = (e: React.FormEvent) => {
+  // Handle Select Proba Student
+  const handleSelectProbaStudent = (probaId: string) => {
+    setSelectedProbaId(probaId);
+    if (!probaId) {
+      setStudentForm({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        fatherPhone: '',
+        motherPhone: '',
+        passportSeries: '',
+        birthDate: '2005-01-01',
+        gender: 'ERKAK',
+        isSchoolStudent: false,
+        status: 'FAOL',
+      });
+      return;
+    }
+
+    const st = probaStudents.find((p: any) => p.id === probaId);
+    if (st) {
+      setStudentForm({
+        firstName: st.firstName || '',
+        lastName: st.lastName || '',
+        phone: st.phone ? formatPhone(st.phone) : '',
+        fatherPhone: st.fatherPhone ? formatPhone(st.fatherPhone) : '',
+        motherPhone: st.motherPhone ? formatPhone(st.motherPhone) : '',
+        passportSeries: st.passportSeries || '',
+        birthDate: st.birthDate ? st.birthDate.split('T')[0] : '2005-01-01',
+        gender: st.gender || 'ERKAK',
+        isSchoolStudent: !!st.isSchoolStudent,
+        status: 'FAOL',
+      });
+    }
+  };
+
+  // Handle Add Student to Group Submit
+  const handleAddStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentForm.firstName || !studentForm.lastName || !studentForm.phone) {
       error('Barcha majburiy maydonlarni to\'ldiring');
       return;
     }
 
-    addStudentMutation.mutate({
-      ...studentForm,
-      phone: unmaskPhone(studentForm.phone),
-      groupId: id,
-    });
+    if (selectedProbaId) {
+      // Update student details if modified, then attach to group
+      try {
+        await studentsApi.update(selectedProbaId, {
+          firstName: studentForm.firstName,
+          lastName: studentForm.lastName,
+          phone: unmaskPhone(studentForm.phone),
+          fatherPhone: studentForm.fatherPhone ? unmaskPhone(studentForm.fatherPhone) : null,
+          motherPhone: studentForm.motherPhone ? unmaskPhone(studentForm.motherPhone) : null,
+          passportSeries: studentForm.passportSeries || null,
+          birthDate: studentForm.birthDate ? new Date(studentForm.birthDate).toISOString() : undefined,
+          gender: studentForm.gender,
+          isSchoolStudent: studentForm.isSchoolStudent,
+        });
+      } catch (_) {}
+
+      addExistingStudentMutation.mutate(selectedProbaId);
+    } else {
+      addStudentMutation.mutate({
+        ...studentForm,
+        phone: unmaskPhone(studentForm.phone),
+        fatherPhone: studentForm.fatherPhone ? unmaskPhone(studentForm.fatherPhone) : null,
+        motherPhone: studentForm.motherPhone ? unmaskPhone(studentForm.motherPhone) : null,
+        birthDate: studentForm.birthDate ? new Date(studentForm.birthDate).toISOString() : new Date().toISOString(),
+        groupId: id,
+      });
+    }
   };
 
   // Open Accept Payment Modal for specific student
@@ -815,7 +929,10 @@ export const GroupDetail: React.FC = () => {
           <Button
             variant="primary"
             icon={<UserPlus size={16} />}
-            onClick={() => setIsAddStudentModalOpen(true)}
+            onClick={() => {
+              setSelectedProbaId('');
+              setIsAddStudentModalOpen(true);
+            }}
           >
             Talaba Qo'shish
           </Button>
@@ -1136,7 +1253,10 @@ export const GroupDetail: React.FC = () => {
               <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)' }}>
                 Guruh a'zolari: {totalStudents} ta talaba
               </span>
-              <Button size="sm" icon={<Plus size={16} />} onClick={() => setIsAddStudentModalOpen(true)}>
+              <Button size="sm" icon={<Plus size={16} />} onClick={() => {
+                setSelectedProbaId('');
+                setIsAddStudentModalOpen(true);
+              }}>
                 Guruhga Talaba Qo'shish
               </Button>
             </div>
@@ -1274,7 +1394,10 @@ export const GroupDetail: React.FC = () => {
                 <p style={{ fontSize: '13px', marginTop: '4px', marginBottom: '16px' }}>
                   To'lovlarni ko'rish uchun avval guruhga talaba qo'shing.
                 </p>
-                <Button icon={<UserPlus size={16} />} onClick={() => setIsAddStudentModalOpen(true)}>
+                <Button icon={<UserPlus size={16} />} onClick={() => {
+                  setSelectedProbaId('');
+                  setIsAddStudentModalOpen(true);
+                }}>
                   Talaba qo'shish
                 </Button>
               </div>
@@ -1285,47 +1408,106 @@ export const GroupDetail: React.FC = () => {
         )}
       </Card>
 
-      {/* Add Student Modal */}
+      {/* ================= MODAL: GURUHGA TALABA QO'SHISH (WITH PROBA SELECTION) ================= */}
       <Modal
         isOpen={isAddStudentModalOpen}
         onClose={() => setIsAddStudentModalOpen(false)}
         title="Guruhga Talaba Qo'shish"
+        maxWidth="540px"
       >
         <form onSubmit={handleAddStudentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Input
-            label="Ism"
-            required
-            placeholder="Ali"
-            value={studentForm.firstName}
-            onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
-          />
+          {/* Proba Selector Section */}
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--card-subtle)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '13px', color: 'var(--primary)' }}>
+              <Sparkles size={15} /> Proba (Sinov) darsidagi talabalardan tanlash:
+            </div>
+            <Select
+              options={[
+                { label: "-- Yangi talaba kiritish (Qo'lda to'ldirish) --", value: '' },
+                ...probaStudents.map((st: any) => ({
+                  label: `📌 ${st.studentName} (${formatPhone(st.phone)})`,
+                  value: st.id,
+                })),
+              ]}
+              value={selectedProbaId}
+              onChange={(e) => handleSelectProbaStudent(e.target.value)}
+            />
+            {selectedProbaId && (
+              <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                ✓ Proba talabasi tanlandi. Guruhga qo'shilgach, proba ro'yxatidan avtomatik chiqariladi.
+              </div>
+            )}
+          </div>
+
+          {/* Form Fields (Matching Image 3) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <Input
+              label="Ism"
+              required
+              placeholder="Ali"
+              value={studentForm.firstName}
+              onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+            />
+            <Input
+              label="Familya"
+              required
+              placeholder="Valiyev"
+              value={studentForm.lastName}
+              onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+            />
+          </div>
 
           <Input
-            label="Familiya"
-            required
-            placeholder="Valiyev"
-            value={studentForm.lastName}
-            onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
-          />
-
-          <Input
-            label="Telefon raqami"
-            required
-            placeholder="+998 90 123 45 67"
-            value={formatPhone(studentForm.phone)}
-            onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
-          />
-
-          <Input
-            label="Tug'ilgan sana"
+            label="Tug'ilgan kun"
             type="date"
             required
             value={studentForm.birthDate}
             onChange={(e) => setStudentForm({ ...studentForm, birthDate: e.target.value })}
           />
 
+          <Input
+            label="Telefon raqam"
+            required
+            placeholder="+998 90 123 45 67"
+            value={formatPhone(studentForm.phone)}
+            onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <Input
+              label="Otasining telefoni"
+              placeholder="+998 90 123 45 67"
+              value={formatPhone(studentForm.fatherPhone)}
+              onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
+            />
+            <Input
+              label="Onasining telefoni"
+              placeholder="+998 90 123 45 67"
+              value={formatPhone(studentForm.motherPhone)}
+              onChange={(e) => setStudentForm({ ...studentForm, motherPhone: unmaskPhone(e.target.value) })}
+            />
+          </div>
+
+          <Input
+            label="Passport seriya (AD XXXXXXX)"
+            placeholder="AD 1234567"
+            value={studentForm.passportSeries}
+            onChange={(e) => setStudentForm({ ...studentForm, passportSeries: e.target.value.toUpperCase() })}
+          />
+
           <Select
             label="Jinsi"
+            required
             options={[
               { label: 'Erkak', value: 'ERKAK' },
               { label: 'Ayol', value: 'AYOL' },
@@ -1334,12 +1516,24 @@ export const GroupDetail: React.FC = () => {
             onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value as any })}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+            <Toggle
+              checked={studentForm.isSchoolStudent}
+              onChange={(checked) => setStudentForm({ ...studentForm, isSchoolStudent: checked })}
+              label="Maktab o'quvchisi"
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsAddStudentModalOpen(false)}>
               Bekor qilish
             </Button>
-            <Button type="submit" isLoading={addStudentMutation.isPending}>
-              Qo'shish
+            <Button
+              type="submit"
+              isLoading={addStudentMutation.isPending || addExistingStudentMutation.isPending}
+              style={{ minWidth: '130px' }}
+            >
+              {selectedProbaId ? "Guruhga Qo'shish" : "SAQLASH"}
             </Button>
           </div>
         </form>
