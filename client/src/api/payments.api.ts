@@ -14,6 +14,10 @@ export const paymentsApi = {
     const res = await api.post('/payments', data);
     return res.data;
   },
+  update: async (id: string, data: any): Promise<Payment> => {
+    const res = await api.patch(`/payments/${id}`, data);
+    return res.data;
+  },
   delete: async (id: string) => {
     const res = await api.delete(`/payments/${id}`);
     return res.data;
