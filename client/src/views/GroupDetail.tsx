@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -20,6 +20,11 @@ import {
   Calendar as CalendarIcon,
   CheckCheck,
   Trash2,
+  Edit2,
+  AlertTriangle,
+  CreditCard,
+  UserCheck,
+  CheckCircle,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -32,10 +37,16 @@ import { useToast } from '../components/ui/Toast/Toast';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { studentsApi } from '../api/students.api';
+import { paymentsApi } from '../api/payments.api';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+
+const MONTH_NAMES = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
+];
 
 export const GroupDetail: React.FC = () => {
   const params = useParams();
@@ -44,8 +55,14 @@ export const GroupDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
 
+  const currentMonthStr = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
   const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'payments'>('attendanceTake');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
 
   // Attendance state for each student: { [studentId]: { status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN', note: '' } }
   const [attendanceState, setAttendanceState] = useState<{
@@ -63,11 +80,139 @@ export const GroupDetail: React.FC = () => {
     status: 'FAOL',
   });
 
+  // Payments Modals in Group Detail
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [payFormData, setPayFormData] = useState({
+    studentId: '',
+    studentName: '',
+    amount: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    method: 'NAQD',
+  });
+
+  const [isEditPayModalOpen, setIsEditPayModalOpen] = useState(false);
+  const [editPayFormData, setEditPayFormData] = useState({
+    id: '',
+    studentName: '',
+    amount: '',
+    paymentDate: '',
+    method: 'NAQD',
+    status: 'TOLANGAN',
+  });
+
+  const [isDeletePayModalOpen, setIsDeletePayModalOpen] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState<any>(null);
+
+  // Queries
   const { data: group, isLoading } = useQuery({
     queryKey: ['group', id],
     queryFn: () => groupsApi.getOne(id!),
     enabled: !!id,
   });
+
+  const { data: groupPaymentsData } = useQuery({
+    queryKey: ['groupPayments', id],
+    queryFn: () => paymentsApi.getAll({ groupId: id, limit: 300 }),
+    enabled: !!id,
+  });
+
+  // Month options generator (past 6 months, current month, next 2 months)
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string; year: number; month: number }[] = [];
+    const now = new Date();
+
+    for (let i = -6; i <= 2; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const value = `${year}-${String(month + 1).padStart(2, '0')}`;
+      let label = `${MONTH_NAMES[month]} ${year}`;
+      if (i === 0) label += ' (Joriy oy)';
+      else if (i === -1) label += " (O'tgan oy)";
+      else if (i === 1) label += ' (Kelgusi oy)';
+
+      options.push({ value, label, year, month });
+    }
+    return options;
+  }, []);
+
+  // Merge group payments from query and group object
+  const allGroupPayments = useMemo(() => {
+    const list = groupPaymentsData?.data || group?.payments || [];
+    return list;
+  }, [groupPaymentsData, group?.payments]);
+
+  // Compute student payment rows for the selected month
+  const studentPaymentRows = useMemo(() => {
+    if (!group?.studentGroups) return [];
+
+    const [year, month] = selectedPaymentMonth.split('-').map(Number);
+    const coursePrice = group.course?.price || 0;
+
+    return group.studentGroups
+      .map((sg: any) => {
+        const student = sg.student;
+        if (!student) return null;
+
+        const studentPaymentsInMonth = allGroupPayments.filter((p: any) => {
+          if (!p.paymentDate || p.status === 'TOLANMAGAN') return false;
+          const pDate = new Date(p.paymentDate);
+          const isMonthMatch = pDate.getFullYear() === year && pDate.getMonth() + 1 === month;
+          const isStudentMatch = p.studentId === student.id;
+          return isMonthMatch && isStudentMatch;
+        });
+
+        const paidAmount = studentPaymentsInMonth.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        const lastPayment = studentPaymentsInMonth[0] || null;
+
+        let status: 'TOLANGAN' | 'QISMAN' | 'TOLANMAGAN' = 'TOLANMAGAN';
+        if (coursePrice > 0) {
+          if (paidAmount >= coursePrice) {
+            status = 'TOLANGAN';
+          } else if (paidAmount > 0) {
+            status = 'QISMAN';
+          } else {
+            status = 'TOLANMAGAN';
+          }
+        } else if (paidAmount > 0) {
+          status = 'TOLANGAN';
+        }
+
+        const remainingDebt = Math.max(0, coursePrice - paidAmount);
+
+        return {
+          studentId: student.id,
+          student,
+          coursePrice,
+          paidAmount,
+          remainingDebt,
+          status,
+          lastPayment,
+          paymentDate: lastPayment?.paymentDate,
+          method: lastPayment?.method,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [group?.studentGroups, group?.course?.price, allGroupPayments, selectedPaymentMonth]);
+
+  // Payment statistics for current group & month
+  const paymentStats = useMemo(() => {
+    const total = studentPaymentRows.length;
+    const paidCount = studentPaymentRows.filter((r) => r.status === 'TOLANGAN').length;
+    const partialCount = studentPaymentRows.filter((r) => r.status === 'QISMAN').length;
+    const unpaidCount = studentPaymentRows.filter((r) => r.status === 'TOLANMAGAN').length;
+    const totalCollected = studentPaymentRows.reduce((sum, r) => sum + r.paidAmount, 0);
+    const totalExpected = studentPaymentRows.reduce((sum, r) => sum + r.coursePrice, 0);
+
+    return {
+      total,
+      paidCount,
+      partialCount,
+      unpaidCount,
+      totalCollected,
+      totalExpected,
+    };
+  }, [studentPaymentRows]);
 
   // Initialize or update attendanceState when group or selectedDate loads
   useEffect(() => {
@@ -139,9 +284,65 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Guruhdan chiqarishda xatolik yuz berdi');
+    },
+  });
+
+  // Create Payment Mutation
+  const createPaymentMutation = useMutation({
+    mutationFn: (payload: any) => paymentsApi.create(payload),
+    onSuccess: () => {
+      success("To'lov muvaffaqiyatli qabul qilindi!");
+      setIsPayModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || "To'lovni saqlashda xatolik yuz berdi");
+    },
+  });
+
+  // Update Payment Mutation
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ pId, data }: { pId: string; data: any }) => paymentsApi.update(pId, data),
+    onSuccess: () => {
+      success("To'lov muvaffaqiyatli tahrirlandi!");
+      setIsEditPayModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || "To'lovni tahrirlashda xatolik yuz berdi");
+    },
+  });
+
+  // Delete Payment Mutation
+  const deletePaymentMutation = useMutation({
+    mutationFn: (pId: string) => paymentsApi.delete(pId),
+    onSuccess: () => {
+      success("To'lov muvaffaqiyatli o'chirildi!");
+      setIsDeletePayModalOpen(false);
+      setDeletingPayment(null);
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || "To'lovni o'chirishda xatolik yuz berdi");
     },
   });
 
@@ -211,6 +412,93 @@ export const GroupDetail: React.FC = () => {
       phone: unmaskPhone(studentForm.phone),
       groupId: id,
     });
+  };
+
+  // Open Accept Payment Modal for specific student
+  const handleOpenPayModal = (student: any, remainingDebt?: number) => {
+    const coursePrice = group?.course?.price || 0;
+    const defaultAmount = remainingDebt && remainingDebt > 0 ? remainingDebt : coursePrice;
+
+    const [year, month] = selectedPaymentMonth.split('-').map(Number);
+    const now = new Date();
+    let paymentDate = '';
+
+    if (now.getFullYear() === year && now.getMonth() + 1 === month) {
+      paymentDate = now.toISOString().split('T')[0];
+    } else {
+      paymentDate = `${year}-${String(month).padStart(2, '0')}-05`;
+    }
+
+    setPayFormData({
+      studentId: student.id,
+      studentName: `${student.firstName} ${student.lastName}`,
+      amount: defaultAmount ? String(defaultAmount) : '',
+      paymentDate,
+      method: 'NAQD',
+    });
+    setIsPayModalOpen(true);
+  };
+
+  const handlePaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payFormData.amount || Number(payFormData.amount) <= 0) {
+      error("To'lov summasini to'g'ri kiriting");
+      return;
+    }
+
+    createPaymentMutation.mutate({
+      studentId: payFormData.studentId,
+      groupId: id,
+      courseId: group?.courseId || null,
+      amount: Number(payFormData.amount),
+      paymentDate: payFormData.paymentDate,
+      method: payFormData.method,
+      status: 'TOLANGAN',
+    });
+  };
+
+  // Open Edit Payment Modal
+  const handleOpenEditPayment = (payment: any, studentName: string) => {
+    if (!payment) return;
+    setEditPayFormData({
+      id: payment.id,
+      studentName,
+      amount: String(payment.amount),
+      paymentDate: payment.paymentDate ? payment.paymentDate.split('T')[0] : '',
+      method: payment.method || 'NAQD',
+      status: payment.status || 'TOLANGAN',
+    });
+    setIsEditPayModalOpen(true);
+  };
+
+  const handleEditPaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editPayFormData.amount || Number(editPayFormData.amount) <= 0) {
+      error("To'lov summasini to'g'ri kiriting");
+      return;
+    }
+
+    updatePaymentMutation.mutate({
+      pId: editPayFormData.id,
+      data: {
+        groupId: id,
+        courseId: group?.courseId || null,
+        amount: Number(editPayFormData.amount),
+        paymentDate: editPayFormData.paymentDate,
+        method: editPayFormData.method,
+        status: editPayFormData.status,
+      },
+    });
+  };
+
+  // Open Delete Payment Modal
+  const handleOpenDeletePayment = (payment: any, studentName: string) => {
+    if (!payment) return;
+    setDeletingPayment({
+      ...payment,
+      studentName,
+    });
+    setIsDeletePayModalOpen(true);
   };
 
   if (isLoading) {
@@ -331,30 +619,146 @@ export const GroupDetail: React.FC = () => {
     },
   ];
 
-  const paymentColumns: Column<any>[] = [
+  // Group Students Payment Status Table Columns
+  const paymentStatusColumns: Column<any>[] = [
     {
       key: 'student',
       header: 'TALABA',
-      render: (row) => `${row.student?.firstName || ''} ${row.student?.lastName || ''}`,
+      render: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: 'var(--primary-grad)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: '12px',
+              flexShrink: 0,
+            }}
+          >
+            {row.student?.firstName?.[0]}
+            {row.student?.lastName?.[0]}
+          </div>
+          <div>
+            <div
+              style={{ fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}
+              onClick={() => router.push(`/students/${row.student?.id}`)}
+            >
+              {row.student?.firstName} {row.student?.lastName}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {formatPhone(row.student?.phone)}
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      key: 'amount',
-      header: 'SUMMA',
-      render: (row) => formatMoney(row.amount),
+      key: 'coursePrice',
+      header: 'KURS NARXI',
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
+          {formatMoney(row.coursePrice)}
+        </span>
+      ),
+    },
+    {
+      key: 'paidAmount',
+      header: "TO'LANGAN SUMMA",
+      render: (row) => (
+        <span
+          style={{
+            fontWeight: 700,
+            color: row.paidAmount > 0 ? '#10b981' : 'var(--text-muted)',
+          }}
+        >
+          {formatMoney(row.paidAmount)}
+        </span>
+      ),
     },
     {
       key: 'paymentDate',
-      header: 'SANASI',
-      render: (row) => formatDate(row.paymentDate),
+      header: 'TO\'LOV SANASI & USULI',
+      render: (row) => {
+        if (!row.paymentDate) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>{formatDate(row.paymentDate)}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              {row.method || 'NAQD'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'status',
       header: 'HOLATI',
       render: (row) => (
-        <Badge variant={row.status === 'TOLANGAN' ? 'success' : row.status === 'QISMAN' ? 'warning' : 'danger'}>
-          {row.status}
+        <Badge
+          variant={
+            row.status === 'TOLANGAN'
+              ? 'success'
+              : row.status === 'QISMAN'
+              ? 'warning'
+              : 'danger'
+          }
+        >
+          {row.status === 'TOLANGAN'
+            ? "TO'LANGAN"
+            : row.status === 'QISMAN'
+            ? `QISMAN (Qarz: ${formatMoney(row.remainingDebt)})`
+            : "TO'LANMAGAN"}
         </Badge>
       ),
+    },
+    {
+      key: 'actions',
+      header: 'AMALLAR',
+      render: (row) => {
+        const studentName = `${row.student?.firstName || ''} ${row.student?.lastName || ''}`;
+
+        if (row.status === 'TOLANGAN' && row.lastPayment) {
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Button
+                size="sm"
+                variant="outline"
+                icon={<Edit2 size={13} />}
+                onClick={() => handleOpenEditPayment(row.lastPayment, studentName)}
+                title="To'lovni tahrirlash"
+              >
+                Tahrirlash
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                icon={<Trash2 size={13} />}
+                onClick={() => handleOpenDeletePayment(row.lastPayment, studentName)}
+                title="To'lovni o'chirish"
+              >
+                O'chirish
+              </Button>
+            </div>
+          );
+        }
+
+        return (
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus size={14} />}
+            onClick={() => handleOpenPayModal(row.student, row.remainingDebt)}
+          >
+            To'lov qabul qilish
+          </Button>
+        );
+      },
     },
   ];
 
@@ -456,7 +860,7 @@ export const GroupDetail: React.FC = () => {
             variant={activeTab === 'payments' ? 'primary' : 'outline'}
             onClick={() => setActiveTab('payments')}
           >
-            <DollarSign size={16} /> To'lovlar Tarixi
+            <DollarSign size={16} /> To'lovlar Holati
           </Button>
         </div>
 
@@ -534,7 +938,7 @@ export const GroupDetail: React.FC = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {studentsList.map((sg: any, index: number) => {
+                {studentsList.map((sg: any) => {
                   const student = sg.student;
                   if (!student) return null;
                   const currentStatus = attendanceState[student.id]?.status || 'KELGAN';
@@ -549,33 +953,33 @@ export const GroupDetail: React.FC = () => {
                         justifyContent: 'space-between',
                         padding: '14px 18px',
                         borderRadius: '12px',
-                        backgroundColor: 'var(--card)',
+                        backgroundColor: 'var(--card-subtle)',
                         border: '1px solid var(--border)',
                         flexWrap: 'wrap',
                         gap: '12px',
-                        transition: 'border-color 0.2s',
                       }}
                     >
                       {/* Student info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '200px' }}>
                         <div
                           style={{
                             width: '36px',
                             height: '36px',
                             borderRadius: '50%',
-                            backgroundColor: 'var(--card-subtle)',
+                            background: 'var(--primary-grad)',
+                            color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 700,
                             fontSize: '13px',
-                            color: 'var(--primary)',
                           }}
                         >
-                          {index + 1}
+                          {student.firstName[0]}
+                          {student.lastName[0]}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)' }}>
+                          <div style={{ fontWeight: 700, fontSize: '14px' }}>
                             {student.firstName} {student.lastName}
                           </div>
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -584,8 +988,8 @@ export const GroupDetail: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* 3 Status Pill Toggles */}
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {/* Status toggle buttons */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
                           onClick={() => handleStudentStatusChange(student.id, 'KELGAN')}
@@ -716,10 +1120,136 @@ export const GroupDetail: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4: TO'LOVLAR (PAYMENTS HISTORY) */}
+        {/* TAB 4: GURUH TALABALARI TO'LOVLAR HOLATI (GROUP PAYMENTS & DEBT OVERVIEW) */}
         {activeTab === 'payments' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <Table columns={paymentColumns} data={group.payments || []} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Top Controls & Month Filter */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px',
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--card-subtle)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                  To'lov oyi / Davri:
+                </span>
+                <select
+                  value={selectedPaymentMonth}
+                  onChange={(e) => setSelectedPaymentMonth(e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--primary)',
+                    backgroundColor: 'var(--card)',
+                    color: 'var(--text)',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  {monthOptions.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status counter badges */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    fontWeight: 600,
+                  }}
+                >
+                  Jami talabalar: <strong>{paymentStats.total}</strong>
+                </span>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(22, 163, 74, 0.15)',
+                    color: '#16a34a',
+                    border: '1px solid rgba(22, 163, 74, 0.3)',
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓ To'laganlar: <strong>{paymentStats.paidCount}</strong>
+                </span>
+                {paymentStats.partialCount > 0 && (
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      padding: '6px 12px',
+                      borderRadius: '16px',
+                      backgroundColor: 'rgba(202, 138, 4, 0.15)',
+                      color: '#ca8a04',
+                      border: '1px solid rgba(202, 138, 4, 0.3)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    ⏳ Qisman: <strong>{paymentStats.partialCount}</strong>
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(220, 38, 38, 0.15)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(220, 38, 38, 0.3)',
+                    fontWeight: 700,
+                  }}
+                >
+                  ⚠️ Qarzdorlar: <strong>{paymentStats.unpaidCount}</strong>
+                </span>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                    color: 'var(--primary)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    fontWeight: 700,
+                  }}
+                >
+                  💰 Yig'ilgan: <strong>{formatMoney(paymentStats.totalCollected)}</strong> / {formatMoney(paymentStats.totalExpected)}
+                </span>
+              </div>
+            </div>
+
+            {/* Students Payment Status Table */}
+            {totalStudents === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                <Users size={48} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                <h4>Guruhda talabalar mavjud emas</h4>
+                <p style={{ fontSize: '13px', marginTop: '4px', marginBottom: '16px' }}>
+                  To'lovlarni ko'rish uchun avval guruhga talaba qo'shing.
+                </p>
+                <Button icon={<UserPlus size={16} />} onClick={() => setIsAddStudentModalOpen(true)}>
+                  Talaba qo'shish
+                </Button>
+              </div>
+            ) : (
+              <Table columns={paymentStatusColumns} data={studentPaymentRows} />
+            )}
           </div>
         )}
       </Card>
@@ -731,25 +1261,24 @@ export const GroupDetail: React.FC = () => {
         title="Guruhga Talaba Qo'shish"
       >
         <form onSubmit={handleAddStudentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <Input
-              label="Ism"
-              required
-              placeholder="Ali"
-              value={studentForm.firstName}
-              onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
-            />
-            <Input
-              label="Familya"
-              required
-              placeholder="Valiyev"
-              value={studentForm.lastName}
-              onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
-            />
-          </div>
+          <Input
+            label="Ism"
+            required
+            placeholder="Ali"
+            value={studentForm.firstName}
+            onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+          />
 
           <Input
-            label="Telefon raqam"
+            label="Familiya"
+            required
+            placeholder="Valiyev"
+            value={studentForm.lastName}
+            onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+          />
+
+          <Input
+            label="Telefon raqami"
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(studentForm.phone)}
@@ -779,10 +1308,203 @@ export const GroupDetail: React.FC = () => {
               Bekor qilish
             </Button>
             <Button type="submit" isLoading={addStudentMutation.isPending}>
-              Guruhga Qo'shish
+              Qo'shish
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* 1. Quick Accept Payment Modal for Specific Student */}
+      <Modal
+        isOpen={isPayModalOpen}
+        onClose={() => setIsPayModalOpen(false)}
+        title="To'lov Qabul Qilish"
+        maxWidth="500px"
+      >
+        <form onSubmit={handlePaySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              padding: '12px 14px',
+              backgroundColor: 'var(--card-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Talaba</div>
+              <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '14px' }}>
+                {payFormData.studentName}
+              </div>
+            </div>
+            <Badge variant="secondary">{group?.name}</Badge>
+          </div>
+
+          <Input
+            label="Summa (so'mda)"
+            type="number"
+            required
+            value={payFormData.amount}
+            onChange={(e) => setPayFormData({ ...payFormData, amount: e.target.value })}
+          />
+
+          <Select
+            label="To'lov turi"
+            options={[
+              { label: 'Naqd pul', value: 'NAQD' },
+              { label: 'Plastik karta (Click/Payme)', value: 'KARTA' },
+              { label: "Bank o'tkazmasi", value: 'OTKAZMA' },
+            ]}
+            value={payFormData.method}
+            onChange={(e) => setPayFormData({ ...payFormData, method: e.target.value })}
+          />
+
+          <Input
+            label="To'lov sanasi"
+            type="date"
+            required
+            value={payFormData.paymentDate}
+            onChange={(e) => setPayFormData({ ...payFormData, paymentDate: e.target.value })}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            <Button type="button" variant="secondary" onClick={() => setIsPayModalOpen(false)}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" isLoading={createPaymentMutation.isPending}>
+              To'lovni Saqlash
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* 2. Edit Payment Modal */}
+      <Modal
+        isOpen={isEditPayModalOpen}
+        onClose={() => setIsEditPayModalOpen(false)}
+        title="To'lovni Tahrirlash"
+        maxWidth="500px"
+      >
+        <form onSubmit={handleEditPaySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              padding: '12px 14px',
+              backgroundColor: 'var(--card-subtle)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Talaba</div>
+            <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '14px' }}>
+              {editPayFormData.studentName}
+            </div>
+          </div>
+
+          <Input
+            label="Summa (so'mda)"
+            type="number"
+            required
+            value={editPayFormData.amount}
+            onChange={(e) => setEditPayFormData({ ...editPayFormData, amount: e.target.value })}
+          />
+
+          <Select
+            label="To'lov turi"
+            options={[
+              { label: 'Naqd pul', value: 'NAQD' },
+              { label: 'Plastik karta (Click/Payme)', value: 'KARTA' },
+              { label: "Bank o'tkazmasi", value: 'OTKAZMA' },
+            ]}
+            value={editPayFormData.method}
+            onChange={(e) => setEditPayFormData({ ...editPayFormData, method: e.target.value })}
+          />
+
+          <Input
+            label="To'lov sanasi"
+            type="date"
+            required
+            value={editPayFormData.paymentDate}
+            onChange={(e) => setEditPayFormData({ ...editPayFormData, paymentDate: e.target.value })}
+          />
+
+          <Select
+            label="Holati"
+            options={[
+              { label: "TO'LANGAN", value: 'TOLANGAN' },
+              { label: 'QISMAN', value: 'QISMAN' },
+              { label: "TO'LANMAGAN (Bekor qilingan)", value: 'TOLANMAGAN' },
+            ]}
+            value={editPayFormData.status}
+            onChange={(e) => setEditPayFormData({ ...editPayFormData, status: e.target.value })}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            <Button type="button" variant="secondary" onClick={() => setIsEditPayModalOpen(false)}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" isLoading={updatePaymentMutation.isPending}>
+              O'zgarishlarni Saqlash
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* 3. Delete Payment Modal */}
+      <Modal
+        isOpen={isDeletePayModalOpen}
+        onClose={() => setIsDeletePayModalOpen(false)}
+        title="To'lovni O'chirish"
+        maxWidth="440px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Trash2 size={20} />
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                Haqiqatan ham ushbu to'lovni o'chirmoqchimisiz?
+              </p>
+              {deletingPayment && (
+                <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Talaba: <strong>{deletingPayment.studentName}</strong>
+                  <br />
+                  Summa: <strong style={{ color: '#10b981' }}>{formatMoney(deletingPayment.amount)}</strong>
+                  <br />
+                  Sana: {formatDate(deletingPayment.paymentDate)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            <Button type="button" variant="secondary" onClick={() => setIsDeletePayModalOpen(false)}>
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              isLoading={deletePaymentMutation.isPending}
+              onClick={() => deletingPayment && deletePaymentMutation.mutate(deletingPayment.id)}
+            >
+              Ha, o'chirilsin
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
