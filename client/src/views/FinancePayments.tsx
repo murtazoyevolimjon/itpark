@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, CreditCard, DollarSign, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, CreditCard, DollarSign, FileSpreadsheet, FileText, UserCheck, BookOpen } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
+import { SearchableSelect } from '../components/ui/SearchableSelect/SearchableSelect';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
@@ -18,6 +19,7 @@ import { studentsApi } from '../api/students.api';
 import { Payment } from '../types';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
+import { formatPhone } from '../utils/phoneMask';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const FinancePayments: React.FC = () => {
@@ -49,8 +51,29 @@ export const FinancePayments: React.FC = () => {
 
   const { data: students } = useQuery({
     queryKey: ['studentsSelect'],
-    queryFn: () => studentsApi.getAll({ limit: 100 }),
+    queryFn: () => studentsApi.getAll({ limit: 1000 }),
   });
+
+  const studentOptions = useMemo(() => {
+    return (
+      students?.data?.map((s) => {
+        const firstGroup = s.studentGroups?.[0]?.group;
+        const groupName = firstGroup?.name;
+        return {
+          value: s.id,
+          label: `${s.firstName} ${s.lastName}`,
+          subLabel: s.phone ? formatPhone(s.phone) : undefined,
+          phone: s.phone,
+          avatarText: `${s.firstName?.[0] || ''}${s.lastName?.[0] || ''}`.toUpperCase(),
+          badge: groupName,
+        };
+      }) || []
+    );
+  }, [students]);
+
+  const selectedStudent = useMemo(() => {
+    return students?.data?.find((s) => s.id === formData.studentId);
+  }, [students, formData.studentId]);
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => paymentsApi.create(payload),
@@ -76,16 +99,25 @@ export const FinancePayments: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const studentId = formData.studentId || students?.data?.[0]?.id || '';
-    if (!studentId || !formData.amount) {
-      error("Talaba va to'lov summasini kiriting");
+    if (!formData.studentId) {
+      error("Iltimos, talabani tanlang");
+      return;
+    }
+    if (!formData.amount) {
+      error("Iltimos, to'lov summasini kiriting");
       return;
     }
 
+    const firstGroup = selectedStudent?.studentGroups?.[0];
+
     createMutation.mutate({
-      ...formData,
-      studentId,
+      studentId: formData.studentId,
+      groupId: firstGroup?.groupId || null,
+      courseId: firstGroup?.group?.courseId || null,
       amount: Number(formData.amount),
+      paymentDate: formData.paymentDate,
+      method: formData.method,
+      status: formData.status,
     });
   };
 
@@ -270,18 +302,91 @@ export const FinancePayments: React.FC = () => {
         title="To'lov qabul qilish"
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Select
+          <SearchableSelect
             label="Talaba"
             required
-            options={
-              students?.data?.map((s) => ({
-                label: `${s.firstName} ${s.lastName} (${s.phone})`,
-                value: s.id,
-              })) || []
-            }
+            options={studentOptions}
             value={formData.studentId}
-            onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+            onChange={(val) => {
+              const student = students?.data?.find((s) => s.id === val);
+              const firstGroup = student?.studentGroups?.[0]?.group;
+              setFormData((prev) => ({
+                ...prev,
+                studentId: val,
+                amount: prev.amount || (firstGroup?.course?.price ? String(firstGroup.course.price) : prev.amount),
+              }));
+            }}
+            placeholder="Talabani qidiring yoki tanlang..."
+            searchPlaceholder="Ism, familiya yoki telefon raqami bilan qidirish..."
           />
+
+          {selectedStudent && (
+            <div
+              style={{
+                padding: '10px 14px',
+                backgroundColor: 'var(--card-subtle)',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '13px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserCheck size={16} color="var(--primary)" />
+                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+                    {selectedStudent.firstName} {selectedStudent.lastName}
+                  </span>
+                </div>
+                {selectedStudent.phone && (
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {formatPhone(selectedStudent.phone)}
+                  </span>
+                )}
+              </div>
+
+              {selectedStudent.studentGroups && selectedStudent.studentGroups.length > 0 ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <BookOpen size={14} />
+                    <span>
+                      Guruh: <strong style={{ color: 'var(--text)' }}>{selectedStudent.studentGroups[0].group?.name}</strong>
+                    </span>
+                  </div>
+                  {selectedStudent.studentGroups[0].group?.course?.price && (
+                    <button
+                      type="button"
+                      style={{
+                        fontSize: '11px',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        border: '1px dashed var(--primary)',
+                        background: 'rgba(43, 127, 255, 0.08)',
+                        color: 'var(--primary)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                      onClick={() => {
+                        const price = selectedStudent.studentGroups?.[0]?.group?.course?.price;
+                        if (price) {
+                          setFormData((prev) => ({ ...prev, amount: String(price) }));
+                        }
+                      }}
+                      title="Kurs narxini to'lov summasiga qo'yish"
+                    >
+                      Kurs narxi: {formatMoney(selectedStudent.studentGroups[0].group.course.price)} (Qo'yish)
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Hozirda faol guruhga biriktirilmagan
+                </span>
+              )}
+            </div>
+          )}
 
           <Input
             label="Summa (so'mda)"

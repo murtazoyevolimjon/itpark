@@ -20,6 +20,7 @@ import {
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
+import { SearchableSelect } from '../components/ui/SearchableSelect/SearchableSelect';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Badge } from '../components/ui/Badge/Badge';
@@ -73,7 +74,7 @@ export const Dashboard: React.FC = () => {
 
   const { data: studentsData } = useQuery({
     queryKey: ['studentsSelect'],
-    queryFn: () => studentsApi.getAll({ limit: 100 }),
+    queryFn: () => studentsApi.getAll({ limit: 1000 }),
   });
 
   // Mutations
@@ -485,15 +486,21 @@ export const Dashboard: React.FC = () => {
             </form>
           ) : (
             <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <Select
+              <SearchableSelect
                 label={t('students')}
                 required
                 options={(studentsData?.data || []).map((s) => ({
-                  label: `${s.firstName} ${s.lastName} (${formatPhone(s.phone)})`,
+                  label: `${s.firstName} ${s.lastName}`,
+                  subLabel: s.phone ? formatPhone(s.phone) : undefined,
+                  phone: s.phone,
+                  avatarText: `${s.firstName?.[0] || ''}${s.lastName?.[0] || ''}`.toUpperCase(),
+                  badge: s.studentGroups?.[0]?.group?.name,
                   value: s.id,
                 }))}
                 value={paymentForm.studentId}
-                onChange={(e) => setPaymentForm({ ...paymentForm, studentId: e.target.value })}
+                onChange={(val) => setPaymentForm({ ...paymentForm, studentId: val })}
+                placeholder="Talabani qidiring yoki tanlang..."
+                searchPlaceholder="Ism, familiya yoki telefon..."
               />
 
               <Input
