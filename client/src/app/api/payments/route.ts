@@ -111,6 +111,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let targetGroupId = groupId || null;
+    let targetCourseId = courseId || null;
+
+    if (!targetGroupId) {
+      const { data: sg } = await supabase
+        .from('student_groups')
+        .select('groupId, group:groups(courseId)')
+        .eq('studentId', studentId)
+        .eq('centerId', authUser.centerId)
+        .limit(1)
+        .maybeSingle();
+
+      if (sg) {
+        targetGroupId = sg.groupId;
+        targetCourseId = (sg as any)?.group?.courseId || targetCourseId;
+      }
+    }
+
     const id = crypto.randomUUID();
 
     const { data, error } = await supabase
@@ -118,8 +136,8 @@ export async function POST(req: NextRequest) {
       .insert({
         id,
         studentId,
-        groupId: groupId || null,
-        courseId: courseId || null,
+        groupId: targetGroupId,
+        courseId: targetCourseId,
         amount: Number(amount) || 0,
         paymentDate: payDate.toISOString(),
         method: method || 'NAQD',
@@ -128,7 +146,7 @@ export async function POST(req: NextRequest) {
         centerId: authUser.centerId,
         updatedAt: new Date().toISOString(),
       })
-      .select()
+      .select('*, student:students(*), group:groups(*), course:courses(*)')
       .single();
 
     if (error) {

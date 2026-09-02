@@ -112,7 +112,7 @@ export const GroupDetail: React.FC = () => {
 
   const { data: groupPaymentsData } = useQuery({
     queryKey: ['groupPayments', id],
-    queryFn: () => paymentsApi.getAll({ groupId: id, limit: 300 }),
+    queryFn: () => paymentsApi.getAll({ limit: 1000 }),
     enabled: !!id,
   });
 
@@ -138,8 +138,13 @@ export const GroupDetail: React.FC = () => {
 
   // Merge group payments from query and group object
   const allGroupPayments = useMemo(() => {
-    const list = groupPaymentsData?.data || group?.payments || [];
-    return list;
+    const list1 = groupPaymentsData?.data || [];
+    const list2 = group?.payments || [];
+    const map = new Map();
+    [...list1, ...list2].forEach((p: any) => {
+      if (p && p.id) map.set(p.id, p);
+    });
+    return Array.from(map.values());
   }, [groupPaymentsData, group?.payments]);
 
   // Compute student payment rows for the selected month
@@ -161,6 +166,15 @@ export const GroupDetail: React.FC = () => {
           const isStudentMatch = p.studentId === student.id;
           return isMonthMatch && isStudentMatch;
         });
+
+        const allStudentEverPayments = allGroupPayments
+          .filter((p: any) => {
+            if (!p.paymentDate || p.status === 'TOLANMAGAN') return false;
+            return p.studentId === student.id;
+          })
+          .sort((a: any, b: any) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+
+        const mostRecentPayment = allStudentEverPayments[0] || null;
 
         const paidAmount = studentPaymentsInMonth.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
         const lastPayment = studentPaymentsInMonth[0] || null;
@@ -190,6 +204,7 @@ export const GroupDetail: React.FC = () => {
           lastPayment,
           paymentDate: lastPayment?.paymentDate,
           method: lastPayment?.method,
+          mostRecentPayment,
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -683,17 +698,33 @@ export const GroupDetail: React.FC = () => {
     },
     {
       key: 'paymentDate',
-      header: 'TO\'LOV SANASI & USULI',
+      header: "TO'LOV SANASI & USULI",
       render: (row) => {
-        if (!row.paymentDate) return <span style={{ color: 'var(--text-muted)' }}>-</span>;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>{formatDate(row.paymentDate)}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              {row.method || 'NAQD'}
-            </span>
-          </div>
-        );
+        if (row.paymentDate) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                {formatDate(row.paymentDate)}
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {row.method || 'NAQD'}
+              </span>
+            </div>
+          );
+        }
+        if (row.mostRecentPayment) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Oldingi to'lov: {formatDate(row.mostRecentPayment.paymentDate)}
+              </span>
+              <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>
+                {formatMoney(row.mostRecentPayment.amount)} ({row.mostRecentPayment.method || 'NAQD'})
+              </span>
+            </div>
+          );
+        }
+        return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>-</span>;
       },
     },
     {

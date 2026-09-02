@@ -32,7 +32,34 @@ export async function GET(
       return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
     }
 
-    return NextResponse.json(group);
+    // Also fetch all payments of the students enrolled in this group
+    const studentIds = (group.studentGroups || [])
+      .map((sg: any) => sg.studentId || sg.student?.id)
+      .filter(Boolean);
+
+    let allGroupPayments = group.payments || [];
+
+    if (studentIds.length > 0) {
+      const { data: studentPayments } = await supabase
+        .from('payments')
+        .select('*, student:students(*), group:groups(*), course:courses(*)')
+        .eq('centerId', authUser.centerId)
+        .in('studentId', studentIds);
+
+      if (studentPayments && studentPayments.length > 0) {
+        // Merge without duplicates
+        const paymentMap = new Map();
+        [...allGroupPayments, ...studentPayments].forEach((p) => {
+          paymentMap.set(p.id, p);
+        });
+        allGroupPayments = Array.from(paymentMap.values());
+      }
+    }
+
+    return NextResponse.json({
+      ...group,
+      payments: allGroupPayments,
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

@@ -316,6 +316,9 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lov saqlashda xatolik yuz berdi");
@@ -333,6 +336,9 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lovni tahrirlashda xatolik yuz berdi");
@@ -351,6 +357,9 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lovni o'chirishda xatolik yuz berdi");
