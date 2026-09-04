@@ -55,6 +55,8 @@ export const Dashboard: React.FC = () => {
   const { theme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<'student' | 'payment'>('student');
+  const [dashboardViewTab, setDashboardViewTab] = useState<'debtors' | 'proba' | 'all'>('debtors');
+  const [debtorsSearch, setDebtorsSearch] = useState('');
 
   // Proba section state
   const [probaSearch, setProbaSearch] = useState('');
@@ -488,8 +490,22 @@ export const Dashboard: React.FC = () => {
   // Debtors Export
   const unpaidStudents = stats?.unpaidStudents || [];
 
+  const filteredDebtors = useMemo(() => {
+    if (!debtorsSearch) return unpaidStudents;
+    const q = debtorsSearch.toLowerCase().trim();
+    return unpaidStudents.filter(
+      (item: any) =>
+        item.studentName?.toLowerCase().includes(q) ||
+        item.groupName?.toLowerCase().includes(q) ||
+        (item.studentPhone && item.studentPhone.includes(q)) ||
+        (item.fatherPhone && item.fatherPhone.includes(q)) ||
+        (item.motherPhone && item.motherPhone.includes(q))
+    );
+  }, [unpaidStudents, debtorsSearch]);
+
   const handleExportDebtorsExcel = () => {
-    if (!unpaidStudents || unpaidStudents.length === 0) {
+    const listToExport = debtorsSearch ? filteredDebtors : unpaidStudents;
+    if (!listToExport || listToExport.length === 0) {
       error("Yuklab olish uchun qarzdorlar mavjud emas");
       return;
     }
@@ -505,7 +521,7 @@ export const Dashboard: React.FC = () => {
       { header: "To'lov holati", key: 'paymentStatus' },
     ];
 
-    const exportRows = unpaidStudents.map((item: any) => ({
+    const exportRows = listToExport.map((item: any) => ({
       studentName: item.studentName,
       groupName: item.groupName,
       studentPhone: formatPhone(item.studentPhone),
@@ -526,7 +542,8 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleExportDebtorsPdf = () => {
-    if (!unpaidStudents || unpaidStudents.length === 0) {
+    const listToExport = debtorsSearch ? filteredDebtors : unpaidStudents;
+    if (!listToExport || listToExport.length === 0) {
       error("Yuklab olish uchun qarzdorlar mavjud emas");
       return;
     }
@@ -542,7 +559,7 @@ export const Dashboard: React.FC = () => {
       { header: 'Holat', key: 'paymentStatus' },
     ];
 
-    const exportRows = unpaidStudents.map((item: any) => ({
+    const exportRows = listToExport.map((item: any) => ({
       studentName: item.studentName,
       groupName: item.groupName,
       studentPhone: formatPhone(item.studentPhone),
@@ -586,389 +603,453 @@ export const Dashboard: React.FC = () => {
         })}
       </div>
 
-      {/* 2. Proba Darsga Keladiganlar Ro'yxati (Sinov Darsi) Section */}
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '50%',
-                background: 'rgba(6, 182, 212, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#06b6d4',
-              }}
-            >
-              <UserCheck size={20} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                Proba darsiga keladiganlar (Sinov darsi)
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                Markazga yangi kelgan va guruhga biriktirilmagan sinov darsi o'quvchilari
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                placeholder="Proba o'quvchilarni izlash..."
-                value={probaSearch}
-                onChange={(e) => setProbaSearch(e.target.value)}
-                style={{
-                  padding: '7px 12px 7px 30px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  backgroundColor: 'var(--card-subtle)',
-                  color: 'var(--text)',
-                  fontSize: '12.5px',
-                  outline: 'none',
-                  minWidth: '220px',
-                }}
-              />
-            </div>
-
-            <ExportDropdown
-              size="sm"
-              onExportExcel={handleExportProbaExcel}
-              onExportPdf={handleExportProbaPdf}
-            />
-
-            <Badge variant="primary">
-              {probaStudents.length} ta o'quvchi
+      {/* 2. Main Section View Switcher Tabs */}
+      <div className={styles.mainSectionNav}>
+        <div className={styles.mainSectionTabs}>
+          <button
+            type="button"
+            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'debtors' ? styles.mainSectionTabBtnActive : ''}`}
+            onClick={() => setDashboardViewTab('debtors')}
+          >
+            <CreditCard size={17} />
+            <span>To'lov qilmaganlar (Qarzdorlar)</span>
+            <Badge variant={dashboardViewTab === 'debtors' ? 'neutral' : 'warning'}>
+              {unpaidStudents.length} ta
             </Badge>
+          </button>
 
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<Plus size={15} />}
-              onClick={() => setIsAddProbaModalOpen(true)}
-            >
-              Yangi Talaba Qo'shish
-            </Button>
-          </div>
+          <button
+            type="button"
+            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'proba' ? styles.mainSectionTabBtnActive : ''}`}
+            onClick={() => setDashboardViewTab('proba')}
+          >
+            <UserCheck size={17} />
+            <span>Proba darsiga keladiganlar (Sinov)</span>
+            <Badge variant={dashboardViewTab === 'proba' ? 'neutral' : 'primary'}>
+              {probaStudents.length} ta
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'all' ? styles.mainSectionTabBtnActive : ''}`}
+            onClick={() => setDashboardViewTab('all')}
+          >
+            <Sparkles size={17} />
+            <span>Barchasini ko'rsatish</span>
+          </button>
         </div>
+      </div>
 
-        {isStatsLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Skeleton height="40px" />
-            <Skeleton height="40px" />
-            <Skeleton height="40px" />
-          </div>
-        ) : filteredProbaStudents.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
-            <UserCheck size={32} color="var(--primary)" style={{ margin: '0 auto 8px', opacity: 0.6 }} />
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>
-              {probaSearch ? "Qidiruv bo'yicha proba talabasi topilmadi" : "Hozirda proba darsida turgan talabalar mavjud emas"}
+      {/* 3. Unpaid / Debtor Students Section (Shown when debtors or all is selected) */}
+      {(dashboardViewTab === 'debtors' || dashboardViewTab === 'all') && (
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                <CreditCard size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                  To'lov qilmagan o'quvchilar ro'yxati (Qarzdorlar)
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                  To'lovni amalga oshirmagan yoki qisman to'lagan o'quvchilar va ularning bog'lanish ma'lumotlari
+                </p>
+              </div>
             </div>
-            <div style={{ fontSize: '12px', marginTop: '4px', marginBottom: '14px' }}>
-              Yangi kelgan o'quvchini qo'shish uchun quyidagi tugmani bosing
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Qarzdorlarni izlash..."
+                  value={debtorsSearch}
+                  onChange={(e) => setDebtorsSearch(e.target.value)}
+                  style={{
+                    padding: '7px 12px 7px 30px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--card-subtle)',
+                    color: 'var(--text)',
+                    fontSize: '12.5px',
+                    outline: 'none',
+                    minWidth: '200px',
+                  }}
+                />
+              </div>
+
+              <ExportDropdown
+                size="sm"
+                onExportExcel={handleExportDebtorsExcel}
+                onExportPdf={handleExportDebtorsPdf}
+              />
+
+              <Badge variant="warning">
+                {filteredDebtors.length} ta qarzdor
+              </Badge>
             </div>
-            <Button size="sm" icon={<Plus size={14} />} onClick={() => setIsAddProbaModalOpen(true)}>
-              + Yangi Talaba Qo'shish
-            </Button>
           </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>TUG'ILGAN SANA</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>TELEFON RAQAMI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>PASSPORT SERIYA</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>RO'YXATGA OLINGAN</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLATI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>AMALLAR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProbaStudents.map((item: any) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.15s' }}>
-                    {/* Ism Familiya */}
-                    <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div
-                          style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: '50%',
-                            background: 'rgba(6, 182, 212, 0.2)',
-                            color: '#06b6d4',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {item.firstName?.[0]}
-                          {item.lastName?.[0]}
+
+          {isStatsLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Skeleton height="40px" />
+              <Skeleton height="40px" />
+              <Skeleton height="40px" />
+            </div>
+          ) : filteredDebtors.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
+              <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>
+                {debtorsSearch ? "Qidiruv bo'yicha qarzdorlar topilmadi" : "Barcha o'quvchilar to'lovlarni to'liq amalga oshirgan"}
+              </div>
+              <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                {debtorsSearch ? "Boshqa kalit so'z bilan izlab ko'ring" : "Hozirda qarzdor o'quvchilar mavjud emas 🎉"}
+              </div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>KURS NARXI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>QARZDORLIK</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TO'LOV HOLATI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDebtors.map((item: any) => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.15s' }}>
+                      {/* Ism Familiya */}
+                      <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
+                            {item.studentName.charAt(0)}
+                          </div>
+                          <span>{item.studentName}</span>
                         </div>
-                        <div>
-                          <div>{item.studentName}</div>
-                          {item.isSchoolStudent && (
-                            <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 700 }}>
-                              Maktab o'quvchisi
-                            </span>
+                      </td>
+
+                      {/* Guruh */}
+                      <td style={{ padding: '14px' }}>
+                        <Badge variant="primary">{item.groupName}</Badge>
+                      </td>
+
+                      {/* Talaba telefoni */}
+                      <td style={{ padding: '14px' }}>
+                        {item.studentPhone && item.studentPhone !== '-' ? (
+                          <a
+                            href={`tel:${item.studentPhone}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
+                          >
+                            <Phone size={14} />
+                            {formatPhone(item.studentPhone)}
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>-</span>
+                        )}
+                      </td>
+
+                      {/* Ota-onasi telefoni */}
+                      <td style={{ padding: '14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {item.fatherPhone && (
+                            <a
+                              href={`tel:${item.fatherPhone}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                            >
+                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                              <Phone size={12} color="var(--primary)" />
+                              {formatPhone(item.fatherPhone)}
+                            </a>
+                          )}
+                          {item.motherPhone && (
+                            <a
+                              href={`tel:${item.motherPhone}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                            >
+                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                              <Phone size={12} color="#ec4899" />
+                              {formatPhone(item.motherPhone)}
+                            </a>
+                          )}
+                          {!item.fatherPhone && !item.motherPhone && (
+                            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
                           )}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Tug'ilgan sana */}
-                    <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
-                      {formatDate(item.birthDate)}
-                    </td>
+                      {/* Kurs narxi */}
+                      <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
+                        {formatMoney(item.coursePrice)}
+                      </td>
 
-                    {/* O'quvchi telefoni */}
-                    <td style={{ padding: '14px' }}>
-                      {item.phone && item.phone !== '-' ? (
-                        <a
-                          href={`tel:${item.phone}`}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
-                        >
-                          <Phone size={13} />
-                          {formatPhone(item.phone)}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>-</span>
-                      )}
-                    </td>
+                      {/* Qarz summasi */}
+                      <td style={{ padding: '14px', fontWeight: 700, color: '#ef4444' }}>
+                        {formatMoney(item.debtAmount)}
+                      </td>
 
-                    {/* Ota-onasining telefoni */}
-                    <td style={{ padding: '14px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {item.fatherPhone && (
-                          <a
-                            href={`tel:${item.fatherPhone}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
-                          >
-                            <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
-                            <Phone size={11} color="var(--primary)" />
-                            {formatPhone(item.fatherPhone)}
-                          </a>
-                        )}
-                        {item.motherPhone && (
-                          <a
-                            href={`tel:${item.motherPhone}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
-                          >
-                            <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
-                            <Phone size={11} color="#ec4899" />
-                            {formatPhone(item.motherPhone)}
-                          </a>
-                        )}
-                        {!item.fatherPhone && !item.motherPhone && (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Kiritilmagan</span>
-                        )}
-                      </div>
-                    </td>
+                      {/* To'lov holati */}
+                      <td style={{ padding: '14px' }}>
+                        <Badge variant={item.paymentStatus === 'QISMAN' ? 'warning' : 'danger'}>
+                          {item.paymentStatus === 'QISMAN' ? "QISMAN TO'LANGAN" : "TO'LANMAGAN"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
-                    {/* Passport seriya */}
-                    <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
-                      {item.passportSeries || '-'}
-                    </td>
+      {/* 4. Proba Darsga Keladiganlar Ro'yxati (Sinov Darsi) Section (Shown when proba or all is selected) */}
+      {(dashboardViewTab === 'proba' || dashboardViewTab === 'all') && (
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: 'rgba(6, 182, 212, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#06b6d4',
+                }}
+              >
+                <UserCheck size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                  Proba darsiga keladiganlar (Sinov darsi)
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                  Markazga yangi kelgan va guruhga biriktirilmagan sinov darsi o'quvchilari
+                </p>
+              </div>
+            </div>
 
-                    {/* Ro'yxatga olingan */}
-                    <td style={{ padding: '14px', color: 'var(--text-muted)', fontSize: '12px' }}>
-                      {formatDate(item.createdAt)}
-                    </td>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Proba o'quvchilarni izlash..."
+                  value={probaSearch}
+                  onChange={(e) => setProbaSearch(e.target.value)}
+                  style={{
+                    padding: '7px 12px 7px 30px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--card-subtle)',
+                    color: 'var(--text)',
+                    fontSize: '12.5px',
+                    outline: 'none',
+                    minWidth: '200px',
+                  }}
+                />
+              </div>
 
-                    {/* Holati */}
-                    <td style={{ padding: '14px' }}>
-                      <Badge variant="warning">
-                        PROBA / SINOV
-                      </Badge>
-                    </td>
+              <ExportDropdown
+                size="sm"
+                onExportExcel={handleExportProbaExcel}
+                onExportPdf={handleExportProbaPdf}
+              />
 
-                    {/* Amallar */}
-                    <td style={{ padding: '14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          icon={<FolderPlus size={13} />}
-                          onClick={() => handleOpenAssignGroup(item)}
-                          title="Guruhga qo'shish"
-                        >
-                          Guruhga qo'shish
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          icon={<Edit2 size={13} />}
-                          onClick={() => handleOpenEditProba(item)}
-                          title="Tahrirlash"
-                        >
-                          Tahrirlash
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          icon={<Trash2 size={13} />}
-                          onClick={() => handleOpenDeleteProba(item)}
-                          title="O'chirish"
-                        >
-                          O'chirish
-                        </Button>
-                      </div>
-                    </td>
+              <Badge variant="primary">
+                {probaStudents.length} ta o'quvchi
+              </Badge>
+
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus size={15} />}
+                onClick={() => setIsAddProbaModalOpen(true)}
+              >
+                YANGI TALABA QO'SHISH
+              </Button>
+            </div>
+          </div>
+
+          {isStatsLoading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Skeleton height="40px" />
+              <Skeleton height="40px" />
+              <Skeleton height="40px" />
+            </div>
+          ) : filteredProbaStudents.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
+              <Sparkles size={32} color="#06b6d4" style={{ margin: '0 auto 8px' }} />
+              <div style={{ fontWeight: 600, color: 'var(--text)' }}>
+                {probaSearch ? "Qidiruv bo'yicha proba o'quvchilari topilmadi" : "Hozirda proba (sinov) darsiga biriktirilmagan yangi talabalar yo'q"}
+              </div>
+              <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                Yangi talaba qo'shish uchun "+ YANGI TALABA QO'SHISH" tugmasini bosing
+              </div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TUG'ILGAN SANA</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TELEFON RAQAMI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>PASSPORT SERIYA</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>RO'YXATGA OLINGAN</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLATI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>AMALLAR</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-
-      {/* 3. Unpaid / Debtor Students Section */}
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-              <CreditCard size={18} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                To'lov qilmagan o'quvchilar ro'yxati (Qarzdorlar)
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                To'lovni amalga oshirmagan yoki qisman to'lagan o'quvchilar va ularning bog'lanish ma'lumotlari
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <ExportDropdown
-              size="sm"
-              onExportExcel={handleExportDebtorsExcel}
-              onExportPdf={handleExportDebtorsPdf}
-            />
-            <Badge variant="warning">
-              {unpaidStudents.length} ta qarzdor
-            </Badge>
-          </div>
-        </div>
-
-        {isStatsLoading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Skeleton height="40px" />
-            <Skeleton height="40px" />
-            <Skeleton height="40px" />
-          </div>
-        ) : unpaidStudents.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
-            <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>Barcha o'quvchilar to'lovlarni to'liq amalga oshirgan</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>Hozirda qarzdor o'quvchilar mavjud emas 🎉</div>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>KURS NARXI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>QARZDORLIK</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>TO'LOV HOLATI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {unpaidStudents.map((item: any) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.15s' }}>
-                    {/* Ism Familiya */}
-                    <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>
-                          {item.studentName.charAt(0)}
+                </thead>
+                <tbody>
+                  {filteredProbaStudents.map((item: any) => (
+                    <tr key={item.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.15s' }}>
+                      {/* Ism Familiya & Maktab o'quvchisi tegi */}
+                      <td style={{ padding: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              background: 'rgba(6, 182, 212, 0.2)',
+                              color: '#06b6d4',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {item.firstName?.charAt(0)}{item.lastName?.charAt(0)}
+                          </div>
+                          <div>
+                            <div>{item.studentName}</div>
+                            {item.isSchoolStudent && (
+                              <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 500 }}>
+                                Maktab o'quvchisi
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span>{item.studentName}</span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Guruh */}
-                    <td style={{ padding: '14px' }}>
-                      <Badge variant="primary">{item.groupName}</Badge>
-                    </td>
+                      {/* Tug'ilgan sana */}
+                      <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
+                        {formatDate(item.birthDate)}
+                      </td>
 
-                    {/* Talaba telefoni */}
-                    <td style={{ padding: '14px' }}>
-                      {item.studentPhone && item.studentPhone !== '-' ? (
-                        <a
-                          href={`tel:${item.studentPhone}`}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
-                        >
-                          <Phone size={14} />
-                          {formatPhone(item.studentPhone)}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>-</span>
-                      )}
-                    </td>
-
-                    {/* Ota-onasi telefoni */}
-                    <td style={{ padding: '14px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {item.fatherPhone && (
+                      {/* Telefon */}
+                      <td style={{ padding: '14px' }}>
+                        {item.phone ? (
                           <a
-                            href={`tel:${item.fatherPhone}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                            href={`tel:${item.phone}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}
                           >
-                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
-                            <Phone size={12} color="var(--primary)" />
-                            {formatPhone(item.fatherPhone)}
+                            <Phone size={13} />
+                            {formatPhone(item.phone)}
                           </a>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>-</span>
                         )}
-                        {item.motherPhone && (
-                          <a
-                            href={`tel:${item.motherPhone}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                      </td>
+
+                      {/* Ota-onasi telefoni */}
+                      <td style={{ padding: '14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {item.fatherPhone && (
+                            <a
+                              href={`tel:${item.fatherPhone}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                            >
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                              <Phone size={11} color="var(--primary)" />
+                              {formatPhone(item.fatherPhone)}
+                            </a>
+                          )}
+                          {item.motherPhone && (
+                            <a
+                              href={`tel:${item.motherPhone}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+                            >
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                              <Phone size={11} color="#ec4899" />
+                              {formatPhone(item.motherPhone)}
+                            </a>
+                          )}
+                          {!item.fatherPhone && !item.motherPhone && (
+                            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Passport seriya */}
+                      <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
+                        {item.passportSeries || '-'}
+                      </td>
+
+                      {/* Ro'yxatga olingan */}
+                      <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
+                        {formatDate(item.createdAt)}
+                      </td>
+
+                      {/* Holati */}
+                      <td style={{ padding: '14px' }}>
+                        <Badge variant="warning">
+                          PROBA / SINOV
+                        </Badge>
+                      </td>
+
+                      {/* Amallar */}
+                      <td style={{ padding: '14px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            icon={<FolderPlus size={13} />}
+                            onClick={() => handleOpenAssignGroup(item)}
+                            title="Guruhga qo'shish"
                           >
-                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
-                            <Phone size={12} color="#ec4899" />
-                            {formatPhone(item.motherPhone)}
-                          </a>
-                        )}
-                        {!item.fatherPhone && !item.motherPhone && (
-                          <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Kurs narxi */}
-                    <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
-                      {formatMoney(item.coursePrice)}
-                    </td>
-
-                    {/* Qarz summasi */}
-                    <td style={{ padding: '14px', fontWeight: 700, color: '#ef4444' }}>
-                      {formatMoney(item.debtAmount)}
-                    </td>
-
-                    {/* To'lov holati */}
-                    <td style={{ padding: '14px' }}>
-                      <Badge variant={item.paymentStatus === 'QISMAN' ? 'warning' : 'danger'}>
-                        {item.paymentStatus === 'QISMAN' ? "QISMAN TO'LANGAN" : "TO'LANMAGAN"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+                            GURUHGA QO'SHISH
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon={<Edit2 size={13} />}
+                            onClick={() => handleOpenEditProba(item)}
+                            title="Tahrirlash"
+                          >
+                            Tahrirlash
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            icon={<Trash2 size={13} />}
+                            onClick={() => handleOpenDeleteProba(item)}
+                            title="O'chirish"
+                          >
+                            O'chirish
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* 4. Quick Actions & Recent Data */}
       <div className={styles.bottomSection}>

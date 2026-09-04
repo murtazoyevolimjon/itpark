@@ -16,4 +16,5 @@ scratch/
 **/scratch/
 *.tsbuildinfo
 .vercel
-
+.temp
+**/.temp
