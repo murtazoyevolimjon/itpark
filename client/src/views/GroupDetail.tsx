@@ -26,6 +26,7 @@ import {
   UserCheck,
   CheckCircle,
   Sparkles,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -88,6 +89,14 @@ export const GroupDetail: React.FC = () => {
     status: 'FAOL',
   });
 
+  // Transfer student modal state
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferStudentData, setTransferStudentData] = useState<{
+    studentId: string;
+    studentName: string;
+    targetGroupId: string;
+  } | null>(null);
+
   // Payments Modals in Group Detail
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [payFormData, setPayFormData] = useState({
@@ -132,6 +141,15 @@ export const GroupDetail: React.FC = () => {
   const probaStudents = useMemo(() => {
     return dashboardStats?.probaStudents || [];
   }, [dashboardStats?.probaStudents]);
+
+  const { data: allGroupsData } = useQuery({
+    queryKey: ['groupsSelect'],
+    queryFn: () => groupsApi.getAll({ limit: 1000 }),
+  });
+
+  const availableTransferGroups = useMemo(() => {
+    return (allGroupsData?.data || []).filter((g: any) => g.id !== id);
+  }, [allGroupsData?.data, id]);
 
   // Month options generator (past 6 months, current month, next 2 months)
   const monthOptions = useMemo(() => {
@@ -360,6 +378,50 @@ export const GroupDetail: React.FC = () => {
       error(err.response?.data?.message || 'Guruhdan chiqarishda xatolik yuz berdi');
     },
   });
+
+  // Transfer student mutation
+  const transferStudentMutation = useMutation({
+    mutationFn: ({ studentId, targetGroupId }: { studentId: string; targetGroupId: string }) =>
+      groupsApi.transferStudent(id, targetGroupId, studentId),
+    onSuccess: (res: any) => {
+      success(res?.message || "Talaba muvaffaqiyatli yangi guruhga o'tkazildi!");
+      setIsTransferModalOpen(false);
+      setTransferStudentData(null);
+      queryClient.invalidateQueries({ queryKey: ['group', id] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || "Talabani boshqa guruhga o'tkazishda xatolik yuz berdi");
+    },
+  });
+
+  const handleOpenTransferModal = (student: any) => {
+    const studentId = student?.id;
+    const studentName = `${student?.firstName || ''} ${student?.lastName || ''}`.trim() || 'Talaba';
+    const firstGroup = availableTransferGroups[0]?.id || '';
+    setTransferStudentData({
+      studentId,
+      studentName,
+      targetGroupId: firstGroup,
+    });
+    setIsTransferModalOpen(true);
+  };
+
+  const handleTransferSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferStudentData?.targetGroupId) {
+      error("Iltimos, o'tkaziladigan yangi guruhni tanlang");
+      return;
+    }
+    transferStudentMutation.mutate({
+      studentId: transferStudentData.studentId,
+      targetGroupId: transferStudentData.targetGroupId,
+    });
+  };
 
   // Create Payment Mutation
   const createPaymentMutation = useMutation({
@@ -692,7 +754,23 @@ export const GroupDetail: React.FC = () => {
         const studentId = row.student?.id || row.studentId;
         const studentName = `${row.student?.firstName || ''} ${row.student?.lastName || ''}`.trim() || 'Ushbu talaba';
         return (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              title="Boshqa guruhga o'tkazish"
+              style={{
+                borderColor: 'rgba(59, 130, 246, 0.4)',
+                color: '#60a5fa',
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenTransferModal(row.student || { id: studentId, firstName: row.student?.firstName, lastName: row.student?.lastName });
+              }}
+            >
+              <ArrowRightLeft size={14} />
+            </Button>
             <Button
               size="sm"
               variant="danger"
@@ -1730,6 +1808,182 @@ export const GroupDetail: React.FC = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* 4. Transfer Student to Another Group Modal */}
+      <Modal
+        isOpen={isTransferModalOpen}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          setTransferStudentData(null);
+        }}
+        title="Talabani Boshqa Guruhga O'tkazish"
+        maxWidth="520px"
+      >
+        <form onSubmit={handleTransferSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Student & Current Group Card */}
+          <div
+            style={{
+              padding: '16px',
+              backgroundColor: 'var(--card-subtle)',
+              borderRadius: '12px',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '50%',
+                  background: 'var(--primary-grad)',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  flexShrink: 0,
+                }}
+              >
+                {transferStudentData?.studentName ? transferStudentData.studentName[0] : 'T'}
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Tanlangan talaba
+                </div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>
+                  {transferStudentData?.studentName}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--border)',
+                fontSize: '13px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span style={{ color: 'var(--text-muted)' }}>Hozirgi guruhi:</span>
+              <Badge variant="secondary">{group.name}</Badge>
+              {group.course?.name && (
+                <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                  ({group.course.name})
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Target Group Selector */}
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: 'var(--text)' }}>
+              Qaysi yangi guruhga o'tkazilsin? <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+
+            {availableTransferGroups.length === 0 ? (
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                  border: '1px solid rgba(234, 179, 8, 0.3)',
+                  color: '#eab308',
+                  fontSize: '13px',
+                }}
+              >
+                Markazda boshqa faol guruh topilmadi. Avval yangi guruh oching.
+              </div>
+            ) : (
+              <select
+                value={transferStudentData?.targetGroupId || ''}
+                onChange={(e) =>
+                  setTransferStudentData((prev) =>
+                    prev ? { ...prev, targetGroupId: e.target.value } : null
+                  )
+                }
+                required
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--card)',
+                  color: 'var(--text)',
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="" disabled>
+                  -- Yangi guruhni tanlang --
+                </option>
+                {availableTransferGroups.map((g: any) => {
+                  const teacherName = g.teacher ? ` • ${g.teacher.firstName} ${g.teacher.lastName}` : '';
+                  const daysTime = g.days?.length ? ` • ${g.days.join(', ')} ${g.startTime || ''}` : '';
+                  const courseName = g.course?.name ? ` (${g.course.name})` : '';
+                  return (
+                    <option key={g.id} value={g.id}>
+                      {g.name}{courseName}{teacherName}{daysTime}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+          </div>
+
+          {/* Informational Alert Box */}
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '12.5px',
+              color: '#93c5fd',
+              lineHeight: 1.4,
+            }}
+          >
+            <ArrowRightLeft size={18} style={{ flexShrink: 0, color: '#3b82f6' }} />
+            <span>
+              Talaba <strong>"{group.name}"</strong> guruhidan chiqariladi va tanlangan yangi guruhga avtomatik qo'shiladi.
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setIsTransferModalOpen(false);
+                setTransferStudentData(null);
+              }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              icon={<ArrowRightLeft size={15} />}
+              isLoading={transferStudentMutation.isPending}
+              disabled={!transferStudentData?.targetGroupId || availableTransferGroups.length === 0}
+            >
+              Guruhga O'tkazish
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

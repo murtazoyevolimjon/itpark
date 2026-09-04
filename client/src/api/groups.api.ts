@@ -30,4 +30,9 @@ export const groupsApi = {
     const res = await api.post(`/groups/${groupId}/students`, { studentId });
     return res.data;
   },
+  transferStudent: async (sourceGroupId: string, targetGroupId: string, studentId: string) => {
+    const res = await api.post(`/groups/${sourceGroupId}/transfer`, { targetGroupId, studentId });
+    return res.data;
+  },
 };
+
