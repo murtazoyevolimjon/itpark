@@ -18,3 +18,4 @@ scratch/
 .vercel
 .temp
 **/.temp
+.env*
