@@ -60,8 +60,9 @@ export async function PATCH(
     if (phone) updateCenterData.phone = phone.trim();
 
     if (newPassword && newPassword.trim()) {
-      const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
-      updateCenterData.password = hashedPassword;
+      const plainPass = newPassword.trim();
+      const hashedPassword = await bcrypt.hash(plainPass, 10);
+      updateCenterData.password = plainPass;
 
       // Update password for user(s) in this center
       await supabase

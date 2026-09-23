@@ -47,6 +47,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/employees', label: t('employees'), icon: Briefcase },
   ];
 
+  const isItPark = Boolean(
+    !user?.centerName ||
+    user.centerName.trim().toUpperCase() === 'IT PARK' ||
+    user.centerName.trim().toUpperCase() === 'IT-PARK' ||
+    user.centerName.toLowerCase().includes('it-park') ||
+    user.centerName.toLowerCase().includes('itpark') ||
+    user.centerId === 'f05c31e9-58dd-481e-8f4f-eb2979982cb1' ||
+    user.email === 'ITPARK_itpark'
+  );
+
   return (
     <>
       <div
@@ -55,11 +65,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       />
       <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.logoArea}>
-          <img
-            src="/itpark-logo.png"
-            alt={user?.centerName || 'IT Park'}
-            className={styles.logoImg}
-          />
+          {isItPark ? (
+            <img
+              src="/itpark-logo.png"
+              alt="IT Park"
+              className={styles.logoImg}
+            />
+          ) : (
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                minWidth: '38px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+              }}
+            >
+              <GraduationCap size={22} />
+            </div>
+          )}
           <div style={{ overflow: 'hidden' }}>
             <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
               {user?.centerName || 'IT PARK'}
@@ -152,21 +181,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 </Link>
               </div>
             )}
-
-            {/* Profile */}
-            <Link
-              href="/profile"
-              className={`${styles.navItem} ${pathname === '/profile' ? styles.navItemActive : ''}`}
-              onClick={onClose}
-            >
-              <div className={styles.navItemLeft}>
-                <User size={18} />
-                <span>{t('profile')}</span>
-              </div>
-            </Link>
           </div>
         </div>
       </aside>
     </>
   );
 };
+

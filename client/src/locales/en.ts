@@ -1,5 +1,5 @@
 export const en = {
-  appName: 'IT PARK',
+  appName: 'EduCRM',
   tagline: 'Modern SaaS CRM system for educational centers',
 
   // Common

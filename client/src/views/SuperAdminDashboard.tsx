@@ -25,6 +25,8 @@ import {
   Lock,
   UserCheck,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { superadminApi } from '../api/superadmin.api';
 import { useSuperAdmin } from '../hooks/useSuperAdmin';
@@ -41,6 +43,11 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [showPasswords, setShowPasswords] = useState<{ [id: string]: boolean }>({});
+
+  const toggleShowPassword = (id: string) => {
+    setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -391,6 +398,57 @@ export const SuperAdminDashboard: React.FC = () => {
                             <Copy size={14} />
                           )}
                         </button>
+                      </span>
+                    </div>
+
+                    <div className={styles.credRow}>
+                      <span className={styles.credLabel}>Parol:</span>
+                      <span className={styles.credValue}>
+                        {center.adminPassword ? (
+                          <>
+                            <span style={{ color: '#38bdf8', letterSpacing: showPasswords[center.id] ? 'normal' : '2px', fontWeight: 700 }}>
+                              {showPasswords[center.id] ? center.adminPassword : '••••••••'}
+                            </span>
+                            <button
+                              className={styles.copyBtn}
+                              onClick={() => toggleShowPassword(center.id)}
+                              title={showPasswords[center.id] ? "Yashirish" : "Ko'rsatish"}
+                            >
+                              {showPasswords[center.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button
+                              className={styles.copyBtn}
+                              onClick={() => handleCopy(center.adminPassword, `pass-${center.id}`)}
+                              title="Parolni nusxalash"
+                            >
+                              {copiedKey === `pass-${center.id}` ? (
+                                <Check size={14} color="#34d399" />
+                              ) : (
+                                <Copy size={14} />
+                              )}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCenterForPass(center);
+                              setNewPasswordInput('');
+                              setIsResetPassModalOpen(true);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#818cf8',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              padding: 0,
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            Parolni belgilash
+                          </button>
+                        )}
                       </span>
                     </div>
 
