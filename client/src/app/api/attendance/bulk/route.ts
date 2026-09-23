@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       // Find existing attendance record for that student, group and date
       const { data: existing } = await supabase
         .from('attendances')
-        .select('id')
+        .select('id, status, note')
         .eq('studentId', rec.studentId)
         .eq('groupId', groupId)
         .gte('date', startOfDay)
@@ -34,15 +34,37 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existing) {
-        await supabase
-          .from('attendances')
-          .update({
-            status: rec.status,
-            note: rec.note || null,
-            updatedAt: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
+        // Davomat olingandan keyin qayta o'zgartirib bo'lmasligi kerak:
+        // 1. Agar avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - umuman o'zgartirilmaydi!
+        if (existing.status === 'KELGAN' || existing.status === 'KECHIKKAN') {
+          continue;
+        }
+
+        // 2. Agar avval KELMAGAN bo'lsa - faqat va faqat bir marta KECHIKKAN deb o'zgartirish mumkin!
+        if (existing.status === 'KELMAGAN') {
+          if (rec.status === 'KECHIKKAN') {
+            await supabase
+              .from('attendances')
+              .update({
+                status: 'KECHIKKAN',
+                note: rec.note !== undefined ? (rec.note || null) : existing.note,
+                updatedAt: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          } else if (rec.status === 'KELMAGAN' && rec.note !== undefined) {
+            // Izohni yangilash mumkin, lekin status KELMAGANligicha qoladi
+            await supabase
+              .from('attendances')
+              .update({
+                note: rec.note || null,
+                updatedAt: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          }
+          // KELGAN yoki boshqa holatga o'tkazishga yo'l qo'yilmaydi!
+        }
       } else {
+        // Yangi davomat yozuvi yaratish
         await supabase.from('attendances').insert({
           id: crypto.randomUUID(),
           studentId: rec.studentId,

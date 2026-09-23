@@ -13,6 +13,7 @@ import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone } from '../utils/phoneMask';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+import styles from './StudentProfile.module.css';
 
 export const StudentProfile: React.FC = () => {
   const params = useParams();
@@ -130,12 +131,12 @@ export const StudentProfile: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <Button variant="outline" size="sm" onClick={() => router.push('/students')}>
           <ArrowLeft size={16} /> Orqaga
         </Button>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>
+        <h2 className={styles.title}>
           {student.firstName} {student.lastName}
         </h2>
         <Badge variant={student.status === 'FAOL' ? 'success' : 'secondary'}>
@@ -145,7 +146,7 @@ export const StudentProfile: React.FC = () => {
 
       {/* Student Personal Info Card */}
       <Card>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+        <div className={styles.infoGrid}>
           <div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Shaxsiy ma'lumotlar</div>
             <div style={{ fontWeight: '600', fontSize: '15px' }}>
@@ -206,22 +207,34 @@ export const StudentProfile: React.FC = () => {
 
       {/* Tabs */}
       <Card>
-        <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
+        <div className={styles.tabsContainer}>
           <Button
             variant={activeTab === 'groups' ? 'primary' : 'outline'}
-            onClick={() => setActiveTab('groups')}
+            onClick={(e) => {
+              setActiveTab('groups');
+              e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }}
+            className={styles.tabBtn}
           >
             <Users size={16} /> Guruhlari ({student.studentGroups?.length || 0})
           </Button>
           <Button
             variant={activeTab === 'attendance' ? 'primary' : 'outline'}
-            onClick={() => setActiveTab('attendance')}
+            onClick={(e) => {
+              setActiveTab('attendance');
+              e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }}
+            className={styles.tabBtn}
           >
             <CalendarCheck size={16} /> Davomat tarixi
           </Button>
           <Button
             variant={activeTab === 'payments' ? 'primary' : 'outline'}
-            onClick={() => setActiveTab('payments')}
+            onClick={(e) => {
+              setActiveTab('payments');
+              e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }}
+            className={styles.tabBtn}
           >
             <DollarSign size={16} /> To'lovlar tarixi
           </Button>

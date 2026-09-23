@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, CalendarCheck } from 'lucide-react';
+import { ArrowLeft, Save, CalendarCheck, Lock } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Select } from '../components/ui/Select/Select';
@@ -56,6 +56,36 @@ export const AttendanceTake: React.FC = () => {
     enabled: !!selectedGroupId && !!attendanceDate,
   });
 
+  // Map of saved attendances for selected group and date: studentId -> status
+  const savedAttendancesMap = useMemo(() => {
+    const map: Record<string, AttendanceStatus> = {};
+    if (Array.isArray(existingAttendance)) {
+      existingAttendance.forEach((att: any) => {
+        if (att.studentId && att.status) {
+          map[att.studentId] = att.status;
+        }
+      });
+    }
+    return map;
+  }, [existingAttendance]);
+
+  const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Saqlash uchun o'zgarishlar borligini tekshirish
+  const hasPendingAttendanceUpdates = useMemo(() => {
+    if (!hasAnySavedAttendance) return true;
+    if (!groupDetail?.studentGroups) return false;
+    return groupDetail.studentGroups.some((sg: any) => {
+      const stId = sg.student?.id || sg.studentId;
+      if (!stId) return false;
+      const saved = savedAttendancesMap[stId];
+      const current = studentStatuses[stId];
+      if (!saved) return true; // yangi talaba
+      if (saved === 'KELMAGAN' && current === 'KECHIKKAN') return true; // kechikkan qilib o'zgartirilgan
+      return false;
+    });
+  }, [hasAnySavedAttendance, groupDetail?.studentGroups, savedAttendancesMap, studentStatuses]);
+
   // Sync student statuses with default 'KELGAN' OR existing saved statuses
   useEffect(() => {
     if (groupDetail?.studentGroups) {
@@ -85,6 +115,7 @@ export const AttendanceTake: React.FC = () => {
       success('Davomat muvaffaqiyatli saqlandi!');
       queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardAttendance'] });
+      queryClient.invalidateQueries({ queryKey: ['existingAttendance', selectedGroupId, attendanceDate] });
       router.push('/attendance');
     },
     onError: (err: any) => {
@@ -93,6 +124,22 @@ export const AttendanceTake: React.FC = () => {
   });
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+    const savedStatus = savedAttendancesMap[studentId];
+
+    if (savedStatus) {
+      // 1. Agar avval KELGAN yoki KECHIKKAN bo'lsa - o'zgartirib bo'lmaydi
+      if (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN') {
+        error("Davomat saqlangan! Ushbu talabaning holatini qayta o'zgartirib bo'lmaydi.");
+        return;
+      }
+
+      // 2. Agar avval KELMAGAN bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
+      if (savedStatus === 'KELMAGAN' && status === 'KELGAN') {
+        error('Kelmagan talabani faqat "Kechikkan" deb o\'zgartirish mumkin!');
+        return;
+      }
+    }
+
     setStudentStatuses((prev) => ({
       ...prev,
       [studentId]: status,
@@ -104,6 +151,12 @@ export const AttendanceTake: React.FC = () => {
       error('Guruhni tanlang');
       return;
     }
+
+    if (hasAnySavedAttendance && !hasPendingAttendanceUpdates) {
+      error("Ushbu sana uchun davomat allaqachon saqlangan va o'zgarishlar yo'q!");
+      return;
+    }
+
     const records = Object.entries(studentStatuses).map(([studentId, status]) => ({
       studentId,
       status,
@@ -160,14 +213,40 @@ export const AttendanceTake: React.FC = () => {
             {groupDetail?.name || 'Talabalar ro\'yxati'}
           </h3>
           <Button
-            icon={<Save size={16} />}
+            icon={hasAnySavedAttendance && !hasPendingAttendanceUpdates ? <Lock size={16} /> : <Save size={16} />}
             isLoading={bulkMutation.isPending}
             onClick={handleSave}
-            disabled={!selectedGroupId || isGroupLoading}
+            disabled={!selectedGroupId || isGroupLoading || (hasAnySavedAttendance && !hasPendingAttendanceUpdates)}
+            variant={hasAnySavedAttendance && hasPendingAttendanceUpdates ? 'primary' : (hasAnySavedAttendance ? 'outline' : 'primary')}
           >
-            SAQLASH
+            {hasAnySavedAttendance
+              ? (hasPendingAttendanceUpdates ? 'KECHIKKANLARNI SAQLASH' : 'DAVOMAT SAQLANGAN')
+              : 'SAQLASH'}
           </Button>
         </div>
+
+        {/* Informative Banner when attendance already saved */}
+        {hasAnySavedAttendance && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              fontSize: '13px',
+              color: 'var(--text)',
+              marginBottom: '16px',
+            }}
+          >
+            <Lock size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+            <div>
+              <strong>Ushbu sana uchun davomat saqlangan.</strong> Qoidaga ko'ra uni qayta o'zgartirib bo'lmaydi. Faqat kelmagan talaba darsga yetib kelsa, uni <strong>"Kechikkan"</strong> deb belgilashingiz mumkin (bir marta).
+            </div>
+          </div>
+        )}
 
         {isGroupLoading ? (
           <Skeleton height="200px" />
@@ -191,21 +270,40 @@ export const AttendanceTake: React.FC = () => {
                   const student = sg.student;
                   if (!student) return null;
                   const currentStatus = studentStatuses[student.id] || 'KELGAN';
+                  const savedStatus = savedAttendancesMap[student.id];
+
+                  // 1. Agar avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - qulflangan
+                  const isLocked = savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN';
+                  // 2. Agar avval KELMAGAN deb saqlangan bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
+                  const isKelmaganSaved = savedStatus === 'KELMAGAN';
 
                   return (
                     <tr key={student.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{idx + 1}</td>
                       <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: 600 }}>
-                        {student.firstName} {student.lastName}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{student.firstName} {student.lastName}</span>
+                          {isLocked && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              <Lock size={12} />
+                            </span>
+                          )}
+                        </div>
+                        {isKelmaganSaved && (
+                          <div style={{ fontSize: '11px', color: currentStatus === 'KECHIKKAN' ? '#ca8a04' : '#ef4444', fontWeight: 500, marginTop: '2px' }}>
+                            {currentStatus === 'KECHIKKAN' ? '✓ Kechikkan deb belgilandi' : '⚠️ Kelmagan (kelsa "Kechikkan" qiling)'}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '14px 16px', fontSize: '13px' }}>{student.phone}</td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: '16px', alignItems: 'center' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked || isKelmaganSaved ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400, opacity: (isLocked && savedStatus !== 'KELGAN') || isKelmaganSaved ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KELGAN"
+                              disabled={isLocked || isKelmaganSaved}
                               checked={currentStatus === 'KELGAN'}
                               onChange={() => handleStatusChange(student.id, 'KELGAN')}
                               style={{ accentColor: '#2b7fff' }}
@@ -213,11 +311,12 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="success">KELGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400, opacity: isLocked && savedStatus !== 'KELMAGAN' ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KELMAGAN"
+                              disabled={isLocked}
                               checked={currentStatus === 'KELMAGAN'}
                               onChange={() => handleStatusChange(student.id, 'KELMAGAN')}
                               style={{ accentColor: '#dc2626' }}
@@ -225,11 +324,12 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="danger">KELMAGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400, opacity: isLocked && savedStatus !== 'KECHIKKAN' ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KECHIKKAN"
+                              disabled={isLocked}
                               checked={currentStatus === 'KECHIKKAN'}
                               onChange={() => handleStatusChange(student.id, 'KECHIKKAN')}
                               style={{ accentColor: '#ca8a04' }}

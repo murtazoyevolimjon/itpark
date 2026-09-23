@@ -27,6 +27,7 @@ import {
   CheckCircle,
   Sparkles,
   ArrowRightLeft,
+  Lock,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -288,6 +289,41 @@ export const GroupDetail: React.FC = () => {
     }
   }, [group, selectedDate]);
 
+  // Tanlangan sana uchun allaqachon saqlangan davomat xaritasi: studentId -> status
+  const savedAttendancesMap = useMemo(() => {
+    const map: Record<string, 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN'> = {};
+    if (!group?.attendances) return map;
+    const cleanDate = selectedDate.split('T')[0];
+    const dateAttendances = group.attendances.filter(
+      (a: any) => a.date && a.date.startsWith(cleanDate)
+    );
+    dateAttendances.forEach((a: any) => {
+      if (a.studentId && a.status) {
+        map[a.studentId] = a.status;
+      }
+    });
+    return map;
+  }, [group?.attendances, selectedDate]);
+
+  const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Saqlash uchun o'zgarishlar borligini tekshirish:
+  // - Agar davomat olinmagan bo'lsa: saqlash mumkin
+  // - Agar davomat olingan bo'lsa: faqat KELMAGAN talaba KECHIKKAN ga o'zgartirilgan bo'lsa yoki yangi talaba bo'lsa saqlash mumkin
+  const hasPendingAttendanceUpdates = useMemo(() => {
+    if (!hasAnySavedAttendance) return true;
+    if (!group?.studentGroups) return false;
+    return group.studentGroups.some((sg: any) => {
+      const stId = sg.student?.id || sg.studentId;
+      if (!stId) return false;
+      const saved = savedAttendancesMap[stId];
+      const current = attendanceState[stId]?.status;
+      if (!saved) return true; // hali olinmagan talaba
+      if (saved === 'KELMAGAN' && current === 'KECHIKKAN') return true; // kechikkan qilib o'zgartirilgan
+      return false;
+    });
+  }, [hasAnySavedAttendance, group?.studentGroups, savedAttendancesMap, attendanceState]);
+
   // Save attendance mutation
   const saveAttendanceMutation = useMutation({
     mutationFn: (payload: { groupId: string; date: string; records: any[] }) =>
@@ -484,6 +520,11 @@ export const GroupDetail: React.FC = () => {
       return;
     }
 
+    if (hasAnySavedAttendance && !hasPendingAttendanceUpdates) {
+      error("Ushbu sana uchun davomat allaqachon saqlangan va o'zgarishlar mavjud emas!");
+      return;
+    }
+
     const records = Object.entries(attendanceState).map(([studentId, data]) => ({
       studentId,
       status: data.status,
@@ -498,7 +539,7 @@ export const GroupDetail: React.FC = () => {
   };
 
   const handleMarkAll = (status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN') => {
-    if (!group?.studentGroups) return;
+    if (!group?.studentGroups || hasAnySavedAttendance) return;
     const updated = { ...attendanceState };
     group.studentGroups.forEach((sg: any) => {
       const studentId = sg.student?.id || sg.studentId;
@@ -513,6 +554,24 @@ export const GroupDetail: React.FC = () => {
   };
 
   const handleStudentStatusChange = (studentId: string, status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN') => {
+    const savedStatus = savedAttendancesMap[studentId];
+
+    if (savedStatus) {
+      // 1. Agar avval KELGAN yoki KECHIKKAN bo'lsa - qayta o'zgartirib bo'lmaydi
+      if (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN') {
+        error("Davomat olingan! Bu talabaning holatini qayta o'zgartirib bo'lmaydi.");
+        return;
+      }
+
+      // 2. Agar avval KELMAGAN bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
+      if (savedStatus === 'KELMAGAN') {
+        if (status === 'KELGAN') {
+          error('Kelmagan talabani faqat "Kechikkan" deb o\'zgartirish mumkin!');
+          return;
+        }
+      }
+    }
+
     setAttendanceState((prev) => ({
       ...prev,
       [studentId]: {
@@ -1139,16 +1198,41 @@ export const GroupDetail: React.FC = () => {
                 <span style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '16px', backgroundColor: 'rgba(202, 138, 4, 0.15)', color: '#ca8a04', border: '1px solid rgba(202, 138, 4, 0.3)' }}>
                   Kechikkan: <strong>{lateCount}</strong>
                 </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  icon={<CheckCheck size={14} />}
-                  onClick={() => handleMarkAll('KELGAN')}
-                >
-                  Hammasini KELGAN qilish
-                </Button>
+                {!hasAnySavedAttendance && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    icon={<CheckCheck size={14} />}
+                    onClick={() => handleMarkAll('KELGAN')}
+                  >
+                    Hammasini KELGAN qilish
+                  </Button>
+                )}
               </div>
             </div>
+
+            {/* Informative Banner when attendance already saved */}
+            {hasAnySavedAttendance && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  fontSize: '13px',
+                  color: 'var(--text)',
+                  marginBottom: '10px',
+                }}
+              >
+                <Lock size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+                <div>
+                  <strong>Ushbu sana uchun davomat saqlangan.</strong> Qoidaga ko'ra uni qayta o'zgartirib bo'lmaydi. Faqat kelmagan talaba darsga yetib kelsa, uni <strong>"Kechikkan"</strong> deb belgilashingiz mumkin (bir marta).
+                </div>
+              </div>
+            )}
 
             {/* Students Attendance List */}
             {totalStudents === 0 ? (
@@ -1169,6 +1253,12 @@ export const GroupDetail: React.FC = () => {
                   if (!student) return null;
                   const currentStatus = attendanceState[student.id]?.status || 'KELGAN';
                   const currentNote = attendanceState[student.id]?.note || '';
+                  const savedStatus = savedAttendancesMap[student.id];
+
+                  // 1. Agar avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - qulflangan
+                  const isLocked = savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN';
+                  // 2. Agar avval KELMAGAN deb saqlangan bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
+                  const isKelmaganSaved = savedStatus === 'KELMAGAN';
 
                   return (
                     <div
@@ -1211,6 +1301,18 @@ export const GroupDetail: React.FC = () => {
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             {formatPhone(student.phone)}
                           </div>
+                          {isLocked && (
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                              <Lock size={11} /> Saqlangan ({savedStatus === 'KELGAN' ? 'Kelgan' : 'Kechikkan'})
+                            </div>
+                          )}
+                          {isKelmaganSaved && (
+                            <div style={{ fontSize: '11px', color: currentStatus === 'KECHIKKAN' ? '#ca8a04' : '#ef4444', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 500 }}>
+                              {currentStatus === 'KECHIKKAN'
+                                ? '✓ "Kechikkan" deb belgilandi'
+                                : '⚠️ Kelmagan (kelsa "Kechikkan" deb o\'zgartiring)'}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1218,44 +1320,49 @@ export const GroupDetail: React.FC = () => {
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <button
                           type="button"
+                          disabled={isLocked || isKelmaganSaved}
                           onClick={() => handleStudentStatusChange(student.id, 'KELGAN')}
                           style={{
                             padding: '8px 16px',
                             borderRadius: '20px',
                             fontSize: '12px',
                             fontWeight: 700,
-                            cursor: 'pointer',
+                            cursor: isLocked || isKelmaganSaved ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
                             transition: 'all 0.2s',
+                            opacity: (isLocked && savedStatus !== 'KELGAN') || isKelmaganSaved ? 0.35 : 1,
                             backgroundColor: currentStatus === 'KELGAN' ? '#16a34a' : 'transparent',
                             color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text-muted)',
                             border: currentStatus === 'KELGAN' ? '1px solid #16a34a' : '1px solid var(--border)',
-                            boxShadow: currentStatus === 'KELGAN' ? '0 2px 8px rgba(22, 163, 74, 0.3)' : 'none',
+                            boxShadow: currentStatus === 'KELGAN' && !isLocked ? '0 2px 8px rgba(22, 163, 74, 0.3)' : 'none',
                           }}
                         >
                           <CheckCircle2 size={14} />
                           KELGAN
+                          {isLocked && savedStatus === 'KELGAN' && <Lock size={12} style={{ marginLeft: 2, opacity: 0.85 }} />}
                         </button>
 
                         <button
                           type="button"
+                          disabled={isLocked}
                           onClick={() => handleStudentStatusChange(student.id, 'KELMAGAN')}
                           style={{
                             padding: '8px 16px',
                             borderRadius: '20px',
                             fontSize: '12px',
                             fontWeight: 700,
-                            cursor: 'pointer',
+                            cursor: isLocked ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
                             transition: 'all 0.2s',
+                            opacity: isLocked && savedStatus !== 'KELMAGAN' ? 0.35 : 1,
                             backgroundColor: currentStatus === 'KELMAGAN' ? '#dc2626' : 'transparent',
                             color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text-muted)',
                             border: currentStatus === 'KELMAGAN' ? '1px solid #dc2626' : '1px solid var(--border)',
-                            boxShadow: currentStatus === 'KELMAGAN' ? '0 2px 8px rgba(220, 38, 38, 0.3)' : 'none',
+                            boxShadow: currentStatus === 'KELMAGAN' && !isLocked ? '0 2px 8px rgba(220, 38, 38, 0.3)' : 'none',
                           }}
                         >
                           <XCircle size={14} />
@@ -1264,25 +1371,36 @@ export const GroupDetail: React.FC = () => {
 
                         <button
                           type="button"
+                          disabled={isLocked}
                           onClick={() => handleStudentStatusChange(student.id, 'KECHIKKAN')}
                           style={{
                             padding: '8px 16px',
                             borderRadius: '20px',
                             fontSize: '12px',
                             fontWeight: 700,
-                            cursor: 'pointer',
+                            cursor: isLocked ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
                             transition: 'all 0.2s',
-                            backgroundColor: currentStatus === 'KECHIKKAN' ? '#ca8a04' : 'transparent',
-                            color: currentStatus === 'KECHIKKAN' ? '#ffffff' : 'var(--text-muted)',
-                            border: currentStatus === 'KECHIKKAN' ? '1px solid #ca8a04' : '1px solid var(--border)',
-                            boxShadow: currentStatus === 'KECHIKKAN' ? '0 2px 8px rgba(202, 138, 4, 0.3)' : 'none',
+                            opacity: isLocked && savedStatus !== 'KECHIKKAN' ? 0.35 : 1,
+                            backgroundColor: currentStatus === 'KECHIKKAN'
+                              ? '#ca8a04'
+                              : isKelmaganSaved
+                              ? 'rgba(202, 138, 4, 0.08)'
+                              : 'transparent',
+                            color: currentStatus === 'KECHIKKAN' ? '#ffffff' : (isKelmaganSaved ? '#ca8a04' : 'var(--text-muted)'),
+                            border: currentStatus === 'KECHIKKAN'
+                              ? '1px solid #ca8a04'
+                              : isKelmaganSaved
+                              ? '1px dashed #ca8a04'
+                              : '1px solid var(--border)',
+                            boxShadow: currentStatus === 'KECHIKKAN' && !isLocked ? '0 2px 8px rgba(202, 138, 4, 0.3)' : 'none',
                           }}
                         >
                           <Clock3 size={14} />
                           KECHIKKAN
+                          {isLocked && savedStatus === 'KECHIKKAN' && <Lock size={12} style={{ marginLeft: 2, opacity: 0.85 }} />}
                         </button>
                       </div>
 
@@ -1292,15 +1410,18 @@ export const GroupDetail: React.FC = () => {
                         placeholder="Izoh / sabab (ixtiyoriy)..."
                         value={currentNote}
                         onChange={(e) => handleStudentNoteChange(student.id, e.target.value)}
+                        disabled={isLocked}
                         style={{
                           padding: '6px 12px',
                           borderRadius: '8px',
                           border: '1px solid var(--border)',
-                          backgroundColor: 'var(--input-bg)',
+                          backgroundColor: isLocked ? 'transparent' : 'var(--input-bg)',
                           color: 'var(--text)',
                           fontSize: '12px',
                           minWidth: '160px',
                           maxWidth: '220px',
+                          opacity: isLocked ? 0.6 : 1,
+                          cursor: isLocked ? 'not-allowed' : 'text',
                         }}
                       />
                     </div>
@@ -1311,12 +1432,16 @@ export const GroupDetail: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                   <Button
                     size="lg"
-                    icon={<Save size={18} />}
+                    icon={hasAnySavedAttendance && !hasPendingAttendanceUpdates ? <Lock size={18} /> : <Save size={18} />}
                     isLoading={saveAttendanceMutation.isPending}
                     onClick={handleSaveAttendance}
-                    style={{ minWidth: '220px' }}
+                    disabled={hasAnySavedAttendance && !hasPendingAttendanceUpdates}
+                    variant={hasAnySavedAttendance && hasPendingAttendanceUpdates ? 'primary' : (hasAnySavedAttendance ? 'outline' : 'primary')}
+                    style={{ minWidth: '240px' }}
                   >
-                    DAVOMATNI SAQLASH
+                    {hasAnySavedAttendance
+                      ? (hasPendingAttendanceUpdates ? 'KECHIKKANLARNI SAQLASH' : 'DAVOMAT SAQLANGAN (QULFLANGAN)')
+                      : 'DAVOMATNI SAQLASH'}
                   </Button>
                 </div>
               </div>
