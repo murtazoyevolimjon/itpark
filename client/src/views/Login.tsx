@@ -126,6 +126,24 @@ export const Login: React.FC = () => {
             {t('loginBtn')}
           </Button>
         </form>
+
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <Link
+            href="/superadmin/login"
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              opacity: 0.75,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            ⚡ Dasturchi boshqaruvi (Super Admin)
+          </Link>
+        </div>
       </div>
     </div>
   );

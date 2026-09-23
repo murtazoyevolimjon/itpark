@@ -57,11 +57,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className={styles.logoArea}>
           <img
             src="/itpark-logo.png"
-            alt="IT Park"
+            alt={user?.centerName || 'IT Park'}
             className={styles.logoImg}
           />
-          <div>
-            <div className={styles.logoTitle}>IT PARK</div>
+          <div style={{ overflow: 'hidden' }}>
+            <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
+              {user?.centerName || 'IT PARK'}
+            </div>
+            {typeof window !== 'undefined' && localStorage.getItem('superadmin_token') && (
+              <Link
+                href="/superadmin"
+                style={{
+                  fontSize: '11px',
+                  color: '#6366f1',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  marginTop: '2px',
+                }}
+              >
+                ⚡ Dasturchi paneli
+              </Link>
+            )}
           </div>
         </div>
 
