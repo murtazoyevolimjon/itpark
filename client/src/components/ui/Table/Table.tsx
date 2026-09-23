@@ -19,6 +19,7 @@ interface TableProps<T> {
   total?: number;
   page?: number;
   limit?: number;
+  limitOptions?: number[];
   search?: string;
   sortBy?: string;
   order?: 'asc' | 'desc';
@@ -36,6 +37,7 @@ export function Table<T extends { id: string }>({
   total = 0,
   page = 1,
   limit = 20,
+  limitOptions = [20, 50, 100, 200, 300],
   search = '',
   sortBy,
   order = 'asc',
@@ -76,9 +78,11 @@ export function Table<T extends { id: string }>({
                 value={limit}
                 onChange={(e) => onLimitChange(Number(e.target.value))}
               >
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
+                {limitOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
               </select>
             </div>
           )}
