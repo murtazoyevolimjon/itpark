@@ -60,6 +60,8 @@ export async function GET(req: NextRequest) {
         if (adminPassword.startsWith('$2a$') || adminPassword.startsWith('$2b$')) {
           if (center.id === 'f05c31e9-58dd-481e-8f4f-eb2979982cb1' || center.email === 'ITPARK_itpark') {
             adminPassword = 'qwerty321';
+          } else {
+            adminPassword = '';
           }
         }
 
