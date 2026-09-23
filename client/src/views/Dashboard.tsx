@@ -422,7 +422,7 @@ export const Dashboard: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Talaba (Ism Familiya)', key: 'studentName' },
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
       { header: 'Onasining telefoni', key: 'motherPhone' },
@@ -463,7 +463,7 @@ export const Dashboard: React.FC = () => {
       { header: 'Telefon', key: 'phone' },
       { header: 'Otasi tel', key: 'fatherPhone' },
       { header: 'Onasi tel', key: 'motherPhone' },
-      { header: 'Passport', key: 'passportSeries' },
+      { header: 'Pasport', key: 'passportSeries' },
       { header: "Qo'shilgan sana", key: 'createdAt' },
       { header: 'Holat', key: 'status' },
     ];
@@ -511,7 +511,7 @@ export const Dashboard: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Talaba (Ism Familiya)', key: 'studentName' },
       { header: 'Guruhi', key: 'groupName' },
       { header: "O'quvchi telefoni", key: 'studentPhone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
@@ -713,7 +713,7 @@ export const Dashboard: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
@@ -901,11 +901,11 @@ export const Dashboard: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>TUG'ILGAN SANA</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>TELEFON RAQAMI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>PASSPORT SERIYA</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>PASPORT SERIYASI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>RO'YXATGA OLINGAN</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLATI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>AMALLAR</th>
@@ -1179,7 +1179,7 @@ export const Dashboard: React.FC = () => {
         maxWidth="540px"
       >
         <form onSubmit={handleAddProbaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Ism & Familya */}
+          {/* Ism & Familiya */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <Input
               label="Ism"
@@ -1189,7 +1189,7 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setProbaForm({ ...probaForm, firstName: e.target.value })}
             />
             <Input
-              label="Familya"
+              label="Familiya"
               placeholder="Valiyev"
               required
               value={probaForm.lastName}
@@ -1231,9 +1231,9 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Passport seriya */}
+          {/* Pasport seriya */}
           <Input
-            label="Passport seriya (AD XXXXXXX)"
+            label="Pasport seriyasi (AD XXXXXXX)"
             placeholder="AD 1234567"
             value={probaForm.passportSeries}
             onChange={(e) => setProbaForm({ ...probaForm, passportSeries: e.target.value.toUpperCase() })}
@@ -1375,7 +1375,7 @@ export const Dashboard: React.FC = () => {
               onChange={(e) => setEditProbaForm({ ...editProbaForm, firstName: e.target.value })}
             />
             <Input
-              label="Familya"
+              label="Familiya"
               placeholder="Valiyev"
               required
               value={editProbaForm.lastName}
@@ -1415,7 +1415,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <Input
-            label="Passport seriya (AD XXXXXXX)"
+            label="Pasport seriyasi (AD XXXXXXX)"
             placeholder="AD 1234567"
             value={editProbaForm.passportSeries}
             onChange={(e) => setEditProbaForm({ ...editProbaForm, passportSeries: e.target.value.toUpperCase() })}

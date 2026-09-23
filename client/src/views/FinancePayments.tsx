@@ -452,7 +452,7 @@ export const FinancePayments: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Talaba (Ism Familiya)', key: 'studentName' },
       { header: 'Qabul qildi', key: 'receivedByName' },
       { header: 'Summa', key: 'amount' },
       { header: "To'lov sanasi", key: 'paymentDate' },

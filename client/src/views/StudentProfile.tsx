@@ -68,7 +68,7 @@ export const StudentProfile: React.FC = () => {
     },
     {
       key: 'joinedAt',
-      header: "A'RO BO'LGAN SANA",
+      header: "A'ZO BO'LGAN SANA",
       render: (row) => formatDate(row.joinedAt),
     },
   ];
@@ -194,7 +194,7 @@ export const StudentProfile: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {student.passportSeries && (
                 <span style={{ fontSize: '13px', fontWeight: 500 }}>
-                  Passport: {student.passportSeries}
+                  Pasport: {student.passportSeries}
                 </span>
               )}
               {student.isSchoolStudent && (

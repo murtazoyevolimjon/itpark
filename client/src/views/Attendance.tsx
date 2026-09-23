@@ -79,7 +79,7 @@ export const Attendance: React.FC = () => {
 
     const exportColumns = [
       { header: 'Sana', key: 'date' },
-      { header: 'Talaba (Ism Familya)', key: 'studentName' },
+      { header: 'Talaba (Ism Familiya)', key: 'studentName' },
       { header: 'Guruhi', key: 'groupName' },
       { header: "O'quvchi telefoni", key: 'studentPhone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
@@ -153,7 +153,7 @@ export const Attendance: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Davomat ko'rsatgichlari</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Davomat ko'rsatkichlari</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
             O'quv markazidagi umumiy davomat statistikasi va dars qoldirganlar tahlili
           </p>
@@ -396,7 +396,7 @@ export const Attendance: React.FC = () => {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 14px', fontWeight: 600 }}>SANA</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILYA)</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
                   <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
                   <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
                   <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>

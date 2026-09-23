@@ -125,7 +125,7 @@ export const Employees: React.FC = () => {
   const columns: Column<Employee>[] = [
     {
       key: 'name',
-      header: 'ISM FAMILYA',
+      header: 'ISM FAMILIYA',
       sortable: true,
       render: (row) => (
         <span style={{ fontWeight: 600 }}>
@@ -242,7 +242,7 @@ export const Employees: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             />
             <Input
-              label="Familya"
+              label="Familiya"
               required
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}

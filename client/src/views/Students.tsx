@@ -148,7 +148,7 @@ export const Students: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.firstName || !formData.lastName || !formData.phone) {
-      error('Ism, familya va telefon raqamini kiriting');
+      error('Ism, familiya va telefon raqamini kiriting');
       return;
     }
     saveMutation.mutate({
@@ -163,7 +163,7 @@ export const Students: React.FC = () => {
   const columns: Column<Student>[] = [
     {
       key: 'name',
-      header: 'ISM FAMILYA',
+      header: 'ISM FAMILIYA',
       sortable: true,
       render: (row) => (
         <span
@@ -324,13 +324,13 @@ export const Students: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Ism Familya', key: 'name' },
+      { header: 'Ism Familiya', key: 'name' },
       { header: 'Guruh', key: 'group' },
       { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
       { header: 'Onasining telefoni', key: 'motherPhone' },
-      { header: 'Passport seriya', key: 'passportSeries' },
+      { header: 'Pasport seriyasi', key: 'passportSeries' },
       { header: 'Jinsi', key: 'gender' },
       { header: "To'lov holati", key: 'paymentStatus' },
     ];
@@ -366,7 +366,7 @@ export const Students: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Ism Familya', key: 'name' },
+      { header: 'Ism Familiya', key: 'name' },
       { header: 'Guruh', key: 'group' },
       { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi tel", key: 'phone' },
@@ -461,7 +461,7 @@ export const Students: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             />
             <Input
-              label="Familya"
+              label="Familiya"
               required
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -500,7 +500,7 @@ export const Students: React.FC = () => {
           </div>
 
           <Input
-            label="Passport seriya (AD XXXXXXX)"
+            label="Pasport seriyasi (AD XXXXXXX)"
             placeholder="AD 1234567"
             value={formData.passportSeries}
             onChange={(e) => setFormData({ ...formData, passportSeries: e.target.value })}

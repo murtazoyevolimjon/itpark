@@ -96,9 +96,9 @@ export const uz = {
   // Teachers
   newTeacher: 'YANGI USTOZ',
   firstName: 'Ism',
-  lastName: 'Familya',
-  fullName: 'ISM FAMILYA',
-  passportSeries: 'Passport seriyasi (AD XXXXXXX)',
+  lastName: 'Familiya',
+  fullName: 'ISM FAMILIYA',
+  passportSeries: 'Pasport seriyasi (AD XXXXXXX)',
   salaryType: 'Maosh turi',
   salaryValue: 'Maosh miqdori',
   fixedSalary: 'Belgilangan (Fixed - so\'mda)',
@@ -121,7 +121,7 @@ export const uz = {
 
   // Attendance
   takeAttendance: 'Davomat olish',
-  attendanceStats: 'Davomat ko\'rsatgichlari',
+  attendanceStats: 'Davomat ko\'rsatkichlari',
   present: 'KELGAN',
   absent: 'KELMAGAN',
   late: 'KECHIKKAN',

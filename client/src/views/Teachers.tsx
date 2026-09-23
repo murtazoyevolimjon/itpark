@@ -126,7 +126,7 @@ export const Teachers: React.FC = () => {
   const columns: Column<Teacher>[] = [
     {
       key: 'name',
-      header: 'ISM FAMILYA',
+      header: 'ISM FAMILIYA',
       sortable: true,
       render: (row) => (
         <span style={{ fontWeight: 600 }}>
@@ -198,9 +198,9 @@ export const Teachers: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Ism Familya', key: 'name' },
+      { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
-      { header: 'Passport seriya', key: 'passportSeries' },
+      { header: 'Pasport seriyasi', key: 'passportSeries' },
       { header: 'Maosh turi', key: 'salaryType' },
       { header: 'Maosh miqdori / foizi', key: 'salary' },
       { header: 'Guruhlar soni', key: 'groupsCount' },
@@ -233,7 +233,7 @@ export const Teachers: React.FC = () => {
     }
 
     const exportColumns = [
-      { header: 'Ism Familya', key: 'name' },
+      { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
       { header: 'Maosh turi', key: 'salaryType' },
       { header: 'Maosh / Foiz', key: 'salary' },
@@ -310,7 +310,7 @@ export const Teachers: React.FC = () => {
           />
 
           <Input
-            label="Familya"
+            label="Familiya"
             required
             value={formData.lastName}
             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -325,7 +325,7 @@ export const Teachers: React.FC = () => {
           />
 
           <Input
-            label="Passport seriya (AD XXXXXXX)"
+            label="Pasport seriyasi (AD XXXXXXX)"
             placeholder="AD 1234567"
             value={formData.passportSeries}
             onChange={(e) => setFormData({ ...formData, passportSeries: e.target.value })}

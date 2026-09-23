@@ -1662,7 +1662,7 @@ export const GroupDetail: React.FC = () => {
               onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
             />
             <Input
-              label="Familya"
+              label="Familiya"
               required
               placeholder="Valiyev"
               value={studentForm.lastName}
@@ -1702,7 +1702,7 @@ export const GroupDetail: React.FC = () => {
           </div>
 
           <Input
-            label="Passport seriya (AD XXXXXXX)"
+            label="Pasport seriyasi (AD XXXXXXX)"
             placeholder="AD 1234567"
             value={studentForm.passportSeries}
             onChange={(e) => setStudentForm({ ...studentForm, passportSeries: e.target.value.toUpperCase() })}
