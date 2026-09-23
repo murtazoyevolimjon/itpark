@@ -154,6 +154,8 @@ export const en = {
   expenseDate: 'DATE',
   expenseNote: 'NOTE',
   pending: 'PENDING',
+  amount: 'Payment Amount',
+  date: 'Payment Date',
 
   // Dashboard Stats Labels
   stats: {

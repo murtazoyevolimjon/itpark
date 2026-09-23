@@ -154,6 +154,8 @@ export const ru = {
   expenseDate: 'ДАТА',
   expenseNote: 'ПРИМЕЧАНИЕ',
   pending: 'В ОЖИДАНИИ',
+  amount: 'Сумма оплаты',
+  date: 'Дата оплаты',
 
   // Dashboard Stats Labels
   stats: {

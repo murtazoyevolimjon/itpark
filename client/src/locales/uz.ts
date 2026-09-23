@@ -154,6 +154,8 @@ export const uz = {
   expenseDate: 'SANA',
   expenseNote: 'IZOH',
   pending: 'KUTILMOQDA',
+  amount: 'To\'lov summasi',
+  date: 'To\'lov sanasi',
 
   // Dashboard Stats Labels
   stats: {

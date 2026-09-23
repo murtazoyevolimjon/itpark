@@ -297,6 +297,218 @@
   border-color: rgba(6, 182, 212, 0.4);
 }
 
+/* Selected Student Info Panel (Quick Payment) */
+.selectedStudentPanel {
+  background: var(--card-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.studentPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.studentPanelLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.studentPanelAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-grad);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(43, 127, 255, 0.3);
+}
+
+.studentPanelMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.studentPanelTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.studentPanelName {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.studentPanelSub {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.studentPanelAttendance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 6px 14px;
+  border-radius: 12px;
+}
+
+.studentPanelAttLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #10b981;
+  letter-spacing: 0.5px;
+}
+
+.studentPanelAttValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: #10b981;
+  line-height: 1.1;
+}
+
+.studentPanelGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.panelInfoCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.panelInfoCard:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.panelInfoCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.panelInfoCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.panelPrimaryText {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panelSecondaryText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.panelMutedText {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.panelLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.priceHighlight {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.debtHighlight {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ef4444;
+}
+
+.quickFillBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.quickFillButton {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.quickFillButton:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+}
+
 /* Mobile & Tablet Responsiveness */
 @media (max-width: 768px) {
   .viewSwitcherContainer {
@@ -329,6 +541,11 @@
 }
 
 @media (max-width: 640px) {
+  .studentPanelGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;

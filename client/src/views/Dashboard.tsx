@@ -23,6 +23,7 @@ import {
   FolderPlus,
   Search,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
@@ -125,6 +126,37 @@ export const Dashboard: React.FC = () => {
     queryKey: ['studentsSelect'],
     queryFn: () => studentsApi.getAll({ limit: 1000 }),
   });
+
+  // Detailed student info when selected for quick payment
+  const { data: selectedPaymentStudent, isLoading: isPaymentStudentLoading } = useQuery({
+    queryKey: ['studentPaymentDetail', paymentForm.studentId],
+    queryFn: () => studentsApi.getOne(paymentForm.studentId),
+    enabled: !!paymentForm.studentId,
+  });
+
+  const selectedStudentBasic = useMemo(() => {
+    if (!paymentForm.studentId || !studentsData?.data) return null;
+    return studentsData.data.find((s) => s.id === paymentForm.studentId);
+  }, [paymentForm.studentId, studentsData]);
+
+  const activeStudentInfo = selectedPaymentStudent || selectedStudentBasic;
+
+  const debtorInfo = useMemo(() => {
+    if (!paymentForm.studentId || !stats?.unpaidStudents) return null;
+    return stats.unpaidStudents.find((u: any) => u.id === paymentForm.studentId || u.studentId === paymentForm.studentId);
+  }, [paymentForm.studentId, stats]);
+
+  const currentGroup = useMemo(() => {
+    const sg = activeStudentInfo?.studentGroups?.[0];
+    return sg?.group || (sg as any) || null;
+  }, [activeStudentInfo]);
+
+  const suggestedPaymentAmount = useMemo(() => {
+    if (debtorInfo?.debtAmount) return Number(debtorInfo.debtAmount);
+    if (debtorInfo?.coursePrice) return Number(debtorInfo.coursePrice);
+    if (currentGroup?.course?.price) return Number(currentGroup.course.price);
+    return 0;
+  }, [debtorInfo, currentGroup]);
 
   // Proba Students List filtered by search
   const probaStudents = stats?.probaStudents || [];
@@ -1157,33 +1189,258 @@ export const Dashboard: React.FC = () => {
                 <SearchableSelect
                   label={t('students')}
                   options={
-                    studentsData?.data?.map((s) => ({
-                      label: `${s.firstName} ${s.lastName}`,
-                      value: s.id,
-                      phone: s.phone,
-                      groupName: s.studentGroups?.[0]?.group?.name || (s.studentGroups?.[0] as any)?.name,
-                    })) || []
+                    studentsData?.data?.map((s) => {
+                      const grp = s.studentGroups?.[0]?.group?.name || (s.studentGroups?.[0] as any)?.name;
+                      const isDebtor = stats?.unpaidStudents?.some((u: any) => u.id === s.id);
+                      return {
+                        label: `${s.firstName} ${s.lastName}`,
+                        value: s.id,
+                        phone: s.phone,
+                        subLabel: grp ? `Guruh: ${grp}` : 'Guruhsiz (Sinov)',
+                        badge: isDebtor ? 'Qarzdor' : s.paymentStatus === 'TOLANGAN' ? "To'langan" : "To'lanmagan",
+                      };
+                    }) || []
                   }
                   value={paymentForm.studentId}
-                  onChange={(val) => setPaymentForm({ ...paymentForm, studentId: val })}
-                  placeholder="Talabani ism yoki telefon raqami orqali qidiring..."
+                  onChange={(val) => {
+                    const debtor = stats?.unpaidStudents?.find((u: any) => u.id === val);
+                    const selSt = studentsData?.data?.find((s) => s.id === val);
+                    const crsPrice = selSt?.studentGroups?.[0]?.group?.course?.price;
+                    const initialAmount = debtor?.debtAmount || debtor?.coursePrice || crsPrice || '';
+                    setPaymentForm({
+                      ...paymentForm,
+                      studentId: val,
+                      amount: initialAmount ? String(initialAmount) : paymentForm.amount,
+                    });
+                  }}
+                  placeholder="Talabani ism, familiya yoki telefon orqali qidiring..."
                   required
                 />
-                <Input
-                  label={t('amount')}
-                  type="number"
-                  placeholder="500000"
-                  value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                  required
-                />
-                <Input
-                  label={t('date')}
-                  type="date"
-                  value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                  required
-                />
+
+                {/* Selected Student Full Information Card */}
+                {paymentForm.studentId && (
+                  <div className={styles.selectedStudentPanel}>
+                    {isPaymentStudentLoading && !selectedStudentBasic ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <Skeleton height="30px" width="50%" />
+                        <Skeleton height="80px" />
+                      </div>
+                    ) : (
+                      <>
+                        {/* Header: Avatar, Name, Badges & Attendance */}
+                        <div className={styles.studentPanelHeader}>
+                          <div className={styles.studentPanelLeft}>
+                            <div className={styles.studentPanelAvatar}>
+                              {(activeStudentInfo?.firstName?.[0] || '') + (activeStudentInfo?.lastName?.[0] || '')}
+                            </div>
+                            <div className={styles.studentPanelMeta}>
+                              <div className={styles.studentPanelTitleRow}>
+                                <span className={styles.studentPanelName}>
+                                  {activeStudentInfo?.firstName} {activeStudentInfo?.lastName}
+                                </span>
+                                <Badge variant={activeStudentInfo?.status === 'FAOL' ? 'success' : 'secondary'}>
+                                  {activeStudentInfo?.status || 'FAOL'}
+                                </Badge>
+                                {debtorInfo ? (
+                                  <Badge variant="danger">QARZDOR</Badge>
+                                ) : (
+                                  <Badge variant="success">TO'LANGAN</Badge>
+                                )}
+                                {activeStudentInfo?.isSchoolStudent && (
+                                  <Badge variant="primary">Maktab o'quvchisi</Badge>
+                                )}
+                              </div>
+                              <div className={styles.studentPanelSub}>
+                                {activeStudentInfo?.birthDate && (
+                                  <span>Tug'ilgan: {formatDate(activeStudentInfo.birthDate)}</span>
+                                )}
+                                {activeStudentInfo?.gender && (
+                                  <span>• Jinsi: {activeStudentInfo.gender === 'ERKAK' ? 'Erkak' : 'Ayol'}</span>
+                                )}
+                                {activeStudentInfo?.passportSeries && (
+                                  <span>• Pasport: {activeStudentInfo.passportSeries}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {activeStudentInfo?.attendancePercentage !== undefined && (
+                            <div className={styles.studentPanelAttendance}>
+                              <span className={styles.studentPanelAttLabel}>Davomat</span>
+                              <span className={styles.studentPanelAttValue}>
+                                {activeStudentInfo.attendancePercentage}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 4 Informative Cards Grid */}
+                        <div className={styles.studentPanelGrid}>
+                          {/* Card 1: Guruhi & Kursi */}
+                          <div className={styles.panelInfoCard}>
+                            <div className={styles.panelInfoCardHeader}>
+                              <Folder size={14} color="var(--primary)" />
+                              <span>GURUHI VA KURSI</span>
+                            </div>
+                            <div className={styles.panelInfoCardBody}>
+                              {currentGroup ? (
+                                <>
+                                  <div className={styles.panelPrimaryText}>{currentGroup.name}</div>
+                                  <div className={styles.panelSecondaryText}>
+                                    Kurs: <strong>{currentGroup.course?.name || '-'}</strong>
+                                    {currentGroup.course?.price ? (
+                                      <span className={styles.priceHighlight}>
+                                        {' '}• {formatMoney(currentGroup.course.price)} so'm/oy
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  {currentGroup.teacher && (
+                                    <div className={styles.panelMutedText}>
+                                      Ustoz: {currentGroup.teacher.firstName} {currentGroup.teacher.lastName}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className={styles.panelMutedText}>Guruhga biriktirilmagan (Sinov darsida)</div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card 2: Aloqa telefonlari */}
+                          <div className={styles.panelInfoCard}>
+                            <div className={styles.panelInfoCardHeader}>
+                              <Phone size={14} color="#10b981" />
+                              <span>ALOQA TELEFONLARI</span>
+                            </div>
+                            <div className={styles.panelInfoCardBody}>
+                              <div>
+                                <span className={styles.panelLabel}>O'zi:</span>
+                                <strong className={styles.panelPrimaryText}>{formatPhone(activeStudentInfo?.phone)}</strong>
+                              </div>
+                              {activeStudentInfo?.fatherPhone && (
+                                <div>
+                                  <span className={styles.panelLabel}>Otasi:</span>
+                                  <span className={styles.panelSecondaryText}>{formatPhone(activeStudentInfo.fatherPhone)}</span>
+                                </div>
+                              )}
+                              {activeStudentInfo?.motherPhone && (
+                                <div>
+                                  <span className={styles.panelLabel}>Onasi:</span>
+                                  <span className={styles.panelSecondaryText}>{formatPhone(activeStudentInfo.motherPhone)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card 3: Moliyaviy Holat & Qarzdorlik */}
+                          <div className={styles.panelInfoCard}>
+                            <div className={styles.panelInfoCardHeader}>
+                              <CreditCard size={14} color="#f59e0b" />
+                              <span>TO'LOV VA QARZDORLIK</span>
+                            </div>
+                            <div className={styles.panelInfoCardBody}>
+                              {debtorInfo ? (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                                    <span className={styles.panelLabel}>Qarzdorlik:</span>
+                                    <span className={styles.debtHighlight}>
+                                      {formatMoney(debtorInfo.debtAmount || debtorInfo.coursePrice)} so'm
+                                    </span>
+                                  </div>
+                                  {debtorInfo.coursePrice && (
+                                    <div className={styles.panelMutedText}>
+                                      Oylik kurs to'lovi: {formatMoney(debtorInfo.coursePrice)} so'm
+                                    </div>
+                                  )}
+                                </>
+                              ) : currentGroup?.course?.price ? (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                                    <span className={styles.panelLabel}>Kurs narxi:</span>
+                                    <span className={styles.panelPrimaryText}>
+                                      {formatMoney(currentGroup.course.price)} so'm
+                                    </span>
+                                  </div>
+                                  <div style={{ color: '#10b981', fontSize: '11.5px', fontWeight: 600, marginTop: '2px' }}>
+                                    Qarzdorlik mavjud emas ✓
+                                  </div>
+                                </>
+                              ) : (
+                                <div className={styles.panelMutedText}>To'lov ma'lumotlari yo'q</div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card 4: Oxirgi to'lov */}
+                          <div className={styles.panelInfoCard}>
+                            <div className={styles.panelInfoCardHeader}>
+                              <DollarSign size={14} color="#06b6d4" />
+                              <span>OXIRGI TO'LOV</span>
+                            </div>
+                            <div className={styles.panelInfoCardBody}>
+                              {activeStudentInfo?.payments && activeStudentInfo.payments.length > 0 ? (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                                    <span className={styles.panelLabel}>Summa:</span>
+                                    <strong className={styles.panelPrimaryText}>
+                                      {formatMoney(activeStudentInfo.payments[0].amount)} so'm
+                                    </strong>
+                                  </div>
+                                  <div className={styles.panelMutedText}>
+                                    Sana: {formatDate(activeStudentInfo.payments[0].paymentDate || activeStudentInfo.payments[0].createdAt)}
+                                  </div>
+                                  <div className={styles.panelMutedText}>
+                                    Jami to'lovlar soni: {activeStudentInfo.payments.length} ta
+                                  </div>
+                                </>
+                              ) : (
+                                <div className={styles.panelMutedText}>Avval to'lov amalga oshirilmagan</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick fill recommendation banner */}
+                        {suggestedPaymentAmount > 0 && (
+                          <div className={styles.quickFillBanner}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Sparkles size={16} color="#f59e0b" />
+                              <span style={{ fontSize: '12.5px', color: 'var(--text)' }}>
+                                Tavsiya etilgan to'lov summasi: <strong>{formatMoney(suggestedPaymentAmount)} so'm</strong>
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.quickFillButton}
+                              onClick={() => setPaymentForm((prev) => ({ ...prev, amount: String(suggestedPaymentAmount) }))}
+                            >
+                              Ushbu summani kiritish
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <Input
+                    label="To'lov summasi (so'm)"
+                    type="number"
+                    placeholder="Masalan: 450000"
+                    value={paymentForm.amount}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="To'lov sanasi"
+                    type="date"
+                    value={paymentForm.paymentDate}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                    required
+                  />
+                </div>
+
                 <Button type="submit" isLoading={createPaymentMutation.isPending} style={{ marginTop: '8px' }}>
                   {t('save')}
                 </Button>
