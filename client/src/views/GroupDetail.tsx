@@ -35,6 +35,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { Input } from '../components/ui/Input/Input';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Select } from '../components/ui/Select/Select';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Toggle } from '../components/ui/Toggle/Toggle';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -2027,41 +2028,17 @@ export const GroupDetail: React.FC = () => {
                 Markazda boshqa faol guruh topilmadi. Avval yangi guruh oching.
               </div>
             ) : (
-              <select
+              <GroupCardSelect
+                groups={availableTransferGroups}
                 value={transferStudentData?.targetGroupId || ''}
-                onChange={(e) =>
+                onChange={(targetGroupId) =>
                   setTransferStudentData((prev) =>
-                    prev ? { ...prev, targetGroupId: e.target.value } : null
+                    prev ? { ...prev, targetGroupId } : null
                   )
                 }
-                required
-                style={{
-                  width: '100%',
-                  padding: '11px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  backgroundColor: 'var(--card)',
-                  color: 'var(--text)',
-                  fontSize: '13.5px',
-                  fontWeight: 600,
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="" disabled>
-                  -- Yangi guruhni tanlang --
-                </option>
-                {availableTransferGroups.map((g: any) => {
-                  const teacherName = g.teacher ? ` • ${g.teacher.firstName} ${g.teacher.lastName}` : '';
-                  const daysTime = g.days?.length ? ` • ${g.days.join(', ')} ${g.startTime || ''}` : '';
-                  const courseName = g.course?.name ? ` (${g.course.name})` : '';
-                  return (
-                    <option key={g.id} value={g.id}>
-                      {g.name}{courseName}{teacherName}{daysTime}
-                    </option>
-                  );
-                })}
-              </select>
+                placeholder="-- Yangi guruhni tanlang --"
+                searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
+              />
             )}
           </div>
 

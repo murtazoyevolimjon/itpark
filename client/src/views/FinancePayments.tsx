@@ -27,6 +27,7 @@ import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { SearchableSelect } from '../components/ui/SearchableSelect/SearchableSelect';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -721,19 +722,14 @@ export const FinancePayments: React.FC = () => {
 
               {/* Guruh / Fan tanlash (agar 2 yoki undan ko'p fanga qatnashsa) */}
               {studentEnrolledGroups.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text)' }}>
-                    Qaysi guruh / fan uchun to'lov qilinmoqda?
-                  </label>
-                  <Select
-                    options={studentEnrolledGroups.map((g) => ({
-                      label: `${g.name} (${g.course?.name ? `${g.course.name} • ` : ''}${formatMoney(g.course?.price || 0)} so'm/oy)`,
-                      value: g.id,
-                    }))}
-                    value={formData.groupId || studentEnrolledGroups[0]?.id || ''}
-                    onChange={(e) => handleGroupChange(e.target.value)}
-                  />
-                </div>
+                <GroupCardSelect
+                  label="Qaysi guruh / fan uchun to'lov qilinmoqda?"
+                  groups={studentEnrolledGroups}
+                  value={formData.groupId || studentEnrolledGroups[0]?.id || ''}
+                  onChange={(groupId) => handleGroupChange(groupId)}
+                  placeholder="Guruhni tanlang"
+                  searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
+                />
               ) : (
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   ⚠️ Talaba hozirda faol guruhga biriktirilmagan (Umumiy to'lov sifatida saqlanadi)

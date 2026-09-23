@@ -10,6 +10,7 @@ import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { Toggle } from '../components/ui/Toggle/Toggle';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -443,14 +444,15 @@ export const Students: React.FC = () => {
         title={selectedStudent ? 'Talabani tahrirlash' : 'Yangi Talaba Qo\'shish'}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Select
+          <GroupCardSelect
             label="Guruh"
-            options={[
-              { label: 'Guruh tanlang', value: '' },
-              ...(groups?.data?.map((g) => ({ label: g.name, value: g.id })) || []),
-            ]}
+            groups={groups?.data || []}
             value={formData.groupId}
-            onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+            onChange={(newId) => setFormData({ ...formData, groupId: newId })}
+            allowEmpty={true}
+            emptyOptionLabel="Guruhsiz (Proba / Sinov darsi)"
+            placeholder="Guruhni tanlang"
+            searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

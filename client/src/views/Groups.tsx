@@ -100,6 +100,8 @@ export const Groups: React.FC = () => {
       success(selectedGroup ? 'Guruh tahrirlandi' : 'Yangi guruh ochildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -112,6 +114,8 @@ export const Groups: React.FC = () => {
       success('Guruh o\'chirildi');
       setDeleteGroupId(null);
       queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');

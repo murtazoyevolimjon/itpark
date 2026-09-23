@@ -28,6 +28,7 @@ import {
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { SearchableSelect } from '../components/ui/SearchableSelect/SearchableSelect';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -1130,14 +1131,15 @@ export const Dashboard: React.FC = () => {
           <div style={{ marginTop: '20px' }}>
             {activeTab === 'student' ? (
               <form onSubmit={handleStudentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <Select
+                <GroupCardSelect
                   label={t('groups')}
-                  options={[
-                    { label: "Guruhsiz (Proba / Sinov darsi)", value: '' },
-                    ...(groupsData?.data?.map((g) => ({ label: g.name, value: g.id })) || []),
-                  ]}
+                  groups={groupsData?.data || []}
                   value={studentForm.groupId}
-                  onChange={(e) => setStudentForm({ ...studentForm, groupId: e.target.value })}
+                  onChange={(newId) => setStudentForm({ ...studentForm, groupId: newId })}
+                  allowEmpty={true}
+                  emptyOptionLabel="Guruhsiz (Proba / Sinov darsi)"
+                  placeholder="Guruhni tanlang yoki Guruhsiz qoldiring"
+                  searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
                 />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <Input
@@ -1601,17 +1603,14 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
 
-          <Select
-            label="Qaysi guruhga qo'shmoqchisiz? *"
+          <GroupCardSelect
+            label="Qaysi guruhga qo'shmoqchisiz?"
             required
-            options={
-              groupsData?.data?.map((g) => ({
-                label: `${g.name} (${g.course?.name || ''} • ${formatMoney(g.course?.price)}/oy)`,
-                value: g.id,
-              })) || []
-            }
+            groups={groupsData?.data || []}
             value={targetGroupId}
-            onChange={(e) => setTargetGroupId(e.target.value)}
+            onChange={(newId) => setTargetGroupId(newId)}
+            placeholder="-- Yangi guruhni tanlang --"
+            searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
           />
 
           <div
