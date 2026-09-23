@@ -11,6 +11,7 @@ import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
+import { SubjectSelect, validateSubjectName } from '../components/ui/SubjectSelect/SubjectSelect';
 import { Toggle } from '../components/ui/Toggle/Toggle';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -41,7 +42,7 @@ export const Students: React.FC = () => {
     phone: '',
     fatherPhone: '',
     motherPhone: '',
-    passportSeries: '',
+    subject: '',
     gender: 'ERKAK' as 'ERKAK' | 'AYOL',
     isSchoolStudent: false,
     groupId: '',
@@ -118,7 +119,7 @@ export const Students: React.FC = () => {
         phone: student.phone || '',
         fatherPhone: student.fatherPhone || '',
         motherPhone: student.motherPhone || '',
-        passportSeries: student.passportSeries || '',
+        subject: (student as any).subject || student.passportSeries || '',
         gender: student.gender || 'ERKAK',
         isSchoolStudent: !!student.isSchoolStudent,
         groupId: currentGroupId,
@@ -132,7 +133,7 @@ export const Students: React.FC = () => {
         phone: '',
         fatherPhone: '',
         motherPhone: '',
-        passportSeries: '',
+        subject: '',
         gender: 'ERKAK',
         isSchoolStudent: false,
         groupId: '',
@@ -152,8 +153,17 @@ export const Students: React.FC = () => {
       error('Ism, familiya va telefon raqamini kiriting');
       return;
     }
+
+    const validSubj = validateSubjectName(formData.subject);
+    if (!validSubj.isValid) {
+      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
+      return;
+    }
+
     saveMutation.mutate({
       ...formData,
+      subject: formData.subject.trim(),
+      passportSeries: formData.subject.trim(),
       phone: unmaskPhone(formData.phone),
       fatherPhone: formData.fatherPhone ? unmaskPhone(formData.fatherPhone) : undefined,
       motherPhone: formData.motherPhone ? unmaskPhone(formData.motherPhone) : undefined,
@@ -217,6 +227,31 @@ export const Students: React.FC = () => {
           </span>
         );
       },
+    },
+    {
+      key: 'subject' as any,
+      header: 'FAN',
+      render: (row: any) => (
+        row.subject || row.passportSeries ? (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              backgroundColor: 'rgba(59, 130, 246, 0.12)',
+              color: '#93c5fd',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+            }}
+          >
+            {row.subject || row.passportSeries}
+          </span>
+        ) : (
+          <span style={{ color: 'var(--text-muted)' }}>-</span>
+        )
+      ),
     },
     {
       key: 'birthDate',
@@ -331,7 +366,7 @@ export const Students: React.FC = () => {
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
       { header: 'Onasining telefoni', key: 'motherPhone' },
-      { header: 'Pasport seriyasi', key: 'passportSeries' },
+      { header: 'Fan', key: 'subject' },
       { header: 'Jinsi', key: 'gender' },
       { header: "To'lov holati", key: 'paymentStatus' },
     ];
@@ -346,7 +381,7 @@ export const Students: React.FC = () => {
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
       motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
-      passportSeries: s.passportSeries || '-',
+      subject: (s as any).subject || s.passportSeries || '-',
       gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
       paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
     }));
@@ -501,11 +536,12 @@ export const Students: React.FC = () => {
             />
           </div>
 
-          <Input
-            label="Pasport seriyasi (AD XXXXXXX)"
-            placeholder="AD 1234567"
-            value={formData.passportSeries}
-            onChange={(e) => setFormData({ ...formData, passportSeries: e.target.value })}
+          {/* Fan tanlash */}
+          <SubjectSelect
+            label="Qaysi fanga keladi? (Fan)"
+            required
+            value={formData.subject}
+            onChange={(subj) => setFormData({ ...formData, subject: subj })}
           />
 
           <Select

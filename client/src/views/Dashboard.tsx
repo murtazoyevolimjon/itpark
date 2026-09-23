@@ -29,6 +29,7 @@ import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
+import { SubjectSelect, validateSubjectName } from '../components/ui/SubjectSelect/SubjectSelect';
 import { SearchableSelect } from '../components/ui/SearchableSelect/SearchableSelect';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -69,7 +70,7 @@ export const Dashboard: React.FC = () => {
   const [selectedProbaStudent, setSelectedProbaStudent] = useState<any>(null);
   const [targetGroupId, setTargetGroupId] = useState('');
 
-  // Form for Adding New Student / Proba Student (matches Image 3)
+  // Form for Adding New Student / Proba Student
   const [probaForm, setProbaForm] = useState({
     firstName: '',
     lastName: '',
@@ -77,7 +78,7 @@ export const Dashboard: React.FC = () => {
     phone: '',
     fatherPhone: '',
     motherPhone: '',
-    passportSeries: '',
+    subject: '',
     gender: 'ERKAK' as 'ERKAK' | 'AYOL',
     isSchoolStudent: false,
   });
@@ -91,7 +92,7 @@ export const Dashboard: React.FC = () => {
     phone: '',
     fatherPhone: '',
     motherPhone: '',
-    passportSeries: '',
+    subject: '',
     gender: 'ERKAK' as 'ERKAK' | 'AYOL',
     isSchoolStudent: false,
   });
@@ -170,7 +171,7 @@ export const Dashboard: React.FC = () => {
         (st.phone && st.phone.includes(q)) ||
         (st.fatherPhone && st.fatherPhone.includes(q)) ||
         (st.motherPhone && st.motherPhone.includes(q)) ||
-        (st.passportSeries && st.passportSeries.toLowerCase().includes(q))
+        ((st.subject || st.passportSeries) && (st.subject || st.passportSeries).toLowerCase().includes(q))
     );
   }, [probaStudents, probaSearch]);
 
@@ -188,7 +189,7 @@ export const Dashboard: React.FC = () => {
         phone: '',
         fatherPhone: '',
         motherPhone: '',
-        passportSeries: '',
+        subject: '',
         gender: 'ERKAK',
         isSchoolStudent: false,
       });
@@ -321,8 +322,28 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
+    const validSubj = validateSubjectName(probaForm.subject);
+    if (!validSubj.isValid) {
+      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
+      return;
+    }
+
+    // Duplicate check on client
+    const cleanP = unmaskPhone(probaForm.phone);
+    const existingDup = probaStudents.find((st: any) => {
+      const stClean = (st.phone || '').replace(/\D/g, '');
+      const stSub = (st.subject || st.passportSeries || '').trim().toLowerCase();
+      return stClean === cleanP && stSub === probaForm.subject.trim().toLowerCase();
+    });
+    if (existingDup) {
+      error(`Ushbu talaba (${existingDup.studentName}) allaqachon "${probaForm.subject}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`);
+      return;
+    }
+
     createProbaStudentMutation.mutate({
       ...probaForm,
+      subject: probaForm.subject.trim(),
+      passportSeries: probaForm.subject.trim(),
       phone: unmaskPhone(probaForm.phone),
       fatherPhone: probaForm.fatherPhone ? unmaskPhone(probaForm.fatherPhone) : null,
       motherPhone: probaForm.motherPhone ? unmaskPhone(probaForm.motherPhone) : null,
@@ -359,7 +380,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(student.phone) || '',
       fatherPhone: student.fatherPhone ? formatPhone(student.fatherPhone) : '',
       motherPhone: student.motherPhone ? formatPhone(student.motherPhone) : '',
-      passportSeries: student.passportSeries || '',
+      subject: student.subject || student.passportSeries || '',
       gender: student.gender || 'ERKAK',
       isSchoolStudent: !!student.isSchoolStudent,
     });
@@ -373,6 +394,12 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
+    const validSubj = validateSubjectName(editProbaForm.subject);
+    if (!validSubj.isValid) {
+      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
+      return;
+    }
+
     updateProbaStudentMutation.mutate({
       id: editProbaForm.id,
       data: {
@@ -382,7 +409,8 @@ export const Dashboard: React.FC = () => {
         phone: unmaskPhone(editProbaForm.phone),
         fatherPhone: editProbaForm.fatherPhone ? unmaskPhone(editProbaForm.fatherPhone) : null,
         motherPhone: editProbaForm.motherPhone ? unmaskPhone(editProbaForm.motherPhone) : null,
-        passportSeries: editProbaForm.passportSeries || null,
+        subject: editProbaForm.subject.trim(),
+        passportSeries: editProbaForm.subject.trim(),
         gender: editProbaForm.gender,
         isSchoolStudent: editProbaForm.isSchoolStudent,
       },
@@ -458,7 +486,7 @@ export const Dashboard: React.FC = () => {
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
       { header: 'Onasining telefoni', key: 'motherPhone' },
-      { header: 'Passport seriyasi', key: 'passportSeries' },
+      { header: 'Fan', key: 'subject' },
       { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "Qo'shilgan sana", key: 'createdAt' },
       { header: 'Holati', key: 'status' },
@@ -469,7 +497,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(item.phone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      passportSeries: item.passportSeries || '-',
+      subject: item.subject || item.passportSeries || '-',
       birthDate: formatDate(item.birthDate),
       createdAt: formatDate(item.createdAt),
       status: "PROBA / SINOV DARSI",
@@ -495,7 +523,7 @@ export const Dashboard: React.FC = () => {
       { header: 'Telefon', key: 'phone' },
       { header: 'Otasi tel', key: 'fatherPhone' },
       { header: 'Onasi tel', key: 'motherPhone' },
-      { header: 'Pasport', key: 'passportSeries' },
+      { header: 'Fan', key: 'subject' },
       { header: "Qo'shilgan sana", key: 'createdAt' },
       { header: 'Holat', key: 'status' },
     ];
@@ -505,7 +533,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(item.phone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      passportSeries: item.passportSeries || '-',
+      subject: item.subject || item.passportSeries || '-',
       createdAt: formatDate(item.createdAt),
       status: "PROBA",
     }));
@@ -962,7 +990,7 @@ export const Dashboard: React.FC = () => {
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>TUG'ILGAN SANA</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>TELEFON RAQAMI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>PASPORT SERIYASI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>FAN</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>RO'YXATGA OLINGAN</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLATI</th>
                     <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>AMALLAR</th>
@@ -1050,9 +1078,27 @@ export const Dashboard: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Passport seriya */}
-                      <td style={{ padding: '14px', color: 'var(--text-muted)' }}>
-                        {item.passportSeries || '-'}
+                      {/* Fan */}
+                      <td style={{ padding: '14px' }}>
+                        {item.subject || item.passportSeries ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                              color: '#93c5fd',
+                              border: '1px solid rgba(59, 130, 246, 0.25)',
+                            }}
+                          >
+                            {item.subject || item.passportSeries}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)' }}>-</span>
+                        )}
                       </td>
 
                       {/* Ro'yxatga olingan */}
@@ -1514,12 +1560,12 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Pasport seriya */}
-          <Input
-            label="Pasport seriyasi (AD XXXXXXX)"
-            placeholder="AD 1234567"
-            value={probaForm.passportSeries}
-            onChange={(e) => setProbaForm({ ...probaForm, passportSeries: e.target.value.toUpperCase() })}
+          {/* Fan tanlash */}
+          <SubjectSelect
+            label="Qaysi fanga keladi? (Fan)"
+            required
+            value={probaForm.subject}
+            onChange={(subj) => setProbaForm({ ...probaForm, subject: subj })}
           />
 
           {/* Jinsi */}
@@ -1694,11 +1740,12 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          <Input
-            label="Pasport seriyasi (AD XXXXXXX)"
-            placeholder="AD 1234567"
-            value={editProbaForm.passportSeries}
-            onChange={(e) => setEditProbaForm({ ...editProbaForm, passportSeries: e.target.value.toUpperCase() })}
+          {/* Fan tanlash */}
+          <SubjectSelect
+            label="Qaysi fanga keladi? (Fan)"
+            required
+            value={editProbaForm.subject}
+            onChange={(subj) => setEditProbaForm({ ...editProbaForm, subject: subj })}
           />
 
           <Select

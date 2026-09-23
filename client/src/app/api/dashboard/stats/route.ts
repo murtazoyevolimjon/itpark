@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
           fatherPhone: st.fatherPhone || null,
           motherPhone: st.motherPhone || null,
           passportSeries: st.passportSeries || null,
+          subject: st.passportSeries || null,
           gender: st.gender || 'ERKAK',
           isSchoolStudent: !!st.isSchoolStudent,
           createdAt: st.createdAt,

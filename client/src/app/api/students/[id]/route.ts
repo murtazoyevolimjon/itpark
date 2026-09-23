@@ -43,6 +43,7 @@ export async function GET(
 
     return NextResponse.json({
       ...student,
+      subject: student.passportSeries || null,
       studentGroups: sgList,
       totalAttendances,
       presentCount,
@@ -73,7 +74,8 @@ export async function PATCH(
     if (body.phone !== undefined) updatePayload.phone = body.phone;
     if (body.fatherPhone !== undefined) updatePayload.fatherPhone = body.fatherPhone || null;
     if (body.motherPhone !== undefined) updatePayload.motherPhone = body.motherPhone || null;
-    if (body.passportSeries !== undefined) updatePayload.passportSeries = body.passportSeries || null;
+    if (body.subject !== undefined) updatePayload.passportSeries = body.subject || null;
+    else if (body.passportSeries !== undefined) updatePayload.passportSeries = body.passportSeries || null;
     if (body.gender !== undefined) updatePayload.gender = body.gender;
     if (body.isSchoolStudent !== undefined) updatePayload.isSchoolStudent = body.isSchoolStudent;
     if (body.status !== undefined) updatePayload.status = body.status;
@@ -125,7 +127,10 @@ export async function PATCH(
       }
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      ...data,
+      subject: data.passportSeries || null,
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

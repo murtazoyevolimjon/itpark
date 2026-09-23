@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
 
       return {
         ...student,
+        subject: student.passportSeries || null,
         studentGroups: sgList,
         paymentStatus,
       };
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
       fatherPhone,
       motherPhone,
       passportSeries,
+      subject,
       gender,
       isSchoolStudent,
       groupId,
@@ -93,6 +95,40 @@ export async function POST(req: NextRequest) {
     } = body;
 
     const supabase = createServerSupabaseClient();
+    const cleanPhone = (phone || '').replace(/\D/g, '');
+    const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
+
+    // Check duplicate student for the same subject
+    if (cleanPhone) {
+      const { data: existingStudents } = await supabase
+        .from('students')
+        .select('id, firstName, lastName, phone, passportSeries')
+        .eq('centerId', authUser.centerId);
+
+      if (existingStudents && existingStudents.length > 0) {
+        const matched = existingStudents.filter((st: any) => {
+          const stClean = (st.phone || '').replace(/\D/g, '');
+          return stClean === cleanPhone || (cleanPhone.length >= 9 && stClean.endsWith(cleanPhone.slice(-9)));
+        });
+
+        if (matched.length > 0 && subjectToSave) {
+          const dup = matched.find((st: any) => {
+            const stSub = (st.passportSeries || '').trim().toLowerCase();
+            return stSub === subjectToSave.toLowerCase();
+          });
+
+          if (dup) {
+            return NextResponse.json(
+              {
+                message: `Ushbu talaba (${dup.firstName} ${dup.lastName}) allaqachon "${dup.passportSeries || subjectToSave}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
     const studentId = crypto.randomUUID();
 
     const { data: student, error } = await supabase
@@ -105,7 +141,7 @@ export async function POST(req: NextRequest) {
         phone,
         fatherPhone: fatherPhone || null,
         motherPhone: motherPhone || null,
-        passportSeries: passportSeries || null,
+        passportSeries: subjectToSave || null,
         gender: gender || 'ERKAK',
         isSchoolStudent: !!isSchoolStudent,
         status: status || 'FAOL',
@@ -130,7 +166,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json(student);
+    return NextResponse.json({
+      ...student,
+      subject: student.passportSeries,
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

@@ -36,6 +36,7 @@ import { Input } from '../components/ui/Input/Input';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Select } from '../components/ui/Select/Select';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
+import { SubjectSelect } from '../components/ui/SubjectSelect/SubjectSelect';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Toggle } from '../components/ui/Toggle/Toggle';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -84,6 +85,7 @@ export const GroupDetail: React.FC = () => {
     phone: '',
     fatherPhone: '',
     motherPhone: '',
+    subject: '',
     passportSeries: '',
     birthDate: '2005-01-01',
     gender: 'ERKAK' as 'ERKAK' | 'AYOL',
@@ -645,7 +647,8 @@ export const GroupDetail: React.FC = () => {
           phone: unmaskPhone(studentForm.phone),
           fatherPhone: studentForm.fatherPhone ? unmaskPhone(studentForm.fatherPhone) : null,
           motherPhone: studentForm.motherPhone ? unmaskPhone(studentForm.motherPhone) : null,
-          passportSeries: studentForm.passportSeries || null,
+          subject: studentForm.subject || group?.course?.name || null,
+          passportSeries: studentForm.subject || group?.course?.name || null,
           birthDate: studentForm.birthDate ? new Date(studentForm.birthDate).toISOString() : undefined,
           gender: studentForm.gender,
           isSchoolStudent: studentForm.isSchoolStudent,
@@ -1702,11 +1705,12 @@ export const GroupDetail: React.FC = () => {
             />
           </div>
 
-          <Input
-            label="Pasport seriyasi (AD XXXXXXX)"
-            placeholder="AD 1234567"
-            value={studentForm.passportSeries}
-            onChange={(e) => setStudentForm({ ...studentForm, passportSeries: e.target.value.toUpperCase() })}
+          {/* Fan tanlash */}
+          <SubjectSelect
+            label="Qaysi fanga keladi? (Fan)"
+            required
+            value={studentForm.subject || group?.course?.name || ''}
+            onChange={(subj) => setStudentForm({ ...studentForm, subject: subj })}
           />
 
           <Select
