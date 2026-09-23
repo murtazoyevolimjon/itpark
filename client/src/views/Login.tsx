@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, LogIn, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, LogIn, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import { Input } from '../components/ui/Input/Input';
 import { Button } from '../components/ui/Button/Button';
 import { useAuth } from '../hooks/useAuth';
@@ -19,28 +19,28 @@ export const Login: React.FC = () => {
   const { lang, setLang, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!login || !password) {
       error(t('loginSub'));
       return;
     }
 
     setIsLoading(true);
     try {
-      await loginWithCredentials(email, password);
+      await loginWithCredentials(login, password);
       success(t('loginTitle'));
       router.push('/dashboard');
     } catch (err: any) {
       if (!err.response) {
         error('Serverga ulanib bo\'lmadi. Backend ishga tushganini va bazani tekshiring.');
       } else if (err.response.status === 401) {
-        error('Email yoki parol noto\'g\'ri');
+        error('Login yoki parol noto\'g\'ri');
       } else {
         error(err.response.data?.message || 'Kirishda xatolik yuz berdi');
       }
@@ -78,21 +78,25 @@ export const Login: React.FC = () => {
         <h1 className={styles.title}>{t('appName')}</h1>
         <p className={styles.subtitle}>{t('loginSub')}</p>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
           <Input
-            label={t('email')}
-            type="email"
-            placeholder="admin@itpark.uz"
-            icon={<Mail size={18} />}
+            label={t('login') || 'Login'}
+            type="text"
+            name="username"
+            autoComplete="off"
+            placeholder="Loginni kiriting"
+            icon={<User size={18} />}
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
           />
 
           <Input
             label={t('password')}
             type={showPassword ? 'text' : 'password'}
-            placeholder="••••••••"
+            name="password"
+            autoComplete="new-password"
+            placeholder="Parolni kiriting"
             icon={<Lock size={18} />}
             rightElement={
               <button

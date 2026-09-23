@@ -6,11 +6,12 @@ import { signToken } from '@/lib/auth';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const loginIdentifier = (body.login || body.email || '').trim();
+    const password = body.password;
 
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       return NextResponse.json(
-        { message: 'Email va parolni kiriting' },
+        { message: 'Login va parolni kiriting' },
         { status: 400 }
       );
     }
@@ -18,16 +19,16 @@ export async function POST(req: NextRequest) {
     const supabase = createServerSupabaseClient();
 
     // Auto-seed if database is freshly empty
-    if (email === 'admin@itpark.uz') {
+    if (loginIdentifier === 'ITPARK_itpark' || loginIdentifier === 'admin@itpark.uz') {
       const { seedSupabaseIfNeeded } = await import('@/lib/seed');
       await seedSupabaseIfNeeded();
     }
 
-    // Fetch user
+    // Fetch user by login/email (case-insensitive)
     const { data: userRecord, error } = await supabase
       .from('users')
       .select('id, fullName, email, password, role, centerId')
-      .eq('email', email)
+      .ilike('email', loginIdentifier)
       .maybeSingle();
 
     if (error) {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     if (!userRecord) {
       return NextResponse.json(
-        { message: "Email yoki parol noto'g'ri" },
+        { message: "Login yoki parol noto'g'ri" },
         { status: 401 }
       );
     }
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     const isMatch = await bcrypt.compare(password, userRecord.password);
     if (!isMatch) {
       return NextResponse.json(
-        { message: "Email yoki parol noto'g'ri" },
+        { message: "Login yoki parol noto'g'ri" },
         { status: 401 }
       );
     }

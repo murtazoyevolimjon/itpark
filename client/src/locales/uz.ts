@@ -31,6 +31,7 @@ export const uz = {
   loginSub: 'Akkauntingizga kirish uchun ma\'lumotlaringizni kiriting',
   registerTitle: 'Markazni ro\'yxatdan o\'tkazish',
   registerSub: 'Yangi o\'quv markazi akkauntini yarating',
+  login: 'Login',
   email: 'Elektron pochta',
   password: 'Parol',
   oldPassword: 'Eski parol',

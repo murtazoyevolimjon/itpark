@@ -15,7 +15,7 @@ export async function seedSupabaseIfNeeded() {
 
   console.log('🌱 Supabase ma\'lumotlar bazasini boshlang\'ich ma\'lumotlar bilan to\'ldirish boshlandi...');
 
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const hashedPassword = await bcrypt.hash('qwerty321', 10);
   const centerId = 'f05c31e9-58dd-481e-8f4f-eb2979982cb1';
   const userId = 'a11c31e9-58dd-481e-8f4f-eb2979982cb1';
 
@@ -23,7 +23,7 @@ export async function seedSupabaseIfNeeded() {
   await supabase.from('centers').insert({
     id: centerId,
     name: 'IT-Park Academy',
-    email: 'admin@itpark.uz',
+    email: 'ITPARK_itpark',
     phone: '998901234567',
     password: hashedPassword,
   });
@@ -32,7 +32,7 @@ export async function seedSupabaseIfNeeded() {
   await supabase.from('users').insert({
     id: userId,
     fullName: 'Administrator',
-    email: 'admin@itpark.uz',
+    email: 'ITPARK_itpark',
     password: hashedPassword,
     role: 'OWNER',
     centerId: centerId,

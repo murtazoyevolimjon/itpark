@@ -31,6 +31,7 @@ export const en = {
   loginSub: 'Enter your credentials to access your account',
   registerTitle: 'Register Center',
   registerSub: 'Create a new educational center account',
+  login: 'Login',
   email: 'Email address',
   password: 'Password',
   oldPassword: 'Old password',
