@@ -68,7 +68,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className={styles.navContainer}>
           {/* Main Section */}
           <div className={styles.sectionGroup}>
-            <div className={styles.sectionTitle}>{t('mainSection')}</div>
             {mainNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.path === '/dashboard' 

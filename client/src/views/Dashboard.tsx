@@ -22,7 +22,6 @@ import {
   Trash2,
   FolderPlus,
   Search,
-  Sparkles,
   Calendar,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
@@ -55,7 +54,7 @@ export const Dashboard: React.FC = () => {
   const { theme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<'student' | 'payment'>('student');
-  const [dashboardViewTab, setDashboardViewTab] = useState<'debtors' | 'proba' | 'all'>('debtors');
+  const [dashboardViewTab, setDashboardViewTab] = useState<'debtors' | 'proba'>('debtors');
   const [debtorsSearch, setDebtorsSearch] = useState('');
 
   // Proba section state
@@ -603,46 +602,71 @@ export const Dashboard: React.FC = () => {
         })}
       </div>
 
-      {/* 2. Main Section View Switcher Tabs */}
-      <div className={styles.mainSectionNav}>
-        <div className={styles.mainSectionTabs}>
-          <button
-            type="button"
-            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'debtors' ? styles.mainSectionTabBtnActive : ''}`}
-            onClick={() => setDashboardViewTab('debtors')}
-          >
-            <CreditCard size={17} />
-            <span>To'lov qilmaganlar (Qarzdorlar)</span>
-            <Badge variant={dashboardViewTab === 'debtors' ? 'neutral' : 'warning'}>
-              {unpaidStudents.length} ta
-            </Badge>
-          </button>
+      {/* 2. Main Section View Switcher Tabs (Debtors & Proba) */}
+      <div className={styles.viewSwitcherContainer}>
+        {/* Tab 1: To'lov qilmaganlar (Qarzdorlar) */}
+        <button
+          type="button"
+          className={`${styles.switchCard} ${
+            dashboardViewTab === 'debtors' ? styles.switchCardActiveDebtors : ''
+          }`}
+          onClick={() => setDashboardViewTab('debtors')}
+        >
+          <div className={styles.switchCardLeft}>
+            <div className={`${styles.switchIconBox} ${styles.switchIconBoxDebtors}`}>
+              <CreditCard size={22} />
+            </div>
+            <div className={styles.switchCardInfo}>
+              <div className={styles.switchCardTitleRow}>
+                <span className={styles.switchCardTitle}>To'lov qilmaganlar</span>
+                <span className={styles.switchTagDebtors}>Qarzdorlar</span>
+              </div>
+              <p className={styles.switchCardDesc}>
+                To'lov muddati o'tgan yoki qisman to'lagan talabalar
+              </p>
+            </div>
+          </div>
+          <div className={styles.switchCardRight}>
+            <div className={`${styles.switchCountBadge} ${styles.switchCountBadgeDebtors}`}>
+              <span className={styles.switchCountNumber}>{unpaidStudents.length}</span>
+              <span className={styles.switchCountUnit}>ta</span>
+            </div>
+          </div>
+        </button>
 
-          <button
-            type="button"
-            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'proba' ? styles.mainSectionTabBtnActive : ''}`}
-            onClick={() => setDashboardViewTab('proba')}
-          >
-            <UserCheck size={17} />
-            <span>Proba darsiga keladiganlar (Sinov)</span>
-            <Badge variant={dashboardViewTab === 'proba' ? 'neutral' : 'primary'}>
-              {probaStudents.length} ta
-            </Badge>
-          </button>
-
-          <button
-            type="button"
-            className={`${styles.mainSectionTabBtn} ${dashboardViewTab === 'all' ? styles.mainSectionTabBtnActive : ''}`}
-            onClick={() => setDashboardViewTab('all')}
-          >
-            <Sparkles size={17} />
-            <span>Barchasini ko'rsatish</span>
-          </button>
-        </div>
+        {/* Tab 2: Proba darsga keladiganlar (Sinov) */}
+        <button
+          type="button"
+          className={`${styles.switchCard} ${
+            dashboardViewTab === 'proba' ? styles.switchCardActiveProba : ''
+          }`}
+          onClick={() => setDashboardViewTab('proba')}
+        >
+          <div className={styles.switchCardLeft}>
+            <div className={`${styles.switchIconBox} ${styles.switchIconBoxProba}`}>
+              <UserCheck size={22} />
+            </div>
+            <div className={styles.switchCardInfo}>
+              <div className={styles.switchCardTitleRow}>
+                <span className={styles.switchCardTitle}>Proba darsga keladiganlar</span>
+                <span className={styles.switchTagProba}>Sinov darsi</span>
+              </div>
+              <p className={styles.switchCardDesc}>
+                Markazga yangi kelgan va hali guruhga biriktirilmagan o'quvchilar
+              </p>
+            </div>
+          </div>
+          <div className={styles.switchCardRight}>
+            <div className={`${styles.switchCountBadge} ${styles.switchCountBadgeProba}`}>
+              <span className={styles.switchCountNumber}>{probaStudents.length}</span>
+              <span className={styles.switchCountUnit}>ta</span>
+            </div>
+          </div>
+        </button>
       </div>
 
-      {/* 3. Unpaid / Debtor Students Section (Shown when debtors or all is selected) */}
-      {(dashboardViewTab === 'debtors' || dashboardViewTab === 'all') && (
+      {/* 3. Unpaid / Debtor Students Section (Shown when debtors is selected) */}
+      {dashboardViewTab === 'debtors' && (
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -809,8 +833,8 @@ export const Dashboard: React.FC = () => {
         </Card>
       )}
 
-      {/* 4. Proba Darsga Keladiganlar Ro'yxati (Sinov Darsi) Section (Shown when proba or all is selected) */}
-      {(dashboardViewTab === 'proba' || dashboardViewTab === 'all') && (
+      {/* 4. Proba Darsga Keladiganlar Ro'yxati (Sinov Darsi) Section (Shown when proba is selected) */}
+      {dashboardViewTab === 'proba' && (
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
