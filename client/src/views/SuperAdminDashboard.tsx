@@ -281,17 +281,18 @@ export const SuperAdminDashboard: React.FC = () => {
             }}
           >
             <Plus size={18} />
-            <span>Yangi O&apos;quv Markaz Qo&apos;shish</span>
+            <span className={styles.addBtnTextDesktop}>Yangi O&apos;quv Markaz Qo&apos;shish</span>
+            <span className={styles.addBtnTextMobile}>+ Yangi Markaz</span>
           </button>
 
-          <a href="/dashboard" className={styles.secondaryBtn}>
+          <a href="/dashboard" className={styles.secondaryBtn} title="CRM Paneli">
             <ExternalLink size={16} />
-            <span>CRM Paneli</span>
+            <span className={styles.navBtnText}>CRM</span>
           </a>
 
           <button className={styles.logoutBtn} onClick={logout} title="Chiqish">
             <LogOut size={16} />
-            <span>Chiqish</span>
+            <span className={styles.navBtnText}>Chiqish</span>
           </button>
         </div>
       </header>

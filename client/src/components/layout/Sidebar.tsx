@@ -102,23 +102,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
               {user?.centerName || 'IT PARK'}
             </div>
-            {typeof window !== 'undefined' && localStorage.getItem('superadmin_token') && (
-              <Link
-                href="/superadmin"
-                style={{
-                  fontSize: '11px',
-                  color: '#6366f1',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginTop: '2px',
-                }}
-              >
-                ⚡ Dasturchi paneli
-              </Link>
-            )}
           </div>
         </div>
 

@@ -5,6 +5,8 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* TOP NAVBAR */
@@ -283,7 +285,7 @@
 /* CENTERS GRID */
 .centersGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
   gap: 24px;
 }
 
@@ -1036,4 +1038,372 @@
   color: #e2e8f0;
   text-align: right;
 }
+
+/* ==================== RESPONSIVE DESIGN FOR MOBILE & TABLETS ==================== */
+
+.addBtnTextDesktop {
+  display: inline;
+}
+.addBtnTextMobile {
+  display: none;
+}
+.navBtnText {
+  display: inline;
+}
+
+@media (max-width: 1024px) {
+  .navbar {
+    padding: 0 20px;
+  }
+  .main {
+    padding: 24px 16px;
+  }
+  .centersGrid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 16px;
+  }
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    height: auto;
+    min-height: 60px;
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brandIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+  }
+
+  .brandTitle {
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .brandBadge {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .navActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .addBtn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .addBtnTextDesktop {
+    display: none;
+  }
+
+  .addBtnTextMobile {
+    display: inline;
+  }
+
+  .secondaryBtn {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .logoutBtn {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .main {
+    padding: 16px 12px;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Hero Banner */
+  .heroBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 14px;
+    border-radius: 14px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .heroContent h2 {
+    font-size: 17px;
+    line-height: 1.3;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .heroContent p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .heroTag {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  /* Stats Grid */
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .statCard {
+    padding: 12px 10px;
+    border-radius: 12px;
+    gap: 8px;
+  }
+
+  .statIconWrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    font-size: 18px;
+  }
+
+  .statValue {
+    font-size: 18px;
+  }
+
+  .statLabel {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  /* Storage Panel */
+  .storagePanel {
+    padding: 16px 12px;
+    border-radius: 14px;
+    margin-bottom: 18px;
+  }
+
+  .storagePanelHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .storagePanelTitle {
+    gap: 10px;
+  }
+
+  .storageIconWrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .storageTitleText {
+    font-size: 15px;
+  }
+
+  .storageTitleSub {
+    font-size: 11px;
+  }
+
+  .storageMainRow {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .storageCircleWrap {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .storageCircleContainer {
+    width: 120px;
+    height: 120px;
+  }
+
+  .storageCircleSvg {
+    width: 120px;
+    height: 120px;
+  }
+
+  .storagePercent {
+    font-size: 24px;
+  }
+
+  .storageDetails {
+    gap: 8px;
+  }
+
+  .storageDetailCard {
+    padding: 10px 12px;
+  }
+
+  .storageDetailIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .storageDetailVal {
+    font-size: 16px;
+  }
+
+  .storageDetailKey {
+    font-size: 11px;
+  }
+
+  .storageTableCounts {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .storageTableRow {
+    grid-template-columns: 80px 1fr 38px;
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .storageTableRowLabel {
+    font-size: 11px;
+  }
+
+  .storageTableRowCount {
+    font-size: 11px;
+  }
+
+  /* Centers List & Search */
+  .centersHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .searchWrap {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+    height: 42px;
+    font-size: 13px;
+  }
+
+  .centersGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .centerCard {
+    padding: 14px 12px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .centerAvatar {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+    border-radius: 10px;
+  }
+
+  .centerName {
+    font-size: 16px;
+  }
+
+  .centerCounters {
+    padding: 8px 6px;
+  }
+
+  .counterNumber {
+    font-size: 15px;
+  }
+
+  .counterTitle {
+    font-size: 10px;
+  }
+
+  .impersonateBtn {
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .actionIconBtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Modals */
+  .modalOverlay {
+    padding: 10px;
+  }
+
+  .modalContent {
+    padding: 18px 14px;
+    border-radius: 16px;
+    max-width: 96vw;
+    gap: 14px;
+  }
+
+  .modalTitle {
+    font-size: 17px;
+  }
+
+  .formInput {
+    height: 40px;
+    font-size: 13px;
+  }
+
+  .modalSubmitBtn {
+    height: 42px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brandTitle {
+    font-size: 13px;
+  }
+  .brandBadge {
+    display: none;
+  }
+  .statCard {
+    padding: 10px 8px;
+    gap: 6px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statLabel {
+    font-size: 10px;
+  }
+}
+
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,6 +13,9 @@ import {
   Search,
   ArrowRight,
   Sparkles,
+  GraduationCap,
+  Activity,
+  Flame,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -33,6 +36,8 @@ const DAY_LABELS: Record<GroupDay, string> = {
   YAK: 'Yak',
 };
 
+const DAY_MAP_BY_INDEX: GroupDay[] = ['YAK', 'DUSH', 'SESH', 'CHOR', 'PAY', 'JU', 'SHAN'];
+
 export const TeacherDashboard: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
@@ -45,28 +50,45 @@ export const TeacherDashboard: React.FC = () => {
 
   const groups: Group[] = groupsData?.data || [];
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.course?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.room?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const todayDayCode = DAY_MAP_BY_INDEX[new Date().getDay()];
+
+  // Filtered groups
+  const filteredGroups = useMemo(() => {
+    return groups.filter((g) =>
+      g.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.course?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.room?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [groups, searchTerm]);
+
+  // Overall statistics
+  const stats = useMemo(() => {
+    const totalGroups = groups.length;
+    const totalStudents = groups.reduce(
+      (acc, g) => acc + (g._count?.studentGroups ?? 0),
+      0
+    );
+    const todayGroups = groups.filter((g) => g.days?.includes(todayDayCode));
+
+    return { totalGroups, totalStudents, todayGroupsCount: todayGroups.length };
+  }, [groups, todayDayCode]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Welcome Banner */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '100%' }}>
+      {/* HERO WELCOME BANNER */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-          borderRadius: '16px',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          borderRadius: '20px',
           padding: '24px 28px',
           color: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 12px 30px -8px rgba(0, 0, 0, 0.35)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: '650px' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '720px' }}>
           <div
             style={{
               display: 'inline-flex',
@@ -74,69 +96,172 @@ export const TeacherDashboard: React.FC = () => {
               gap: '6px',
               padding: '4px 12px',
               borderRadius: '20px',
-              background: 'rgba(59, 130, 246, 0.2)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              background: 'rgba(59, 130, 246, 0.18)',
+              border: '1px solid rgba(59, 130, 246, 0.35)',
               fontSize: '12px',
+              fontWeight: 700,
               color: '#93c5fd',
               marginBottom: '12px',
             }}
           >
             <Sparkles size={14} />
-            <span>O'qituvchi Kabineti</span>
+            <span>O'qituvchi Boshqaruv Markazi</span>
           </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>
-            Assalomu alaykum, {user?.fullName || "O'qituvchi"}!
-          </h1>
-          <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-            Bu yerda siz o'zingizga biriktirilgan guruhlarni ko'rishingiz, o'quvchilar ro'yxatini kuzatishingiz va darslar bo'yicha davomat olishingiz mumkin.
-          </p>
-        </div>
 
-        {/* Quick action button */}
-        <div
-          style={{
-            marginTop: '20px',
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <Button
-            onClick={() => router.push('/teacher/attendance')}
-            icon={<CalendarCheck size={16} />}
+          <h1
             style={{
-              backgroundColor: '#3b82f6',
-              color: '#ffffff',
-              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
+              fontSize: 'clamp(20px, 4vw, 28px)',
+              fontWeight: 800,
+              margin: '0 0 8px 0',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.25,
             }}
           >
-            Bugungi davomatni olish
-          </Button>
+            Assalomu alaykum, {user?.fullName || "O'qituvchi"}!
+          </h1>
+          <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0, lineHeight: 1.55 }}>
+            Sizga biriktirilgan dars guruhlarini kuzatib boring, dars jadvallarini ko'ring va dars boshlanganda davomatni tez va oson qayd eting.
+          </p>
+
+          <div
+            style={{
+              marginTop: '20px',
+              display: 'flex',
+              gap: '12px',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+            }}
+          >
+            <Button
+              onClick={() => router.push('/teacher/attendance')}
+              icon={<CalendarCheck size={17} />}
+              style={{
+                backgroundColor: '#3b82f6',
+                color: '#ffffff',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                fontWeight: 700,
+                padding: '10px 20px',
+                borderRadius: '10px',
+              }}
+            >
+              Bugungi Davomatni Olish
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Header and Search */}
+      {/* METRICS STATS BAR */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+          gap: '16px',
+        }}
+      >
+        {/* Metric 1 */}
+        <Card style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(59, 130, 246, 0.15)',
+              color: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <BookOpen size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
+              {stats.totalGroups}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
+              Guruhlarim soni
+            </div>
+          </div>
+        </Card>
+
+        {/* Metric 2 */}
+        <Card style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#10b981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <GraduationCap size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
+              {stats.totalStudents}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
+              Jami o'quvchilarim
+            </div>
+          </div>
+        </Card>
+
+        {/* Metric 3 */}
+        <Card style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid var(--border)' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(245, 158, 11, 0.15)',
+              color: '#f59e0b',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Flame size={24} />
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>
+              {stats.todayGroupsCount}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 600 }}>
+              Bugungi darslar ({DAY_LABELS[todayDayCode] || 'Bugun'})
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* FILTER & HEADER */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '14px',
         }}
       >
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)' }}>
+          <h2 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
             Mening Guruhlarim ({filteredGroups.length})
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-            Faqat sizga biriktirilgan o'quv guruhlari
+            Dars o'tadigan o'quv guruhlaringiz ro'yxati
           </p>
         </div>
 
-        <div style={{ width: '280px', maxWidth: '100%' }}>
+        <div style={{ width: '320px', maxWidth: '100%' }}>
           <Input
-            placeholder="Guruh yoki kurs bo'yicha qidirish..."
+            placeholder="Guruh, kurs yoki xona nomi..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             icon={<Search size={16} />}
@@ -144,12 +269,12 @@ export const TeacherDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Groups List */}
+      {/* GROUPS GRID */}
       {isLoading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 330px), 1fr))', gap: '20px' }}>
           {[1, 2, 3].map((i) => (
             <Card key={i}>
-              <Skeleton height="160px" />
+              <Skeleton height="180px" />
             </Card>
           ))}
         </div>
@@ -170,7 +295,7 @@ export const TeacherDashboard: React.FC = () => {
                 width: '64px',
                 height: '64px',
                 borderRadius: '50%',
-                background: 'var(--background)',
+                background: 'var(--surface)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -179,13 +304,13 @@ export const TeacherDashboard: React.FC = () => {
             >
               <Users size={32} />
             </div>
-            <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
+            <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
               {searchTerm ? "Qidiruv bo'yicha guruh topilmadi" : "Sizga hali guruh biriktirilmagan"}
             </h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '400px', margin: 0 }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', maxWidth: '420px', margin: 0 }}>
               {searchTerm
-                ? "Boshqa so'z bilan qidirib ko'ring yoki qidiruvni tozalang."
-                : "Admin sizni yangi guruhlarga biriktirgandan so'ng, ular shu yerda ko'rinadi."}
+                ? "Boshqa so'z bilan qidirib ko'ring yoki qidiruv matnini tozalang."
+                : "Administrator sizni o'quv guruhlariga biriktirganidan so'ng barcha guruhlaringiz shu yerda avtomatik chiqadi."}
             </p>
           </div>
         </Card>
@@ -193,12 +318,13 @@ export const TeacherDashboard: React.FC = () => {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
             gap: '20px',
           }}
         >
           {filteredGroups.map((group) => {
             const studentCount = group._count?.studentGroups ?? 0;
+            const isTodayClass = group.days?.includes(todayDayCode);
 
             return (
               <Card
@@ -207,10 +333,27 @@ export const TeacherDashboard: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  border: isTodayClass ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid var(--border)',
+                  background: isTodayClass ? 'linear-gradient(180deg, rgba(59, 130, 246, 0.04) 0%, var(--card) 100%)' : 'var(--card)',
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
+                {isTodayClass && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                    }}
+                  />
+                )}
+
                 <div>
                   {/* Top Bar: Name & Status */}
                   <div
@@ -219,15 +362,17 @@ export const TeacherDashboard: React.FC = () => {
                       justifyContent: 'space-between',
                       alignItems: 'flex-start',
                       marginBottom: '14px',
+                      gap: '8px',
                     }}
                   >
                     <div>
                       <h3
                         style={{
-                          fontSize: '18px',
-                          fontWeight: 700,
+                          fontSize: '17px',
+                          fontWeight: 800,
                           color: 'var(--text)',
-                          margin: '0 0 4px 0',
+                          margin: '0 0 6px 0',
+                          lineHeight: 1.25,
                         }}
                       >
                         {group.name}
@@ -239,20 +384,37 @@ export const TeacherDashboard: React.FC = () => {
                           gap: '6px',
                           fontSize: '13px',
                           color: 'var(--primary)',
-                          fontWeight: 600,
+                          fontWeight: 700,
                         }}
                       >
                         <BookOpen size={14} />
-                        <span>{group.course?.name || "Kurs ko'rsatilmagan"}</span>
+                        <span>{group.course?.name || "Kurs belgilanmagan"}</span>
                       </div>
                     </div>
 
-                    <Badge variant={group.status === 'FAOL' ? 'success' : 'secondary'}>
-                      {group.status}
-                    </Badge>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <Badge variant={group.status === 'FAOL' ? 'success' : 'secondary'}>
+                        {group.status}
+                      </Badge>
+                      {isTodayClass && (
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            color: '#3b82f6',
+                            background: 'rgba(59, 130, 246, 0.12)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          Bugun dars
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Details grid */}
+                  {/* Details Container */}
                   <div
                     style={{
                       display: 'flex',
@@ -260,9 +422,10 @@ export const TeacherDashboard: React.FC = () => {
                       gap: '10px',
                       background: 'var(--background)',
                       padding: '12px 14px',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       marginBottom: '16px',
                       fontSize: '13px',
+                      border: '1px solid var(--border)',
                     }}
                   >
                     {/* Time */}
@@ -270,8 +433,8 @@ export const TeacherDashboard: React.FC = () => {
                       <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Clock size={14} /> Dars vaqti:
                       </span>
-                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                        {group.startTime} - {group.endTime}
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                        {group.startTime || '--:--'} - {group.endTime || '--:--'}
                       </span>
                     </div>
 
@@ -281,7 +444,7 @@ export const TeacherDashboard: React.FC = () => {
                         <DoorOpen size={14} /> Xona:
                       </span>
                       <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                        {group.room?.name || 'Xona belgilanmagan'}
+                        {group.room?.name || '-'}
                       </span>
                     </div>
 
@@ -292,7 +455,7 @@ export const TeacherDashboard: React.FC = () => {
                       </span>
                       <span
                         style={{
-                          fontWeight: 700,
+                          fontWeight: 800,
                           color: studentCount > 0 ? '#10b981' : 'var(--text-muted)',
                         }}
                       >
@@ -303,25 +466,29 @@ export const TeacherDashboard: React.FC = () => {
                     {/* Days */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                       <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={14} /> Kunlar:
+                        <Calendar size={14} /> Dars kunlari:
                       </span>
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         {group.days && group.days.length > 0 ? (
-                          group.days.map((day) => (
-                            <span
-                              key={day}
-                              style={{
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                background: 'rgba(59, 130, 246, 0.1)',
-                                color: '#3b82f6',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                              }}
-                            >
-                              {DAY_LABELS[day] || day}
-                            </span>
-                          ))
+                          group.days.map((day) => {
+                            const isThisDay = day === todayDayCode;
+                            return (
+                              <span
+                                key={day}
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  background: isThisDay ? '#3b82f6' : 'var(--card-subtle)',
+                                  color: isThisDay ? '#ffffff' : 'var(--text-muted)',
+                                  padding: '2px 7px',
+                                  borderRadius: '5px',
+                                  border: isThisDay ? 'none' : '1px solid var(--border)',
+                                }}
+                              >
+                                {DAY_LABELS[day] || day}
+                              </span>
+                            );
+                          })
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>-</span>
                         )}
@@ -330,14 +497,18 @@ export const TeacherDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '10px' }}>
+                {/* Card Action Button */}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                   <Button
                     fullWidth
                     icon={<CalendarCheck size={16} />}
                     onClick={() => router.push(`/teacher/attendance?groupId=${group.id}`)}
+                    style={{
+                      fontWeight: 700,
+                      borderRadius: '10px',
+                    }}
                   >
-                    Davomat olish
+                    Davomat Olish
                   </Button>
                 </div>
               </Card>
