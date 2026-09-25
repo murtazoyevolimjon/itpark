@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
       const { data: centerRecord } = await supabase
         .from('centers')
-        .select('id, name, email, phone')
+        .select('id, name, phone')
         .eq('id', teacherRecord.centerId)
         .maybeSingle();
 

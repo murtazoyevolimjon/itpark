@@ -41,34 +41,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Pre-validate: If teacher is updating an existing KELMAGAN to KECHIKKAN, note MUST be provided!
-    if (isTeacher) {
-      for (const rec of records) {
-        const { data: existing } = await supabase
-          .from('attendances')
-          .select('id, status, note')
-          .eq('studentId', rec.studentId)
-          .eq('groupId', groupId)
-          .gte('date', startOfDay)
-          .lte('date', endOfDay)
-          .maybeSingle();
-
-        if (existing && existing.status === 'KELMAGAN' && rec.status === 'KECHIKKAN') {
-          if (!rec.note || !rec.note.trim()) {
-            return NextResponse.json(
-              { message: "Kechikib kelgan o'quvchi uchun kechikish sababini yozish qat'iy majburiy!" },
-              { status: 400 }
-            );
-          }
-        }
-      }
-    }
-
     for (const rec of records) {
       // Find existing attendance record for that student, group and date
       const { data: existing } = await supabase
         .from('attendances')
-        .select('id, status, note')
+        .select('id')
         .eq('studentId', rec.studentId)
         .eq('groupId', groupId)
         .gte('date', startOfDay)
@@ -76,37 +53,14 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existing) {
-        if (!isTeacher) {
-          // ADMIN yoki OWNER: To'liq erkin o'zgartira oladi (ixtiyoriy o'zgartirish ruxsat)
-          await supabase
-            .from('attendances')
-            .update({
-              status: rec.status,
-              note: rec.note !== undefined ? (rec.note || null) : existing.note,
-              updatedAt: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
-        } else {
-          // TEACHER: Qat'iy qoidalar:
-          // 1. Agar avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - umuman o'zgartirilmaydi!
-          if (existing.status === 'KELGAN' || existing.status === 'KECHIKKAN') {
-            continue;
-          }
-
-          // 2. Agar avval KELMAGAN bo'lsa - faqatgina KECHIKKAN deb o'zgartirish mumkin (sababi bilan)
-          if (existing.status === 'KELMAGAN') {
-            if (rec.status === 'KECHIKKAN') {
-              await supabase
-                .from('attendances')
-                .update({
-                  status: 'KECHIKKAN',
-                  note: (rec.note || '').trim() || existing.note,
-                  updatedAt: new Date().toISOString(),
-                })
-                .eq('id', existing.id);
-            }
-          }
-        }
+        await supabase
+          .from('attendances')
+          .update({
+            status: rec.status,
+            note: rec.note !== undefined ? (rec.note || null) : null,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
       } else {
         // Yangi davomat yozuvi yaratish
         await supabase.from('attendances').insert({

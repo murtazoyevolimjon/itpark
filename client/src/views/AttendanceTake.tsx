@@ -129,23 +129,6 @@ export const AttendanceTake: React.FC = () => {
   });
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
-    const isTeacher = user?.role === 'TEACHER';
-    const savedStatus = savedAttendancesMap[studentId];
-
-    if (isTeacher && savedStatus) {
-      // 1. Agar avval KELGAN yoki KECHIKKAN bo'lsa - o'zgartirib bo'lmaydi
-      if (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN') {
-        error("Davomat saqlangan! O'qituvchi ushbu talabaning holatini qayta o'zgartira olmaydi.");
-        return;
-      }
-
-      // 2. Agar avval KELMAGAN bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
-      if (savedStatus === 'KELMAGAN' && status === 'KELGAN') {
-        error('Kelmagan talabani faqat "Kechikkan" deb o\'zgartirish mumkin!');
-        return;
-      }
-    }
-
     setStudentStatuses((prev) => ({
       ...prev,
       [studentId]: status,
@@ -155,11 +138,6 @@ export const AttendanceTake: React.FC = () => {
   const handleSave = () => {
     if (!selectedGroupId) {
       error('Guruhni tanlang');
-      return;
-    }
-
-    if (hasAnySavedAttendance && !hasPendingAttendanceUpdates) {
-      error("Ushbu sana uchun davomat allaqachon saqlangan va o'zgarishlar yo'q!");
       return;
     }
 
@@ -219,15 +197,12 @@ export const AttendanceTake: React.FC = () => {
             {groupDetail?.name || 'Talabalar ro\'yxati'}
           </h3>
           <Button
-            icon={hasAnySavedAttendance && !hasPendingAttendanceUpdates ? <Lock size={16} /> : <Save size={16} />}
+            icon={<Save size={16} />}
             isLoading={bulkMutation.isPending}
             onClick={handleSave}
-            disabled={!selectedGroupId || isGroupLoading || (hasAnySavedAttendance && !hasPendingAttendanceUpdates)}
-            variant={hasAnySavedAttendance && hasPendingAttendanceUpdates ? 'primary' : (hasAnySavedAttendance ? 'outline' : 'primary')}
+            disabled={!selectedGroupId || isGroupLoading}
           >
-            {hasAnySavedAttendance
-              ? (hasPendingAttendanceUpdates ? 'KECHIKKANLARNI SAQLASH' : 'DAVOMAT SAQLANGAN')
-              : 'SAQLASH'}
+            {hasAnySavedAttendance ? 'DAVOMATNI YANGILASH' : 'DAVOMATNI SAQLASH'}
           </Button>
         </div>
 
@@ -240,16 +215,15 @@ export const AttendanceTake: React.FC = () => {
               gap: '10px',
               padding: '12px 16px',
               borderRadius: '10px',
-              backgroundColor: 'rgba(59, 130, 246, 0.08)',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
               fontSize: '13px',
               color: 'var(--text)',
               marginBottom: '16px',
             }}
           >
-            <Lock size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
             <div>
-              <strong>Ushbu sana uchun davomat saqlangan.</strong> Qoidaga ko'ra uni qayta o'zgartirib bo'lmaydi. Faqat kelmagan talaba darsga yetib kelsa, uni <strong>"Kechikkan"</strong> deb belgilashingiz mumkin (bir marta).
+              <strong>Ushbu sana uchun davomat oldin saqlangan.</strong> Kerak bo'lsa o'quvchilar holatini o'zgartirib, <strong>"DAVOMATNI YANGILASH"</strong> tugmasini bosishingiz mumkin.
             </div>
           </div>
         )}
@@ -276,41 +250,21 @@ export const AttendanceTake: React.FC = () => {
                   const student = sg.student;
                   if (!student) return null;
                   const currentStatus = studentStatuses[student.id] || 'KELGAN';
-                  const savedStatus = savedAttendancesMap[student.id];
-
-                  const isTeacher = user?.role === 'TEACHER';
-                  // 1. Agar teacher bo'lsa va avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - qulflangan
-                  const isLocked = isTeacher && (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN');
-                  // 2. Agar teacher bo'lsa va avval KELMAGAN deb saqlangan bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
-                  const isKelmaganSaved = isTeacher && savedStatus === 'KELMAGAN';
 
                   return (
                     <tr key={student.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{idx + 1}</td>
                       <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: 600 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{student.firstName} {student.lastName}</span>
-                          {isLocked && (
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                              <Lock size={12} />
-                            </span>
-                          )}
-                        </div>
-                        {isKelmaganSaved && (
-                          <div style={{ fontSize: '11px', color: currentStatus === 'KECHIKKAN' ? '#ca8a04' : '#ef4444', fontWeight: 500, marginTop: '2px' }}>
-                            {currentStatus === 'KECHIKKAN' ? '✓ Kechikkan deb belgilandi' : '⚠️ Kelmagan (kelsa "Kechikkan" qiling)'}
-                          </div>
-                        )}
+                        <span>{student.firstName} {student.lastName}</span>
                       </td>
                       <td style={{ padding: '14px 16px', fontSize: '13px' }}>{student.phone}</td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: '16px', alignItems: 'center' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked || isKelmaganSaved ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400, opacity: isLocked || isKelmaganSaved ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KELGAN"
-                              disabled={isLocked || isKelmaganSaved}
                               checked={currentStatus === 'KELGAN'}
                               onChange={() => handleStatusChange(student.id, 'KELGAN')}
                               style={{ accentColor: '#2b7fff' }}
@@ -318,12 +272,11 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="success">KELGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400, opacity: isLocked ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KELMAGAN"
-                              disabled={isLocked}
                               checked={currentStatus === 'KELMAGAN'}
                               onChange={() => handleStatusChange(student.id, 'KELMAGAN')}
                               style={{ accentColor: '#dc2626' }}
@@ -331,12 +284,11 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="danger">KELMAGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400, opacity: isLocked ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
                               value="KECHIKKAN"
-                              disabled={isLocked}
                               checked={currentStatus === 'KECHIKKAN'}
                               onChange={() => handleStatusChange(student.id, 'KECHIKKAN')}
                               style={{ accentColor: '#ca8a04' }}
