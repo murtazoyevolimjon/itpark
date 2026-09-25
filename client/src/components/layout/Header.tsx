@@ -80,7 +80,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <div className={styles.avatar}>{getInitials(user?.fullName)}</div>
             <div className={styles.userInfo}>
               <span className={styles.userName}>{user?.fullName || 'Foydalanuvchi'}</span>
-              <span className={styles.userRole}>{user?.role || 'OWNER'}</span>
+              <span className={styles.userRole}>
+                {user?.role === 'TEACHER' ? "O'QITUVCHI" : (user?.role || 'OWNER')}
+              </span>
             </div>
             <ChevronDown size={14} color="var(--text-muted)" />
           </div>

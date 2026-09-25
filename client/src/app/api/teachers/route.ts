@@ -38,12 +38,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    const formattedData = (data || []).map((item: any) => ({
-      ...item,
-      _count: {
-        groups: item.groups ? item.groups[0]?.count || 0 : 0,
-      },
-    }));
+    const formattedData = (data || []).map((item: any) => {
+      const sanitized = { ...item };
+      delete sanitized.password;
+      return {
+        ...sanitized,
+        _count: {
+          groups: item.groups ? item.groups[0]?.count || 0 : 0,
+        },
+      };
+    });
 
     return NextResponse.json({
       data: formattedData,
@@ -64,25 +68,74 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { firstName, lastName, phone, passportSeries, salaryType, salaryValue, status } = body;
+    const { firstName, lastName, phone, passportSeries, salaryType, salaryValue, status, login, password } = body;
 
     const supabase = createServerSupabaseClient();
+
+    // Check login uniqueness if provided
+    let trimmedLogin = (login || '').trim();
+    let hashedPassword: string | null = null;
+
+    if (trimmedLogin) {
+      // Check in teachers table
+      const { data: existingTeacher } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('login', trimmedLogin)
+        .maybeSingle();
+
+      if (existingTeacher) {
+        return NextResponse.json(
+          { message: 'Bu login boshqa o\'qituvchi tomonidan band qilingan' },
+          { status: 400 }
+        );
+      }
+
+      // Check in users table
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', trimmedLogin)
+        .maybeSingle();
+
+      if (existingUser) {
+        return NextResponse.json(
+          { message: 'Bu login tizimda allaqachon mavjud' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (password && password.trim()) {
+      const bcrypt = await import('bcryptjs');
+      hashedPassword = await bcrypt.default.hash(password.trim(), 10);
+    }
+
     const id = crypto.randomUUID();
+
+    const insertPayload: any = {
+      id,
+      firstName,
+      lastName,
+      phone,
+      passportSeries: passportSeries || null,
+      salaryType: salaryType || 'FIXED',
+      salaryValue: Number(salaryValue) || 0,
+      status: status || 'FAOL',
+      centerId: authUser.centerId,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (trimmedLogin) {
+      insertPayload.login = trimmedLogin;
+    }
+    if (hashedPassword) {
+      insertPayload.password = hashedPassword;
+    }
 
     const { data, error } = await supabase
       .from('teachers')
-      .insert({
-        id,
-        firstName,
-        lastName,
-        phone,
-        passportSeries: passportSeries || null,
-        salaryType: salaryType || 'FIXED',
-        salaryValue: Number(salaryValue) || 0,
-        status: status || 'FAOL',
-        centerId: authUser.centerId,
-        updatedAt: new Date().toISOString(),
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
@@ -90,7 +143,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    const result = { ...data };
+    delete result.password;
+
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

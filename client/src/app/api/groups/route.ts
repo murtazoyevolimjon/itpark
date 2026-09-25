@@ -23,6 +23,11 @@ export async function GET(req: NextRequest) {
       .select('*, course:courses(*), teacher:teachers(*), room:rooms(*), studentGroups:student_groups(count)', { count: 'exact' })
       .eq('centerId', authUser.centerId);
 
+    // If teacher, only return their own groups!
+    if (authUser.role === 'TEACHER') {
+      query = query.eq('teacherId', authUser.sub);
+    }
+
     if (search) {
       query = query.ilike('name', `%${search}%`);
     }
@@ -61,6 +66,10 @@ export async function POST(req: NextRequest) {
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+
+    if (authUser.role === 'TEACHER') {
+      return NextResponse.json({ message: "O'qituvchilar guruh yarata olmaydi" }, { status: 403 });
     }
 
     const body = await req.json();

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -29,11 +29,17 @@ export const Teachers: React.FC = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [deleteTeacherId, setDeleteTeacherId] = useState<string | null>(null);
 
+  // Password reset modal state
+  const [passwordModalTeacher, setPasswordModalTeacher] = useState<Teacher | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     phone: '',
     passportSeries: '',
+    login: '',
+    password: '',
     salaryType: 'FIXED' as 'FIXED' | 'PERCENT',
     salaryValue: '',
     status: 'FAOL',
@@ -78,6 +84,19 @@ export const Teachers: React.FC = () => {
     },
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: ({ id, pass }: { id: string; pass: string }) =>
+      teachersApi.update(id, { password: pass }),
+    onSuccess: () => {
+      success('O\'qituvchi paroli muvaffaqiyatli yangilandi!');
+      setPasswordModalTeacher(null);
+      setNewPassword('');
+    },
+    onError: (err: any) => {
+      error(err.response?.data?.message || 'Parolni yangilashda xatolik');
+    },
+  });
+
   const handleOpenModal = (teacher?: Teacher) => {
     if (teacher) {
       setSelectedTeacher(teacher);
@@ -86,6 +105,8 @@ export const Teachers: React.FC = () => {
         lastName: teacher.lastName,
         phone: teacher.phone,
         passportSeries: teacher.passportSeries || '',
+        login: teacher.login || '',
+        password: '',
         salaryType: teacher.salaryType,
         salaryValue: teacher.salaryValue.toString(),
         status: teacher.status,
@@ -97,6 +118,8 @@ export const Teachers: React.FC = () => {
         lastName: '',
         phone: '',
         passportSeries: '',
+        login: '',
+        password: '',
         salaryType: 'FIXED',
         salaryValue: '',
         status: 'FAOL',
@@ -116,10 +139,32 @@ export const Teachers: React.FC = () => {
       error('Barcha majburiy maydonlarni to\'ldiring');
       return;
     }
-    saveMutation.mutate({
+    const payload: any = {
       ...formData,
       phone: unmaskPhone(formData.phone),
       salaryValue: Number(formData.salaryValue),
+    };
+    if (formData.login) {
+      payload.login = formData.login.trim();
+    }
+    if (formData.password) {
+      payload.password = formData.password.trim();
+    } else {
+      delete payload.password;
+    }
+
+    saveMutation.mutate(payload);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordModalTeacher || !newPassword.trim()) {
+      error('Yangi parolni kiriting');
+      return;
+    }
+    passwordMutation.mutate({
+      id: passwordModalTeacher.id,
+      pass: newPassword.trim(),
     });
   };
 
@@ -133,6 +178,16 @@ export const Teachers: React.FC = () => {
           {row.firstName} {row.lastName}
         </span>
       ),
+    },
+    {
+      key: 'login',
+      header: 'LOGIN',
+      render: (row) =>
+        row.login ? (
+          <Badge variant="primary">@{row.login}</Badge>
+        ) : (
+          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>-</span>
+        ),
     },
     {
       key: 'phone',
@@ -169,6 +224,7 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
+            title="Tahrirlash"
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
@@ -178,7 +234,21 @@ export const Teachers: React.FC = () => {
           </Button>
           <Button
             size="sm"
+            variant="outline"
+            title="Parolni yangilash"
+            style={{ color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPasswordModalTeacher(row);
+              setNewPassword('');
+            }}
+          >
+            <Key size={14} />
+          </Button>
+          <Button
+            size="sm"
             variant="danger"
+            title="O'chirish"
             onClick={(e) => {
               e.stopPropagation();
               setDeleteTeacherId(row.id);
@@ -351,12 +421,76 @@ export const Teachers: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, salaryValue: e.target.value })}
           />
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Input
+              label="Login (tizimga kirish uchun)"
+              placeholder="anvar_rustamov"
+              value={formData.login}
+              onChange={(e) => setFormData({ ...formData, login: e.target.value })}
+            />
+
+            <Input
+              label={selectedTeacher ? "Yangi parol (agar o'zgartirilsa)" : "Boshlang'ich parol"}
+              type="password"
+              placeholder={selectedTeacher ? "O'zgartirish shart emas" : "Parolni kiriting"}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
               Bekor qilish
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
               Saqlash
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={!!passwordModalTeacher}
+        onClose={() => {
+          setPasswordModalTeacher(null);
+          setNewPassword('');
+        }}
+        title="O'qituvchi parolini yangilash"
+      >
+        <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--text)' }}>
+              {passwordModalTeacher?.firstName} {passwordModalTeacher?.lastName}
+            </strong>{' '}
+            uchun yangi parol o'rnating. O'qituvchi logini:{' '}
+            <strong style={{ color: 'var(--primary)' }}>
+              {passwordModalTeacher?.login || passwordModalTeacher?.phone || '-'}
+            </strong>
+          </p>
+
+          <Input
+            label="Yangi parol"
+            type="password"
+            required
+            placeholder="Yangi parolni kiriting (masalan: 123456)"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setPasswordModalTeacher(null);
+                setNewPassword('');
+              }}
+            >
+              Bekor qilish
+            </Button>
+            <Button type="submit" isLoading={passwordMutation.isPending}>
+              Parolni saqlash
             </Button>
           </div>
         </form>

@@ -40,6 +40,65 @@ export async function POST(req: NextRequest) {
     }
 
     if (!userRecord) {
+      // 2. Check teachers table if login matches teacher login or phone
+      let teacherRecord: any = null;
+      try {
+        const { data, error: tErr } = await supabase
+          .from('teachers')
+          .select('id, firstName, lastName, phone, login, password, centerId, status')
+          .or(`login.eq.${loginIdentifier},phone.eq.${loginIdentifier}`)
+          .maybeSingle();
+
+        if (!tErr) {
+          teacherRecord = data;
+        }
+      } catch (err) {
+        console.warn('[LOGIN] Teacher lookup error:', err);
+      }
+
+      if (teacherRecord && teacherRecord.password) {
+        if (teacherRecord.status === 'NOFAOL') {
+          return NextResponse.json(
+            { message: "Sizning akkauntingiz nofaol holatda. Administratorga murojaat qiling" },
+            { status: 403 }
+          );
+        }
+
+        const isMatch = await bcrypt.compare(password, teacherRecord.password);
+        if (!isMatch) {
+          return NextResponse.json(
+            { message: "Login yoki parol noto'g'ri" },
+            { status: 401 }
+          );
+        }
+
+        const { data: centerRecord } = await supabase
+          .from('centers')
+          .select('name')
+          .eq('id', teacherRecord.centerId)
+          .maybeSingle();
+
+        const teacherLogin = teacherRecord.login || teacherRecord.phone;
+
+        const tokens = signToken({
+          sub: teacherRecord.id,
+          email: teacherLogin,
+          role: 'TEACHER',
+          centerId: teacherRecord.centerId,
+        });
+
+        const user = {
+          id: teacherRecord.id,
+          fullName: `${teacherRecord.firstName} ${teacherRecord.lastName}`.trim(),
+          email: teacherLogin,
+          role: 'TEACHER' as const,
+          centerId: teacherRecord.centerId,
+          centerName: centerRecord?.name || 'IT-Park Academy',
+        };
+
+        return NextResponse.json({ tokens, user });
+      }
+
       return NextResponse.json(
         { message: "Login yoki parol noto'g'ri" },
         { status: 401 }

@@ -11,6 +11,33 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
+    if (authUser.role === 'TEACHER') {
+      const { data: teacherRecord, error: tErr } = await supabase
+        .from('teachers')
+        .select('id, firstName, lastName, phone, centerId, status')
+        .eq('id', authUser.sub)
+        .maybeSingle();
+
+      if (tErr || !teacherRecord) {
+        return NextResponse.json({ message: "O'qituvchi topilmadi" }, { status: 404 });
+      }
+
+      const { data: centerRecord } = await supabase
+        .from('centers')
+        .select('id, name, email, phone')
+        .eq('id', teacherRecord.centerId)
+        .maybeSingle();
+
+      return NextResponse.json({
+        id: teacherRecord.id,
+        fullName: `${teacherRecord.firstName} ${teacherRecord.lastName}`.trim(),
+        email: authUser.email,
+        role: 'TEACHER',
+        centerId: teacherRecord.centerId,
+        center: centerRecord || { name: 'IT-Park Academy' },
+      });
+    }
+
     const { data: userRecord, error } = await supabase
       .from('users')
       .select('id, fullName, email, role, centerId')

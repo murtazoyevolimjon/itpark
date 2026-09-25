@@ -1362,7 +1362,7 @@ export const GroupDetail: React.FC = () => {
                             alignItems: 'center',
                             gap: '6px',
                             transition: 'all 0.2s',
-                            opacity: isLocked && savedStatus !== 'KELMAGAN' ? 0.35 : 1,
+                            opacity: isLocked ? 0.35 : 1,
                             backgroundColor: currentStatus === 'KELMAGAN' ? '#dc2626' : 'transparent',
                             color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text-muted)',
                             border: currentStatus === 'KELMAGAN' ? '1px solid #dc2626' : '1px solid var(--border)',

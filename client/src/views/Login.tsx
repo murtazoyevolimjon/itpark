@@ -32,9 +32,13 @@ export const Login: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await loginWithCredentials(login, password);
+      const loggedUser = await loginWithCredentials(login, password);
       success(t('loginTitle'));
-      router.push('/dashboard');
+      if (loggedUser?.role === 'TEACHER') {
+        router.push('/teacher');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       if (!err.response) {
         error('Serverga ulanib bo\'lmadi. Backend ishga tushganini va bazani tekshiring.');

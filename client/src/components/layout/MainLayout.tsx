@@ -5,7 +5,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { useAuth } from '../../hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import styles from './MainLayout.module.css';
 
@@ -15,14 +15,25 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname() || '/';
 
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
+      return;
     }
-  }, [isLoading, isAuthenticated, router]);
+
+    if (!isLoading && isAuthenticated && user) {
+      if (user.role === 'TEACHER') {
+        // Teacher is strictly restricted to /teacher and /profile
+        if (!pathname.startsWith('/teacher') && pathname !== '/profile') {
+          router.replace('/teacher');
+        }
+      }
+    }
+  }, [isLoading, isAuthenticated, user, pathname, router]);
 
   if (isLoading) {
     return (

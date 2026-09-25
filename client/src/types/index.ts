@@ -2,7 +2,7 @@ export interface User {
   id: string;
   fullName: string;
   email: string;
-  role: 'OWNER' | 'ADMIN' | 'MANAGER';
+  role: 'OWNER' | 'ADMIN' | 'MANAGER' | 'TEACHER';
   centerId: string;
   centerName?: string;
 }
@@ -54,6 +54,7 @@ export interface Teacher {
   lastName: string;
   phone: string;
   passportSeries?: string;
+  login?: string;
   salaryType: 'FIXED' | 'PERCENT';
   salaryValue: number;
   status: 'FAOL' | 'NOFAOL';

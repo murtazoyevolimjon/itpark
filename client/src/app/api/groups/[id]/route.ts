@@ -32,6 +32,11 @@ export async function GET(
       return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
     }
 
+    // Teacher can only view their own group
+    if (authUser.role === 'TEACHER' && group.teacherId !== authUser.sub) {
+      return NextResponse.json({ message: "Siz faqat o'zingizning guruhingizni ko'ra olasiz" }, { status: 403 });
+    }
+
     // Also fetch all payments of the students enrolled in this group
     const studentIds = (group.studentGroups || [])
       .map((sg: any) => sg.studentId || sg.student?.id)
@@ -75,6 +80,10 @@ export async function PATCH(
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
 
+    if (authUser.role === 'TEACHER') {
+      return NextResponse.json({ message: "O'qituvchilar guruhni tahrirlay olmaydi" }, { status: 403 });
+    }
+
     const body = await req.json();
     const supabase = createServerSupabaseClient();
 
@@ -115,6 +124,10 @@ export async function DELETE(
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+
+    if (authUser.role === 'TEACHER') {
+      return NextResponse.json({ message: "O'qituvchilar guruhni o'chira olmaydi" }, { status: 403 });
     }
 
     const supabase = createServerSupabaseClient();

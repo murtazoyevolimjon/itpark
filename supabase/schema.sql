@@ -4,7 +4,7 @@
 
 -- 1. ENUM TURLARI
 DO $$ BEGIN
-    CREATE TYPE "Role" AS ENUM ('OWNER', 'ADMIN', 'MANAGER');
+    CREATE TYPE "Role" AS ENUM ('OWNER', 'ADMIN', 'MANAGER', 'TEACHER');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
@@ -102,6 +102,8 @@ CREATE TABLE IF NOT EXISTS "teachers" (
     "lastName" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "passportSeries" TEXT,
+    "login" TEXT UNIQUE,
+    "password" TEXT,
     "salaryType" "TeacherSalaryType" NOT NULL DEFAULT 'FIXED',
     "salaryValue" DOUBLE PRECISION NOT NULL,
     "status" "ActiveStatus" NOT NULL DEFAULT 'FAOL',

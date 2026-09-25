@@ -14,11 +14,13 @@ import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { AttendanceStatus } from '../types';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+import { useAuth } from '../hooks/useAuth';
 
 export const AttendanceTake: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { user } = useAuth();
 
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(
@@ -73,6 +75,9 @@ export const AttendanceTake: React.FC = () => {
 
   // Saqlash uchun o'zgarishlar borligini tekshirish
   const hasPendingAttendanceUpdates = useMemo(() => {
+    // Admin yoki Owner doimo xohlagan paytda o'zgartira oladi
+    if (user?.role !== 'TEACHER') return true;
+
     if (!hasAnySavedAttendance) return true;
     if (!groupDetail?.studentGroups) return false;
     return groupDetail.studentGroups.some((sg: any) => {
@@ -80,11 +85,11 @@ export const AttendanceTake: React.FC = () => {
       if (!stId) return false;
       const saved = savedAttendancesMap[stId];
       const current = studentStatuses[stId];
-      if (!saved) return true; // yangi talaba
-      if (saved === 'KELMAGAN' && current === 'KECHIKKAN') return true; // kechikkan qilib o'zgartirilgan
+      if (!saved) return true;
+      if (saved === 'KELMAGAN' && current === 'KECHIKKAN') return true;
       return false;
     });
-  }, [hasAnySavedAttendance, groupDetail?.studentGroups, savedAttendancesMap, studentStatuses]);
+  }, [user, hasAnySavedAttendance, groupDetail?.studentGroups, savedAttendancesMap, studentStatuses]);
 
   // Sync student statuses with default 'KELGAN' OR existing saved statuses
   useEffect(() => {
@@ -124,12 +129,13 @@ export const AttendanceTake: React.FC = () => {
   });
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+    const isTeacher = user?.role === 'TEACHER';
     const savedStatus = savedAttendancesMap[studentId];
 
-    if (savedStatus) {
+    if (isTeacher && savedStatus) {
       // 1. Agar avval KELGAN yoki KECHIKKAN bo'lsa - o'zgartirib bo'lmaydi
       if (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN') {
-        error("Davomat saqlangan! Ushbu talabaning holatini qayta o'zgartirib bo'lmaydi.");
+        error("Davomat saqlangan! O'qituvchi ushbu talabaning holatini qayta o'zgartira olmaydi.");
         return;
       }
 
@@ -272,10 +278,11 @@ export const AttendanceTake: React.FC = () => {
                   const currentStatus = studentStatuses[student.id] || 'KELGAN';
                   const savedStatus = savedAttendancesMap[student.id];
 
-                  // 1. Agar avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - qulflangan
-                  const isLocked = savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN';
-                  // 2. Agar avval KELMAGAN deb saqlangan bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
-                  const isKelmaganSaved = savedStatus === 'KELMAGAN';
+                  const isTeacher = user?.role === 'TEACHER';
+                  // 1. Agar teacher bo'lsa va avval KELGAN yoki KECHIKKAN deb saqlangan bo'lsa - qulflangan
+                  const isLocked = isTeacher && (savedStatus === 'KELGAN' || savedStatus === 'KECHIKKAN');
+                  // 2. Agar teacher bo'lsa va avval KELMAGAN deb saqlangan bo'lsa - faqat KECHIKKAN deb o'zgartirish mumkin
+                  const isKelmaganSaved = isTeacher && savedStatus === 'KELMAGAN';
 
                   return (
                     <tr key={student.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -298,7 +305,7 @@ export const AttendanceTake: React.FC = () => {
                       <td style={{ padding: '14px 16px', fontSize: '13px' }}>{student.phone}</td>
                       <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: '16px', alignItems: 'center' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked || isKelmaganSaved ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400, opacity: (isLocked && savedStatus !== 'KELGAN') || isKelmaganSaved ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked || isKelmaganSaved ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400, opacity: isLocked || isKelmaganSaved ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
@@ -311,7 +318,7 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="success">KELGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400, opacity: isLocked && savedStatus !== 'KELMAGAN' ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400, opacity: isLocked ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}
@@ -324,7 +331,7 @@ export const AttendanceTake: React.FC = () => {
                             <Badge variant="danger">KELMAGAN</Badge>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400, opacity: isLocked && savedStatus !== 'KECHIKKAN' ? 0.35 : 1 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: isLocked ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400, opacity: isLocked ? 0.35 : 1 }}>
                             <input
                               type="radio"
                               name={`att-${student.id}`}

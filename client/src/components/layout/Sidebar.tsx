@@ -36,7 +36,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     pathname.startsWith('/finance'),
   );
 
-  const mainNavItems = [
+  const isTeacher = user?.role === 'TEACHER';
+
+  const teacherNavItems = [
+    { path: '/teacher', label: 'Mening guruhlarim', icon: Users },
+    { path: '/teacher/attendance', label: 'Davomat olish', icon: CalendarCheck },
+  ];
+
+  const adminNavItems = [
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/courses', label: t('courses'), icon: BookOpen },
     { path: '/groups', label: t('groups'), icon: Users },
@@ -46,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/rooms', label: t('rooms'), icon: DoorOpen },
     { path: '/employees', label: t('employees'), icon: Briefcase },
   ];
+
+  const mainNavItems = isTeacher ? teacherNavItems : adminNavItems;
 
   const isItPark = Boolean(
     !user?.centerName ||
@@ -138,50 +147,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             })}
           </div>
 
-          {/* Personal & Finance Section */}
-          <div className={styles.sectionGroup}>
-            <div className={styles.sectionTitle}>{t('personalSection')}</div>
+          {/* Personal & Finance Section (Admin/Owner only) */}
+          {!isTeacher && (
+            <div className={styles.sectionGroup}>
+              <div className={styles.sectionTitle}>{t('personalSection')}</div>
 
-            {/* Finance Accordion */}
-            <div
-              className={`${styles.navItem} ${
-                pathname.startsWith('/finance') ? styles.navItemActive : ''
-              }`}
-              onClick={() => setIsFinanceOpen(!isFinanceOpen)}
-            >
-              <div className={styles.navItemLeft}>
-                <DollarSign size={18} />
-                <span>{t('finance')}</span>
+              {/* Finance Accordion */}
+              <div
+                className={`${styles.navItem} ${
+                  pathname.startsWith('/finance') ? styles.navItemActive : ''
+                }`}
+                onClick={() => setIsFinanceOpen(!isFinanceOpen)}
+              >
+                <div className={styles.navItemLeft}>
+                  <DollarSign size={18} />
+                  <span>{t('finance')}</span>
+                </div>
+                {isFinanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
               </div>
-              {isFinanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+
+              {isFinanceOpen && (
+                <div className={styles.dropdownSubMenu}>
+                  <Link
+                    href="/finance"
+                    className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
+                    onClick={onClose}
+                  >
+                    • {t('financeSummary')}
+                  </Link>
+                  <Link
+                    href="/finance/expenses"
+                    className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
+                    onClick={onClose}
+                  >
+                    • {t('financeExpenses')}
+                  </Link>
+                  <Link
+                    href="/finance/payments"
+                    className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
+                    onClick={onClose}
+                  >
+                    • {t('financePayments')}
+                  </Link>
+                </div>
+              )}
             </div>
-
-            {isFinanceOpen && (
-              <div className={styles.dropdownSubMenu}>
-                <Link
-                  href="/finance"
-                  className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
-                  onClick={onClose}
-                >
-                  • {t('financeSummary')}
-                </Link>
-                <Link
-                  href="/finance/expenses"
-                  className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
-                  onClick={onClose}
-                >
-                  • {t('financeExpenses')}
-                </Link>
-                <Link
-                  href="/finance/payments"
-                  className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
-                  onClick={onClose}
-                >
-                  • {t('financePayments')}
-                </Link>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </aside>
     </>

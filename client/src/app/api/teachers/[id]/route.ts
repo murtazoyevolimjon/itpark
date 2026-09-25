@@ -24,7 +24,10 @@ export async function GET(
       return NextResponse.json({ message: 'O\'qituvchi topilmadi' }, { status: 404 });
     }
 
-    return NextResponse.json(data);
+    const sanitized = { ...data };
+    delete sanitized.password;
+
+    return NextResponse.json(sanitized);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
@@ -52,6 +55,49 @@ export async function PATCH(
     if (body.salaryValue !== undefined) updatePayload.salaryValue = Number(body.salaryValue);
     if (body.status !== undefined) updatePayload.status = body.status;
 
+    if (body.login !== undefined) {
+      const trimmedLogin = (body.login || '').trim();
+      if (trimmedLogin) {
+        // Check uniqueness in teachers
+        const { data: existingTeacher } = await supabase
+          .from('teachers')
+          .select('id')
+          .eq('login', trimmedLogin)
+          .neq('id', params.id)
+          .maybeSingle();
+
+        if (existingTeacher) {
+          return NextResponse.json(
+            { message: 'Bu login boshqa o\'qituvchi tomonidan band qilingan' },
+            { status: 400 }
+          );
+        }
+
+        // Check uniqueness in users
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', trimmedLogin)
+          .maybeSingle();
+
+        if (existingUser) {
+          return NextResponse.json(
+            { message: 'Bu login tizimda allaqachon mavjud' },
+            { status: 400 }
+          );
+        }
+
+        updatePayload.login = trimmedLogin;
+      } else {
+        updatePayload.login = null;
+      }
+    }
+
+    if (body.password !== undefined && body.password.trim()) {
+      const bcrypt = await import('bcryptjs');
+      updatePayload.password = await bcrypt.default.hash(body.password.trim(), 10);
+    }
+
     const { data, error } = await supabase
       .from('teachers')
       .update(updatePayload)
@@ -64,7 +110,10 @@ export async function PATCH(
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    const result = { ...data };
+    delete result.password;
+
+    return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

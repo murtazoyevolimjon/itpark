@@ -10,7 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (token: string, refreshToken: string, user: User) => void;
-  loginWithCredentials: (email: string, pass: string) => Promise<void>;
+  loginWithCredentials: (email: string, pass: string) => Promise<User>;
   registerCenter: (dto: RegisterCenterDto) => Promise<void>;
   logout: () => void;
   refetchUser: () => Promise<void>;
@@ -85,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithCredentials = async (loginOrEmail: string, pass: string) => {
     const res = await authApi.login({ login: loginOrEmail, email: loginOrEmail, password: pass });
     login(res.tokens.accessToken, res.tokens.refreshToken, res.user);
+    return res.user;
   };
 
   const registerCenter = async (dto: RegisterCenterDto) => {
