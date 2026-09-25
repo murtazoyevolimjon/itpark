@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -32,6 +32,10 @@ export const Teachers: React.FC = () => {
   // Password reset modal state
   const [passwordModalTeacher, setPasswordModalTeacher] = useState<Teacher | null>(null);
   const [newPassword, setNewPassword] = useState('');
+
+  // Eye toggle states
+  const [showFormPassword, setShowFormPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -131,6 +135,7 @@ export const Teachers: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedTeacher(null);
+    setShowFormPassword(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -429,13 +434,54 @@ export const Teachers: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, login: e.target.value })}
             />
 
-            <Input
-              label={selectedTeacher ? "Yangi parol (agar o'zgartirilsa)" : "Boshlang'ich parol"}
-              type="password"
-              placeholder={selectedTeacher ? "O'zgartirish shart emas" : "Parolni kiriting"}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+                {selectedTeacher ? "Yangi parol (agar o'zgartirilsa)" : "Boshlang'ich parol"}
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showFormPassword ? 'text' : 'password'}
+                  placeholder={selectedTeacher ? "O'zgartirish shart emas" : "Parolni kiriting"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 40px 10px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    fontFamily: 'inherit',
+                    transition: 'border-color 0.2s',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowFormPassword((v) => !v)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    transition: 'color 0.15s',
+                  }}
+                  title={showFormPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                >
+                  {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
@@ -455,6 +501,7 @@ export const Teachers: React.FC = () => {
         onClose={() => {
           setPasswordModalTeacher(null);
           setNewPassword('');
+          setShowResetPassword(false);
         }}
         title="O'qituvchi parolini yangilash"
       >
@@ -469,14 +516,55 @@ export const Teachers: React.FC = () => {
             </strong>
           </p>
 
-          <Input
-            label="Yangi parol"
-            type="password"
-            required
-            placeholder="Yangi parolni kiriting (masalan: 123456)"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Yangi parol <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showResetPassword ? 'text' : 'password'}
+                required
+                placeholder="Yangi parolni kiriting (masalan: 123456)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 40px 10px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--text)',
+                  fontSize: '14px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowResetPassword((v) => !v)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  transition: 'color 0.15s',
+                }}
+                title={showResetPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+              >
+                {showResetPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button

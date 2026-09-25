@@ -79,4 +79,8 @@ export const superadminApi = {
     const res = await superadminClient.post('/impersonate', { centerId });
     return res.data;
   },
+  getDbStats: async () => {
+    const res = await superadminClient.get('/db-stats');
+    return res.data;
+  },
 };

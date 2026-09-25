@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -27,6 +27,11 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  HardDrive,
+  Database,
+  RefreshCw,
+  Activity,
+  BarChart3,
 } from 'lucide-react';
 import { superadminApi } from '../api/superadmin.api';
 import { useSuperAdmin } from '../hooks/useSuperAdmin';
@@ -73,11 +78,39 @@ export const SuperAdminDashboard: React.FC = () => {
     password: '',
   });
 
+  // DB Stats refresh counter
+  const [dbRefreshTick, setDbRefreshTick] = useState(0);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Query: Centers
   const { data: centersData, isLoading, refetch } = useQuery({
     queryKey: ['superadmin', 'centers'],
     queryFn: superadminApi.getCenters,
   });
+
+  // Query: DB Stats
+  const { data: dbStats, refetch: refetchDbStats } = useQuery({
+    queryKey: ['superadmin', 'db-stats', dbRefreshTick],
+    queryFn: superadminApi.getDbStats,
+    staleTime: 55_000,
+  });
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDbRefreshTick((prev) => prev + 1);
+      setLastRefreshed(new Date());
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetchDbStats();
+    setLastRefreshed(new Date());
+    setTimeout(() => setIsRefreshing(false), 600);
+  }, [refetchDbStats]);
 
   const centers = centersData?.centers || [];
 
@@ -320,6 +353,179 @@ export const SuperAdminDashboard: React.FC = () => {
               <div className={styles.statValue}>{stats.totalTeachers}</div>
               <div className={styles.statLabel}>Jami O&apos;qituvchilar</div>
             </div>
+          </div>
+        </div>
+
+        {/* DATABASE STORAGE MONITOR */}
+        <div className={styles.storagePanel}>
+          {/* Panel Header */}
+          <div className={styles.storagePanelHeader}>
+            <div className={styles.storagePanelTitle}>
+              <div className={styles.storageIconWrap}>
+                <HardDrive size={20} />
+              </div>
+              <div>
+                <div className={styles.storageTitleText}>Supabase Database Monitoring</div>
+                <div className={styles.storageTitleSub}>
+                  Yangilandi: {lastRefreshed.toLocaleTimeString('uz-UZ')}
+                  {' · '}
+                  <span className={styles.autoRefreshBadge}>
+                    <Activity size={11} />
+                    Har 60 soniyada yangilanadi
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              className={`${styles.refreshBtn} ${isRefreshing ? styles.refreshBtnSpin : ''}`}
+              onClick={handleManualRefresh}
+              title="Hozir yangilash"
+            >
+              <RefreshCw size={16} />
+              <span>Yangilash</span>
+            </button>
+          </div>
+
+          {/* Main Storage Row */}
+          <div className={styles.storageMainRow}>
+            {/* Big Progress Circle + Info */}
+            <div className={styles.storageCircleWrap}>
+              <div className={styles.storageCircleContainer}>
+                <svg viewBox="0 0 120 120" className={styles.storageCircleSvg}>
+                  <circle
+                    cx="60" cy="60" r="52"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.07)"
+                    strokeWidth="10"
+                  />
+                  <circle
+                    cx="60" cy="60" r="52"
+                    fill="none"
+                    stroke={
+                      (dbStats?.usagePercent || 0) > 80 ? '#ef4444' :
+                      (dbStats?.usagePercent || 0) > 60 ? '#f59e0b' : '#22c55e'
+                    }
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 52}`}
+                    strokeDashoffset={`${2 * Math.PI * 52 * (1 - (dbStats?.usagePercent || 0) / 100)}`}
+                    transform="rotate(-90 60 60)"
+                    style={{ transition: 'stroke-dashoffset 1s ease' }}
+                  />
+                </svg>
+                <div className={styles.storageCircleInner}>
+                  <div className={styles.storagePercent}>
+                    {dbStats ? `${dbStats.usagePercent}%` : '—'}
+                  </div>
+                  <div className={styles.storagePercentLabel}>ishlatilgan</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Usage Details */}
+            <div className={styles.storageDetails}>
+              <div className={styles.storageDetailCard}>
+                <div className={styles.storageDetailIcon} style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa' }}>
+                  <Database size={18} />
+                </div>
+                <div>
+                  <div className={styles.storageDetailVal}>
+                    {dbStats ? `${dbStats.usedMB.toFixed(1)} MB` : '...'}
+                  </div>
+                  <div className={styles.storageDetailKey}>Ishlatilgan hajm</div>
+                </div>
+              </div>
+
+              <div className={styles.storageDetailCard}>
+                <div className={styles.storageDetailIcon} style={{ background: 'rgba(168,85,247,0.15)', color: '#c084fc' }}>
+                  <HardDrive size={18} />
+                </div>
+                <div>
+                  <div className={styles.storageDetailVal}>
+                    {dbStats ? `${dbStats.limitMB} MB` : '500 MB'}
+                  </div>
+                  <div className={styles.storageDetailKey}>Jami limit (Free)</div>
+                </div>
+              </div>
+
+              <div className={styles.storageDetailCard}>
+                <div className={styles.storageDetailIcon} style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>
+                  <BarChart3 size={18} />
+                </div>
+                <div>
+                  <div className={styles.storageDetailVal}>
+                    {dbStats ? `${(dbStats.limitMB - dbStats.usedMB).toFixed(1)} MB` : '...'}
+                  </div>
+                  <div className={styles.storageDetailKey}>Bo'sh qolgan joy</div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className={styles.storageBarWrap}>
+                <div className={styles.storageBarLabel}>
+                  <span>0 MB</span>
+                  <span>{dbStats ? `${dbStats.usedMB.toFixed(1)} / ${dbStats.limitMB} MB` : 'yuklanmoqda...'}</span>
+                  <span>500 MB</span>
+                </div>
+                <div className={styles.storageBarTrack}>
+                  <div
+                    className={styles.storageBarFill}
+                    style={{
+                      width: `${dbStats?.usagePercent || 0}%`,
+                      background:
+                        (dbStats?.usagePercent || 0) > 80
+                          ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                          : (dbStats?.usagePercent || 0) > 60
+                          ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                          : 'linear-gradient(90deg, #22c55e, #16a34a)',
+                    }}
+                  />
+                </div>
+                {(dbStats?.usagePercent || 0) > 80 && (
+                  <div className={styles.storageWarning}>
+                    <AlertTriangle size={13} />
+                    <span>Disk joyi 80% dan oshdi! Upgrade rejasini ko&apos;rib chiqing.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Table Row Counts */}
+            {dbStats?.rowCounts && (
+              <div className={styles.storageTableCounts}>
+                <div className={styles.storageTableCountsTitle}>
+                  <BarChart3 size={14} /> Jadvallar bo&apos;yicha yozuvlar
+                </div>
+                <div className={styles.storageTableList}>
+                  {([
+                    { key: 'students', label: "O'quvchilar", color: '#60a5fa' },
+                    { key: 'attendance', label: 'Davomat', color: '#34d399' },
+                    { key: 'payments', label: "To'lovlar", color: '#a78bfa' },
+                    { key: 'groups', label: 'Guruhlar', color: '#f472b6' },
+                    { key: 'teachers', label: "O'qituvchilar", color: '#fb923c' },
+                    { key: 'users', label: 'Foydalanuvchilar', color: '#38bdf8' },
+                    { key: 'expenses', label: 'Xarajatlar', color: '#facc15' },
+                    { key: 'centers', label: 'Markazlar', color: '#4ade80' },
+                  ] as Array<{ key: string; label: string; color: string }>).map(({ key, label, color }) => {
+                    const count = dbStats.rowCounts[key] || 0;
+                    const maxCount = Math.max(...Object.values(dbStats.rowCounts as Record<string, number>), 1);
+                    const pct = Math.min((count / maxCount) * 100, 100);
+                    return (
+                      <div key={key} className={styles.storageTableRow}>
+                        <span className={styles.storageTableRowLabel}>{label}</span>
+                        <div className={styles.storageTableRowBar}>
+                          <div
+                            className={styles.storageTableRowFill}
+                            style={{ width: `${pct}%`, background: color }}
+                          />
+                        </div>
+                        <span className={styles.storageTableRowCount}>{count.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
