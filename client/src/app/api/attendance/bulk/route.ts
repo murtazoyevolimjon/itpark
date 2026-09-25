@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       // Find existing attendance record for that student, group and date
       const { data: existing } = await supabase
         .from('attendances')
-        .select('id')
+        .select('id, status, note')
         .eq('studentId', rec.studentId)
         .eq('groupId', groupId)
         .gte('date', startOfDay)
@@ -53,16 +53,40 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (existing) {
-        await supabase
-          .from('attendances')
-          .update({
-            status: rec.status,
-            note: rec.note !== undefined ? (rec.note || null) : null,
-            updatedAt: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
+        if (isTeacher) {
+          // O'qituvchi saqlangan davomatni qayta ololmaydi.
+          // Yagona ruxsat: Agar o'quvchi avval "KELMAGAN" bo'lsa, darsga kelsa uni "KECHIKKAN" deb sababini yozish mumkin.
+          if (existing.status === 'KELMAGAN' && rec.status === 'KECHIKKAN') {
+            if (!rec.note || !rec.note.trim()) {
+              return NextResponse.json(
+                { message: "Kechikib kelgan o'quvchi uchun kechikish sababini yozish majburiy!" },
+                { status: 400 }
+              );
+            }
+            await supabase
+              .from('attendances')
+              .update({
+                status: 'KECHIKKAN',
+                note: rec.note.trim(),
+                updatedAt: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          }
+          // Agar o'quvchi KELGAN yoki KECHIKKAN bo'lsa, o'qituvchi o'zgartira olmaydi
+          continue;
+        } else {
+          // Admin / Owner ixtiyoriy o'zgartira oladi
+          await supabase
+            .from('attendances')
+            .update({
+              status: rec.status,
+              note: rec.note !== undefined ? (rec.note || null) : null,
+              updatedAt: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+        }
       } else {
-        // Yangi davomat yozuvi yaratish
+        // Yangi davomat yozuvi yaratish (birinchi marta olish)
         await supabase.from('attendances').insert({
           id: crypto.randomUUID(),
           studentId: rec.studentId,

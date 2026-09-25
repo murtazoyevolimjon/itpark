@@ -10,15 +10,15 @@ import {
   XCircle,
   Clock,
   ArrowLeft,
+  Lock,
   CheckCheck,
-  MessageSquare,
-  Sparkles,
-  Users,
+  AlertCircle,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Select } from '../components/ui/Select/Select';
 import { Input } from '../components/ui/Input/Input';
+import { Badge } from '../components/ui/Badge/Badge';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -40,16 +40,15 @@ export const TeacherAttendance: React.FC = () => {
     new Date().toISOString().split('T')[0]
   );
 
-  // Form statuses state: studentId -> status
+  // Form statuses state: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
-  const [studentNotes, setStudentNotes] = useState<Record<string, string>>({});
 
-  // Note modal state
-  const [noteModalStudent, setNoteModalStudent] = useState<{
+  // Late reason modal state for changing KELMAGAN -> KECHIKKAN
+  const [lateModalStudent, setLateModalStudent] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const [tempNote, setTempNote] = useState<string>('');
+  const [lateReason, setLateReason] = useState<string>('');
 
   // Fetch only this teacher's groups
   const { data: groupsData, isLoading: isGroupsLoading } = useQuery({
@@ -104,11 +103,10 @@ export const TeacherAttendance: React.FC = () => {
 
   const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
 
-  // Initialize or sync student statuses
+  // Initialize student statuses for initial taking
   useEffect(() => {
     if (groupDetail?.studentGroups) {
       const initialStatuses: Record<string, AttendanceStatus> = {};
-      const initialNotes: Record<string, string> = {};
 
       groupDetail.studentGroups.forEach((sg: any) => {
         const student = sg.student;
@@ -116,25 +114,21 @@ export const TeacherAttendance: React.FC = () => {
           const saved = savedAttendancesMap[student.id];
           if (saved) {
             initialStatuses[student.id] = saved.status;
-            initialNotes[student.id] = saved.note || '';
           } else {
-            // Default to KELGAN for new attendance
+            // Default to KELGAN for initial attendance
             initialStatuses[student.id] = 'KELGAN';
-            initialNotes[student.id] = '';
           }
         }
       });
 
       setStudentStatuses(initialStatuses);
-      setStudentNotes(initialNotes);
     }
   }, [groupDetail, savedAttendancesMap]);
 
-  // Save Mutation
+  // Save Mutation (Initial or Late update)
   const saveMutation = useMutation({
     mutationFn: (payload: any) => attendanceApi.bulkSave(payload),
     onSuccess: () => {
-      success('Davomat muvaffaqiyatli saqlandi!');
       queryClient.invalidateQueries({
         queryKey: ['teacherExistingAttendance', selectedGroupId, attendanceDate],
       });
@@ -151,16 +145,18 @@ export const TeacherAttendance: React.FC = () => {
     },
   });
 
-  // Handle changing status
-  const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+  // Handle changing status when taking NEW attendance
+  const handleInitialStatusChange = (studentId: string, status: AttendanceStatus) => {
+    if (hasAnySavedAttendance) return;
     setStudentStatuses((prev) => ({
       ...prev,
       [studentId]: status,
     }));
   };
 
-  // Mark all as KELGAN
+  // Mark all as KELGAN (only when taking initial attendance)
   const handleMarkAllPresent = () => {
+    if (hasAnySavedAttendance) return;
     if (!groupDetail?.studentGroups) return;
 
     const allPresent: Record<string, AttendanceStatus> = {};
@@ -173,8 +169,13 @@ export const TeacherAttendance: React.FC = () => {
     success("Barcha o'quvchilar 'Kelgan' deb belgilandi");
   };
 
-  // Submit attendance
-  const handleSaveAttendance = () => {
+  // Save Initial Attendance (Can only be done ONCE)
+  const handleSaveInitialAttendance = () => {
+    if (hasAnySavedAttendance) {
+      error("Ushbu sana uchun davomat allaqachon saqlangan va qayta olib bo'lmaydi!");
+      return;
+    }
+
     if (!selectedGroupId) {
       error('Iltimos, guruhni tanlang');
       return;
@@ -189,32 +190,56 @@ export const TeacherAttendance: React.FC = () => {
     const records = students.map((sg: any) => ({
       studentId: sg.student.id,
       status: studentStatuses[sg.student.id] || 'KELGAN',
-      note: studentNotes[sg.student.id] || null,
     }));
 
-    saveMutation.mutate({
-      groupId: selectedGroupId,
-      date: attendanceDate,
-      records,
-    });
+    saveMutation.mutate(
+      {
+        groupId: selectedGroupId,
+        date: attendanceDate,
+        records,
+      },
+      {
+        onSuccess: () => {
+          success("Davomat muvaffaqiyatli saqlandi! Endi u qulflangan.");
+        },
+      }
+    );
   };
 
-  // Open note modal
-  const handleOpenNoteModal = (studentId: string, studentName: string) => {
-    setNoteModalStudent({ id: studentId, name: studentName });
-    setTempNote(studentNotes[studentId] || '');
+  // Open modal to mark an absent student as LATE
+  const handleOpenLateModal = (studentId: string, studentName: string) => {
+    setLateModalStudent({ id: studentId, name: studentName });
+    setLateReason('');
   };
 
-  // Save note
-  const handleSaveNote = () => {
-    if (!noteModalStudent) return;
-    setStudentNotes((prev) => ({
-      ...prev,
-      [noteModalStudent.id]: tempNote.trim(),
-    }));
-    setNoteModalStudent(null);
-    setTempNote('');
-    success("Izoh saqlandi");
+  // Submit LATE modification (KELMAGAN -> KECHIKKAN)
+  const handleConfirmLate = () => {
+    if (!lateModalStudent) return;
+    if (!lateReason.trim()) {
+      error("Kechikish sababini yozish majburiy!");
+      return;
+    }
+
+    saveMutation.mutate(
+      {
+        groupId: selectedGroupId,
+        date: attendanceDate,
+        records: [
+          {
+            studentId: lateModalStudent.id,
+            status: 'KECHIKKAN',
+            note: lateReason.trim(),
+          },
+        ],
+      },
+      {
+        onSuccess: () => {
+          success(`${lateModalStudent.name} 'Kechikkan' deb qayd etildi!`);
+          setLateModalStudent(null);
+          setLateReason('');
+        },
+      }
+    );
   };
 
   const groupOptions = [
@@ -232,13 +257,23 @@ export const TeacherAttendance: React.FC = () => {
     let kelgan = 0;
     let kelmagan = 0;
     let kechikkan = 0;
-    Object.values(studentStatuses).forEach((st) => {
-      if (st === 'KELGAN') kelgan++;
-      else if (st === 'KELMAGAN') kelmagan++;
-      else if (st === 'KECHIKKAN') kechikkan++;
-    });
+
+    if (hasAnySavedAttendance) {
+      Object.values(savedAttendancesMap).forEach((st) => {
+        if (st.status === 'KELGAN') kelgan++;
+        else if (st.status === 'KELMAGAN') kelmagan++;
+        else if (st.status === 'KECHIKKAN') kechikkan++;
+      });
+    } else {
+      Object.values(studentStatuses).forEach((st) => {
+        if (st === 'KELGAN') kelgan++;
+        else if (st === 'KELMAGAN') kelmagan++;
+        else if (st === 'KECHIKKAN') kechikkan++;
+      });
+    }
+
     return { kelgan, kelmagan, kechikkan, total: studentsList.length };
-  }, [studentStatuses, studentsList]);
+  }, [hasAnySavedAttendance, savedAttendancesMap, studentStatuses, studentsList]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -292,38 +327,57 @@ export const TeacherAttendance: React.FC = () => {
         </div>
       </Card>
 
-      {/* Informational Banner */}
+      {/* Status Banner */}
       {selectedGroupId && (
-        <div
-          style={{
-            padding: '14px 18px',
-            borderRadius: '12px',
-            background: hasAnySavedAttendance ? 'rgba(16, 185, 129, 0.08)' : 'rgba(59, 130, 246, 0.08)',
-            border: hasAnySavedAttendance ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(59, 130, 246, 0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {hasAnySavedAttendance ? (
-              <CheckCircle2 size={18} color="#10b981" />
-            ) : (
-              <CalendarCheck size={18} color="#3b82f6" />
-            )}
-            <span style={{ fontSize: '13px', color: 'var(--text)' }}>
-              {hasAnySavedAttendance
-                ? "✓ Ushbu sana uchun davomat oldin saqlangan. Kerakli o'quvchi holatini o'zgartirib, 'Davomatni yangilash' tugmasini bosing."
-                : "ℹ️ O'quvchilar davomatini belgilang va 'Davomatni saqlash' tugmasini bosing."}
-            </span>
+        hasAnySavedAttendance ? (
+          /* SAVED AND LOCKED BANNER */
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+            }}
+          >
+            <Lock size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
+              <strong style={{ color: '#d97706', display: 'block', fontSize: '14px', marginBottom: '2px' }}>
+                Davomat saqlangan! (Qayta olib bo'lmaydi)
+              </strong>
+              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchilar saqlangan davomatni qayta o'zgartira olmaydi.{' '}
+              <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
+            </div>
           </div>
+        ) : (
+          /* INITIAL TAKING BANNER */
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CalendarCheck size={18} color="#3b82f6" />
+              <span style={{ fontSize: '13px', color: 'var(--text)' }}>
+                Darsga kelganlarni <strong>"Kelgan"</strong>, hali kelmaganlarni <strong>"Kelmagan"</strong> deb belgilang va <strong>"Davomatni saqlash"</strong> tugmasini bosing.
+              </span>
+            </div>
 
-          <Button size="sm" variant="outline" onClick={handleMarkAllPresent}>
-            <CheckCheck size={15} /> Barchasini kelgan qilish
-          </Button>
-        </div>
+            <Button size="sm" variant="outline" onClick={handleMarkAllPresent}>
+              <CheckCheck size={15} /> Barchasini kelgan qilish
+            </Button>
+          </div>
+        )
       )}
 
       {/* Students List Card */}
@@ -349,15 +403,21 @@ export const TeacherAttendance: React.FC = () => {
             )}
           </div>
 
-          {/* Action Button: ALWAYS VISIBLE AND ACTIVE */}
-          <Button
-            icon={<Save size={16} />}
-            isLoading={saveMutation.isPending}
-            onClick={handleSaveAttendance}
-            disabled={!selectedGroupId || studentsList.length === 0}
-          >
-            {hasAnySavedAttendance ? 'DAVOMATNI YANGILASH' : 'DAVOMATNI SAQLASH'}
-          </Button>
+          {/* Action Button: Only visible when taking initial attendance */}
+          {!hasAnySavedAttendance ? (
+            <Button
+              icon={<Save size={16} />}
+              isLoading={saveMutation.isPending}
+              onClick={handleSaveInitialAttendance}
+              disabled={!selectedGroupId || studentsList.length === 0}
+            >
+              DAVOMATNI SAQLASH
+            </Button>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', padding: '6px 12px', borderRadius: '8px' }}>
+              <Lock size={14} /> Davomat qulflangan
+            </div>
+          )}
         </div>
 
         {/* Loading state */}
@@ -383,7 +443,7 @@ export const TeacherAttendance: React.FC = () => {
 
               const studentId = student.id;
               const currentStatus = studentStatuses[studentId] || 'KELGAN';
-              const note = studentNotes[studentId];
+              const saved = savedAttendancesMap[studentId];
 
               return (
                 <div
@@ -423,170 +483,161 @@ export const TeacherAttendance: React.FC = () => {
                       <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>
                         {student.firstName} {student.lastName}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{formatPhone(student.phone)}</span>
-                        {note && (
-                          <span style={{ color: '#f59e0b', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <MessageSquare size={12} /> {note}
-                          </span>
-                        )}
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {formatPhone(student.phone)}
                       </div>
                     </div>
                   </div>
 
-                  {/* Attendance Interactive Buttons: ALWAYS CLICKABLE */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Kelgan button */}
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(studentId, 'KELGAN')}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                        border:
-                          currentStatus === 'KELGAN'
-                            ? '2px solid #10b981'
-                            : '1px solid var(--border)',
-                        background:
-                          currentStatus === 'KELGAN' ? '#10b981' : 'var(--surface)',
-                        color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text)',
-                      }}
-                    >
-                      <CheckCircle2 size={15} /> Kelgan
-                    </button>
+                  {/* Attendance Controls */}
+                  <div>
+                    {hasAnySavedAttendance && saved ? (
+                      /* SAVED VIEW: Locked statuses + only KELMAGAN can be modified to KECHIKKAN */
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {saved.status === 'KELGAN' && (
+                          <Badge variant="success">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={14} /> KELGAN
+                            </span>
+                          </Badge>
+                        )}
 
-                    {/* Kelmagan button */}
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(studentId, 'KELMAGAN')}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                        border:
-                          currentStatus === 'KELMAGAN'
-                            ? '2px solid #ef4444'
-                            : '1px solid var(--border)',
-                        background:
-                          currentStatus === 'KELMAGAN' ? '#ef4444' : 'var(--surface)',
-                        color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text)',
-                      }}
-                    >
-                      <XCircle size={15} /> Kelmagan
-                    </button>
+                        {saved.status === 'KECHIKKAN' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <Badge variant="warning">
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={14} /> KECHIKKAN
+                              </span>
+                            </Badge>
+                            {saved.note && (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                Sababi: {saved.note}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
-                    {/* Kechikkan button */}
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(studentId, 'KECHIKKAN')}
-                      style={{
-                        padding: '8px 14px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s ease',
-                        border:
-                          currentStatus === 'KECHIKKAN'
-                            ? '2px solid #f59e0b'
-                            : '1px solid var(--border)',
-                        background:
-                          currentStatus === 'KECHIKKAN' ? '#f59e0b' : 'var(--surface)',
-                        color: currentStatus === 'KECHIKKAN' ? '#ffffff' : 'var(--text)',
-                      }}
-                    >
-                      <Clock size={15} /> Kechikkan
-                    </button>
+                        {saved.status === 'KELMAGAN' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Badge variant="danger">
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <XCircle size={14} /> KELMAGAN
+                              </span>
+                            </Badge>
 
-                    {/* Note Button (optional for adding reason/comment) */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleOpenNoteModal(
-                          studentId,
-                          `${student.firstName} ${student.lastName}`
-                        )
-                      }
-                      title="Izoh qo'shish yoki tahrirlash"
-                      style={{
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        border: note ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border)',
-                        background: note ? 'rgba(245, 158, 11, 0.1)' : 'var(--surface)',
-                        color: note ? '#d97706' : 'var(--text-muted)',
-                      }}
-                    >
-                      <MessageSquare size={14} />
-                      {note ? 'Izoh' : '+Izoh'}
-                    </button>
+                            {/* Allowed action: Absent student came late */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              style={{
+                                color: '#d97706',
+                                borderColor: 'rgba(245, 158, 11, 0.4)',
+                                background: 'rgba(245, 158, 11, 0.08)',
+                                fontWeight: 600,
+                              }}
+                              onClick={() =>
+                                handleOpenLateModal(
+                                  studentId,
+                                  `${student.firstName} ${student.lastName}`
+                                )
+                              }
+                            >
+                              <Clock size={14} /> Kechikib keldi
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* INITIAL TAKING CONTROLS: Choose Kelgan or Kelmagan */
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleInitialStatusChange(studentId, 'KELGAN')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            border:
+                              currentStatus === 'KELGAN'
+                                ? '2px solid #10b981'
+                                : '1px solid var(--border)',
+                            background:
+                              currentStatus === 'KELGAN' ? '#10b981' : 'var(--surface)',
+                            color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text)',
+                          }}
+                        >
+                          <CheckCircle2 size={15} /> Kelgan
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInitialStatusChange(studentId, 'KELMAGAN')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            border:
+                              currentStatus === 'KELMAGAN'
+                                ? '2px solid #ef4444'
+                                : '1px solid var(--border)',
+                            background:
+                              currentStatus === 'KELMAGAN' ? '#ef4444' : 'var(--surface)',
+                            color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text)',
+                          }}
+                        >
+                          <XCircle size={15} /> Kelmagan
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* Bottom Save Button for long lists */}
-        {studentsList.length > 5 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-            <Button
-              icon={<Save size={16} />}
-              isLoading={saveMutation.isPending}
-              onClick={handleSaveAttendance}
-              disabled={!selectedGroupId || studentsList.length === 0}
-            >
-              {hasAnySavedAttendance ? 'DAVOMATNI YANGILASH' : 'DAVOMATNI SAQLASH'}
-            </Button>
-          </div>
-        )}
       </Card>
 
-      {/* Note Modal */}
+      {/* Late Reason Modal (KELMAGAN -> KECHIKKAN) */}
       <Modal
-        isOpen={!!noteModalStudent}
-        onClose={() => setNoteModalStudent(null)}
-        title="O'quvchiga izoh qo'shish"
+        isOpen={!!lateModalStudent}
+        onClose={() => setLateModalStudent(null)}
+        title="O'quvchini kechikkan deb qayd etish"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-            <strong style={{ color: 'var(--text)' }}>{noteModalStudent?.name}</strong> uchun davomat izohi:
+            <strong style={{ color: 'var(--text)' }}>{lateModalStudent?.name}</strong> darsga kechikib keldi. Kechikish sababini kiriting:
           </p>
 
           <Input
-            label="Izoh (masalan: 15 minut kechikdi, shamollagan, va h.k.)"
-            placeholder="Izoh matnini kiriting..."
-            value={tempNote}
-            onChange={(e) => setTempNote(e.target.value)}
+            label="Kechikish sababi (majburiy)"
+            required
+            placeholder="Masalan: 15 minut, tirbandlik yoki uzrli sabab..."
+            value={lateReason}
+            onChange={(e) => setLateReason(e.target.value)}
           />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-            <Button variant="secondary" onClick={() => setNoteModalStudent(null)}>
+            <Button variant="secondary" onClick={() => setLateModalStudent(null)}>
               Bekor qilish
             </Button>
-            <Button onClick={handleSaveNote}>
-              Saqlash
+            <Button
+              isLoading={saveMutation.isPending}
+              onClick={handleConfirmLate}
+              style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
+            >
+              Kechikkan deb saqlash
             </Button>
           </div>
         </div>
