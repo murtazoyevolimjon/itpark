@@ -659,10 +659,8 @@ export const AIAssistant: React.FC = () => {
                 placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+                helperText="Google AI Studio (aistudio.google.com) orqali olingan bepul API kalit. Kiritilmasa ham tizim ichki algoritmlar orqali tahlil qilaveradi."
               />
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-6px 0 0 0' }}>
-                Google AI Studio (aistudio.google.com) orqali olingan bepul API kalit. Kiritilmasa ham tizim ichki algoritmlar orqali tahlil qilaveradi.
-              </p>
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <Button onClick={handleSaveApiKey} icon={<Key size={16} />}>

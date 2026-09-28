@@ -168,7 +168,7 @@ export const FloatingAIWidget: React.FC = () => {
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: res.result || 'Ma\'lumot topilmadi.',
+        content: res.result || "Ma'lumot topilmadi.",
         source: res.source,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -201,19 +201,19 @@ export const FloatingAIWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating trigger button - Compact & Sleek */}
+      {/* Compact circular floating trigger button */}
       {!isOpen && (
         <button
           className={styles.floatingTrigger}
           onClick={() => setIsOpen(true)}
-          title="AI Yordamchini ochish"
+          title="AI Yordamchi"
           aria-label="AI Yordamchi"
         >
           <div className={styles.triggerIconWrap}>
-            <Sparkles size={16} />
+            <Sparkles size={20} />
             <span className={styles.pulseDot} />
           </div>
-          <span className={styles.triggerLabel}>AI Yordamchi</span>
+          <span className={styles.triggerTooltip}>AI Yordamchi</span>
         </button>
       )}
 
@@ -232,27 +232,30 @@ export const FloatingAIWidget: React.FC = () => {
           <div className={styles.drawerHeader}>
             <div className={styles.headerLeft}>
               <div className={styles.headerIconBox}>
-                <Bot size={20} />
+                <Bot size={18} />
               </div>
               <div>
                 <h3 className={styles.headerTitle}>
                   AI Yordamchi
-                  <Sparkles size={13} color="#facc15" />
+                  <Sparkles size={12} color="#facc15" />
                 </h3>
                 <p className={styles.headerSubtitle}>
-                  {context.icon} {context.label} bo'limi tahlili
+                  {context.icon} {context.label}
                 </p>
               </div>
             </div>
 
             <div className={styles.headerActions}>
+              {/* Expand / Minimize toggle inside the widget */}
               <button
                 className={styles.headerBtn}
-                title={isExpanded ? "O'lchamni kichraytirish" : "Maydonni kengaytirish"}
+                title={isExpanded ? 'Kichraytirish' : 'Maydonni kattalashtirish'}
                 onClick={() => setIsExpanded(!isExpanded)}
               >
-                {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
+
+              {/* Dedicated full page link */}
               <button
                 className={styles.headerBtn}
                 title="Alohida sahifada ochish"
@@ -263,19 +266,21 @@ export const FloatingAIWidget: React.FC = () => {
               >
                 <ExternalLink size={14} />
               </button>
+
               <button
                 className={styles.headerBtn}
-                title="Chatni tozalash"
+                title="Tozalash"
                 onClick={handleClear}
               >
-                <RotateCcw size={15} />
+                <RotateCcw size={14} />
               </button>
+
               <button
                 className={styles.headerBtn}
                 title="Yopish"
                 onClick={() => setIsOpen(false)}
               >
-                <X size={17} />
+                <X size={16} />
               </button>
             </div>
           </div>
@@ -375,7 +380,7 @@ export const FloatingAIWidget: React.FC = () => {
                 disabled={isLoading || !inputQuestion.trim()}
                 title="Yuborish"
               >
-                <Send size={15} />
+                <Send size={14} />
               </button>
             </form>
           </div>
