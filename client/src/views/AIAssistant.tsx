@@ -49,16 +49,20 @@ export const AIAssistant: React.FC = () => {
   const [copiedText, setCopiedText] = useState(false);
 
   // Chat state
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'ai',
-      text: `Assalomu alaykum! Men "Markaz CRM AI Yordamchisi"man. Markazingizdagi o'quvchilar, guruhlar, davomat, to'lovlar va ustozlar yuklamasi bo'yicha har qanday savolingizga faqat haqiqiy ma'lumotlar asosida javob beraman.`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'welcome',
+        sender: 'ai',
+        text: `Assalomu alaykum! Men "Markaz CRM AI Yordamchisi"man. Markazingizdagi o'quvchilar, guruhlar, davomat, to'lovlar va ustozlar yuklamasi bo'yicha har qanday savolingizga faqat haqiqiy ma'lumotlar asosida javob beraman.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  }, []);
 
   // Settings: Gemini API Key in localStorage
   const [apiKey, setApiKey] = useState('');
@@ -655,8 +659,10 @@ export const AIAssistant: React.FC = () => {
                 placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                helperText="Google AI Studio (aistudio.google.com) orqali olingan bepul API kalit. Kiritilmasa ham tizim ichki algoritmlar orqali tahlil qilaveradi."
               />
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-6px 0 0 0' }}>
+                Google AI Studio (aistudio.google.com) orqali olingan bepul API kalit. Kiritilmasa ham tizim ichki algoritmlar orqali tahlil qilaveradi.
+              </p>
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <Button onClick={handleSaveApiKey} icon={<Key size={16} />}>

@@ -1,9 +1,6 @@
-import { AIAssistant } from '@/views/AIAssistant';
+'use client';
 
-export const metadata = {
-  title: 'AI Yordamchi | IT Park Academy CRM',
-  description: "Markaz ma'lumotlari tahlili va sun'iy intellekt yordamchisi",
-};
+import { AIAssistant } from '@/views/AIAssistant';
 
 export default function AIAssistantPage() {
   return <AIAssistant />;

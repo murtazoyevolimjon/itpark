@@ -8,6 +8,8 @@ import {
   X,
   Send,
   Maximize2,
+  Minimize2,
+  ExternalLink,
   Copy,
   Check,
   RotateCcw,
@@ -33,6 +35,7 @@ export const FloatingAIWidget: React.FC = () => {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -198,7 +201,7 @@ export const FloatingAIWidget: React.FC = () => {
 
   return (
     <>
-      {/* Floating trigger button */}
+      {/* Floating trigger button - Compact & Sleek */}
       {!isOpen && (
         <button
           className={styles.floatingTrigger}
@@ -207,11 +210,10 @@ export const FloatingAIWidget: React.FC = () => {
           aria-label="AI Yordamchi"
         >
           <div className={styles.triggerIconWrap}>
-            <Sparkles size={18} />
+            <Sparkles size={16} />
             <span className={styles.pulseDot} />
           </div>
           <span className={styles.triggerLabel}>AI Yordamchi</span>
-          <span className={styles.pageContextBadge}>{context.label}</span>
         </button>
       )}
 
@@ -225,7 +227,7 @@ export const FloatingAIWidget: React.FC = () => {
 
       {/* Drawer Panel */}
       {isOpen && (
-        <div className={styles.drawer}>
+        <div className={`${styles.drawer} ${isExpanded ? styles.drawerExpanded : ''}`}>
           {/* Header */}
           <div className={styles.drawerHeader}>
             <div className={styles.headerLeft}>
@@ -246,13 +248,20 @@ export const FloatingAIWidget: React.FC = () => {
             <div className={styles.headerActions}>
               <button
                 className={styles.headerBtn}
-                title="To'liq sahifada ochish"
+                title={isExpanded ? "O'lchamni kichraytirish" : "Maydonni kengaytirish"}
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+              </button>
+              <button
+                className={styles.headerBtn}
+                title="Alohida sahifada ochish"
                 onClick={() => {
                   setIsOpen(false);
                   router.push('/ai-assistant');
                 }}
               >
-                <Maximize2 size={15} />
+                <ExternalLink size={14} />
               </button>
               <button
                 className={styles.headerBtn}
