@@ -7,6 +7,7 @@ import { Footer } from './Footer';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
+import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
@@ -60,6 +61,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         </main>
         <Footer />
       </div>
+      <FloatingAIWidget />
     </div>
   );
 };

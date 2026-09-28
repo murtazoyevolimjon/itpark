@@ -3,34 +3,52 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, CalendarCheck, Lock } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  CalendarCheck,
+  Lock,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  CheckCheck,
+  AlertCircle,
+} from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Select } from '../components/ui/Select/Select';
 import { Input } from '../components/ui/Input/Input';
 import { Badge } from '../components/ui/Badge/Badge';
+import { Modal } from '../components/ui/Modal/Modal';
 import { useToast } from '../components/ui/Toast/Toast';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { AttendanceStatus } from '../types';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
-import { useAuth } from '../hooks/useAuth';
+import { formatPhone } from '../utils/phoneMask';
+import {
+  getTashkentDateString,
+  checkAttendanceTimeEligibility,
+} from '../utils/attendanceTime';
 
 export const AttendanceTake: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
-  const { user } = useAuth();
 
+  const todayStr = useMemo(() => getTashkentDateString(), []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
-  const [attendanceDate, setAttendanceDate] = useState<string>(
-    new Date().toISOString().split('T')[0],
-  );
+  const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
 
-  // Student attendance statuses state map: studentId -> status
-  const [studentStatuses, setStudentStatuses] = useState<
-    Record<string, AttendanceStatus>
-  >({});
+  // Student attendance statuses state map: studentId -> status (only used when taking initial attendance)
+  const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
+
+  // Late reason modal state for changing KELMAGAN -> KECHIKKAN
+  const [lateModalStudent, setLateModalStudent] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [lateReason, setLateReason] = useState<string>('');
 
   const { data: groups } = useQuery({
     queryKey: ['groupsSelect'],
@@ -44,7 +62,7 @@ export const AttendanceTake: React.FC = () => {
     }
   }, [groups, selectedGroupId]);
 
-  // Fetch selected group details to get list of students
+  // Fetch selected group details to get list of students & timing
   const { data: groupDetail, isLoading: isGroupLoading } = useQuery({
     queryKey: ['groupDetailAttendance', selectedGroupId],
     queryFn: () => groupsApi.getOne(selectedGroupId),
@@ -52,76 +70,74 @@ export const AttendanceTake: React.FC = () => {
   });
 
   // Fetch existing attendance records for the selected group and date
-  const { data: existingAttendance, isLoading: isAttendanceLoading } = useQuery({
+  const {
+    data: existingAttendance,
+    isLoading: isAttendanceLoading,
+    refetch: refetchAttendance,
+  } = useQuery({
     queryKey: ['existingAttendance', selectedGroupId, attendanceDate],
     queryFn: () => attendanceApi.getByGroup(selectedGroupId, attendanceDate),
     enabled: !!selectedGroupId && !!attendanceDate,
   });
 
-  // Map of saved attendances for selected group and date: studentId -> status
+  // Map of saved attendances for selected group and date: studentId -> { status, note }
+  // Only considers attendances matching the selected attendanceDate!
   const savedAttendancesMap = useMemo(() => {
-    const map: Record<string, AttendanceStatus> = {};
+    const map: Record<string, { status: AttendanceStatus; note?: string }> = {};
     if (Array.isArray(existingAttendance)) {
+      const cleanDate = attendanceDate.split('T')[0];
       existingAttendance.forEach((att: any) => {
+        const attDateStr = att.date ? att.date.split('T')[0] : '';
+        if (attDateStr && attDateStr !== cleanDate) {
+          return;
+        }
         if (att.studentId && att.status) {
-          map[att.studentId] = att.status;
+          map[att.studentId] = {
+            status: att.status,
+            note: att.note || '',
+          };
         }
       });
     }
     return map;
-  }, [existingAttendance]);
+  }, [existingAttendance, attendanceDate]);
 
   const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
 
-  // Saqlash uchun o'zgarishlar borligini tekshirish
-  const hasPendingAttendanceUpdates = useMemo(() => {
-    // Admin yoki Owner doimo xohlagan paytda o'zgartira oladi
-    if (user?.role !== 'TEACHER') return true;
-
-    if (!hasAnySavedAttendance) return true;
-    if (!groupDetail?.studentGroups) return false;
-    return groupDetail.studentGroups.some((sg: any) => {
-      const stId = sg.student?.id || sg.studentId;
-      if (!stId) return false;
-      const saved = savedAttendancesMap[stId];
-      const current = studentStatuses[stId];
-      if (!saved) return true;
-      if (saved === 'KELMAGAN' && current === 'KECHIKKAN') return true;
-      return false;
-    });
-  }, [user, hasAnySavedAttendance, groupDetail?.studentGroups, savedAttendancesMap, studentStatuses]);
+  // Time eligibility check for taking initial attendance on this group & date
+  const timeEligibility = useMemo(() => {
+    return checkAttendanceTimeEligibility(attendanceDate, groupDetail);
+  }, [attendanceDate, groupDetail]);
 
   // Sync student statuses with default 'KELGAN' OR existing saved statuses
   useEffect(() => {
     if (groupDetail?.studentGroups) {
       const initialMap: Record<string, AttendanceStatus> = {};
-      groupDetail.studentGroups.forEach((sg) => {
-        if (sg.student) {
-          initialMap[sg.student.id] = 'KELGAN';
+      groupDetail.studentGroups.forEach((sg: any) => {
+        const student = sg.student;
+        if (student) {
+          const saved = savedAttendancesMap[student.id];
+          if (saved) {
+            initialMap[student.id] = saved.status;
+          } else {
+            initialMap[student.id] = 'KELGAN';
+          }
         }
       });
 
-      // Override with existing saved attendance if available
-      if (Array.isArray(existingAttendance) && existingAttendance.length > 0) {
-        existingAttendance.forEach((att: any) => {
-          if (att.studentId && att.status) {
-            initialMap[att.studentId] = att.status;
-          }
-        });
-      }
-
       setStudentStatuses(initialMap);
     }
-  }, [groupDetail, existingAttendance]);
+  }, [groupDetail, savedAttendancesMap]);
 
   const bulkMutation = useMutation({
     mutationFn: (payload: any) => attendanceApi.bulkSave(payload),
     onSuccess: () => {
-      success('Davomat muvaffaqiyatli saqlandi!');
       queryClient.invalidateQueries({ queryKey: ['attendanceStats'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardAttendance'] });
-      queryClient.invalidateQueries({ queryKey: ['existingAttendance', selectedGroupId, attendanceDate] });
-      router.push('/attendance');
+      queryClient.invalidateQueries({
+        queryKey: ['existingAttendance', selectedGroupId, attendanceDate],
+      });
+      refetchAttendance();
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Davomat saqlashda xatolik');
@@ -129,60 +145,183 @@ export const AttendanceTake: React.FC = () => {
   });
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
+    if (hasAnySavedAttendance || !timeEligibility.canTakeAttendance) return;
     setStudentStatuses((prev) => ({
       ...prev,
       [studentId]: status,
     }));
   };
 
+  const handleMarkAllPresent = () => {
+    if (hasAnySavedAttendance || !timeEligibility.canTakeAttendance) return;
+    if (!groupDetail?.studentGroups) return;
+
+    const allPresent: Record<string, AttendanceStatus> = {};
+    groupDetail.studentGroups.forEach((sg: any) => {
+      if (sg.student) {
+        allPresent[sg.student.id] = 'KELGAN';
+      }
+    });
+    setStudentStatuses(allPresent);
+    success("Barcha o'quvchilar 'Kelgan' deb belgilandi");
+  };
+
+  // Save initial attendance (Once only!)
   const handleSave = () => {
+    if (hasAnySavedAttendance) {
+      error("Ushbu sana uchun davomat allaqachon saqlangan va qayta olib bo'lmaydi!");
+      return;
+    }
+
+    if (!timeEligibility.canTakeAttendance) {
+      error(timeEligibility.message);
+      return;
+    }
+
     if (!selectedGroupId) {
       error('Guruhni tanlang');
       return;
     }
 
-    const records = Object.entries(studentStatuses).map(([studentId, status]) => ({
-      studentId,
-      status,
-    }));
-
-    if (records.length === 0) {
+    const students = groupDetail?.studentGroups || [];
+    if (students.length === 0) {
       error('Guruhda talabalar topilmadi');
       return;
     }
 
-    bulkMutation.mutate({
-      groupId: selectedGroupId,
-      date: attendanceDate,
-      records,
-    });
+    const records = students.map((sg: any) => ({
+      studentId: sg.student.id,
+      status: studentStatuses[sg.student.id] || 'KELGAN',
+    }));
+
+    bulkMutation.mutate(
+      {
+        groupId: selectedGroupId,
+        date: attendanceDate,
+        records,
+      },
+      {
+        onSuccess: () => {
+          success("Davomat muvaffaqiyatli saqlandi! Endi u qulflangan.");
+        },
+      }
+    );
+  };
+
+  // Open modal to mark absent student as late
+  const handleOpenLateModal = (studentId: string, studentName: string) => {
+    setLateModalStudent({ id: studentId, name: studentName });
+    setLateReason('');
+  };
+
+  // Submit late modification (KELMAGAN -> KECHIKKAN)
+  const handleConfirmLate = () => {
+    if (!lateModalStudent) return;
+    if (!lateReason.trim()) {
+      error("Kechikish sababini yozish majburiy!");
+      return;
+    }
+
+    bulkMutation.mutate(
+      {
+        groupId: selectedGroupId,
+        date: attendanceDate,
+        records: [
+          {
+            studentId: lateModalStudent.id,
+            status: 'KECHIKKAN',
+            note: lateReason.trim(),
+          },
+        ],
+      },
+      {
+        onSuccess: () => {
+          success(`${lateModalStudent.name} 'Kechikkan' deb qayd etildi!`);
+          setLateModalStudent(null);
+          setLateReason('');
+        },
+      }
+    );
   };
 
   const groupOptions = [
     { label: 'Guruhni tanlang', value: '' },
-    ...(groups?.data?.map((g) => ({ label: g.name, value: g.id })) || []),
+    ...(groups?.data?.map((g: any) => ({
+      label: `${g.name} (${g.course?.name || 'Kurs'})`,
+      value: g.id,
+    })) || []),
   ];
 
+  const studentsList = groupDetail?.studentGroups || [];
+
+  // Summary counts
+  const summaryCounts = useMemo(() => {
+    let kelgan = 0;
+    let kelmagan = 0;
+    let kechikkan = 0;
+
+    if (hasAnySavedAttendance) {
+      Object.values(savedAttendancesMap).forEach((st) => {
+        if (st.status === 'KELGAN') kelgan++;
+        else if (st.status === 'KELMAGAN') kelmagan++;
+        else if (st.status === 'KECHIKKAN') kechikkan++;
+      });
+    } else {
+      Object.values(studentStatuses).forEach((st) => {
+        if (st === 'KELGAN') kelgan++;
+        else if (st === 'KELMAGAN') kelmagan++;
+        else if (st === 'KECHIKKAN') kechikkan++;
+      });
+    }
+
+    return { kelgan, kelmagan, kechikkan, total: studentsList.length };
+  }, [hasAnySavedAttendance, savedAttendancesMap, studentStatuses, studentsList]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Button variant="outline" size="sm" onClick={() => router.push('/attendance')}>
-          <ArrowLeft size={16} /> Orqaga
-        </Button>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Davomat olish</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Button variant="outline" size="sm" onClick={() => router.push('/attendance')}>
+            <ArrowLeft size={16} /> Davomatlar ro'yxatiga qaytish
+          </Button>
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+              Davomat Olish
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+              Guruhlar bo'yicha kunlik dars davomatini qayd qilish
+            </p>
+          </div>
+        </div>
+
+        {/* Live Counters */}
+        {studentsList.length > 0 && (
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
+              ✓ Kelgan: {summaryCounts.kelgan}
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
+              ✕ Kelmagan: {summaryCounts.kelmagan}
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
+              🕒 Kechikkan: {summaryCounts.kechikkan}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Selectors Card */}
       <Card>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
           <Select
-            label="Guruh"
+            label="Guruhni tanlang"
             options={groupOptions}
             value={selectedGroupId}
             onChange={(e) => setSelectedGroupId(e.target.value)}
           />
           <Input
-            label="Sana"
+            label="Dars sanasi"
             type="date"
             value={attendanceDate}
             onChange={(e) => setAttendanceDate(e.target.value)}
@@ -190,121 +329,374 @@ export const AttendanceTake: React.FC = () => {
         </div>
       </Card>
 
-      {/* Students Attendance Table Card */}
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-            {groupDetail?.name || 'Talabalar ro\'yxati'}
-          </h3>
-          <Button
-            icon={<Save size={16} />}
-            isLoading={bulkMutation.isPending}
-            onClick={handleSave}
-            disabled={!selectedGroupId || isGroupLoading}
-          >
-            {hasAnySavedAttendance ? 'DAVOMATNI YANGILASH' : 'DAVOMATNI SAQLASH'}
-          </Button>
-        </div>
-
-        {/* Informative Banner when attendance already saved */}
-        {hasAnySavedAttendance && (
+      {/* Status Banner */}
+      {selectedGroupId && (
+        hasAnySavedAttendance ? (
+          /* SAVED AND LOCKED BANNER */
           <div
             style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
               display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '12px 16px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              fontSize: '13px',
-              color: 'var(--text)',
-              marginBottom: '16px',
+              alignItems: 'flex-start',
+              gap: '12px',
             }}
           >
-            <div>
-              <strong>Ushbu sana uchun davomat oldin saqlangan.</strong> Kerak bo'lsa o'quvchilar holatini o'zgartirib, <strong>"DAVOMATNI YANGILASH"</strong> tugmasini bosishingiz mumkin.
+            <Lock size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
+              <strong style={{ color: '#d97706', display: 'block', fontSize: '14px', marginBottom: '2px' }}>
+                Davomat saqlangan! (Qulflangan)
+              </strong>
+              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchi yoki admin saqlangan davomatni qayta o'zgartira olmaydi.{' '}
+              <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
             </div>
           </div>
-        )}
-
-        {isGroupLoading ? (
-          <Skeleton height="200px" />
-        ) : !groupDetail?.studentGroups || groupDetail.studentGroups.length === 0 ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Ushbu guruhda hali birorta ham talaba mavjud emas.
+        ) : !timeEligibility.canTakeAttendance ? (
+          /* TIME RESTRICTION OR PAST DATE BANNER */
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                ? 'rgba(239, 68, 68, 0.08)'
+                : 'rgba(245, 158, 11, 0.08)',
+              border: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                ? '1px solid rgba(239, 68, 68, 0.3)'
+                : '1px solid rgba(245, 158, 11, 0.3)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+            }}
+          >
+            {timeEligibility.status === 'TIME_EXPIRED' ? (
+              <Clock size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            ) : (
+              <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            )}
+            <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
+              <strong
+                style={{
+                  color: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE' ? '#ef4444' : '#d97706',
+                  display: 'block',
+                  fontSize: '14px',
+                  marginBottom: '2px',
+                }}
+              >
+                {timeEligibility.status === 'TIME_EXPIRED'
+                  ? 'Davomat olish vaqti tugagan!'
+                  : timeEligibility.status === 'PAST_DATE'
+                  ? "O'tgan sana uchun yangi davomat saqlab bo'lmaydi!"
+                  : timeEligibility.status === 'FUTURE_DATE'
+                  ? "Kelgusi sana uchun davomat olinmaydi!"
+                  : 'Dars hali boshlanmagan!'}
+              </strong>
+              {timeEligibility.message}
+            </div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
-                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>TALABA</th>
-                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>TELEFON</th>
-                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center' }}>DAVOMAT HOLATI</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupDetail.studentGroups.map((sg, idx) => {
-                  const student = sg.student;
-                  if (!student) return null;
-                  const currentStatus = studentStatuses[student.id] || 'KELGAN';
+          /* INITIAL TAKING BANNER (WITHIN ALLOWED TIME) */
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CalendarCheck size={18} color="#3b82f6" />
+              <span style={{ fontSize: '13px', color: 'var(--text)' }}>
+                Darsga kelganlarni <strong>"Kelgan"</strong>, hali kelmaganlarni <strong>"Kelmagan"</strong> deb belgilang va <strong>"Davomatni saqlash"</strong> tugmasini bosing.
+                {timeEligibility.deadlineTime && (
+                  <span style={{ color: '#2563eb', fontWeight: 600, marginLeft: '6px' }}>
+                    (Soat {timeEligibility.deadlineTime} gacha)
+                  </span>
+                )}
+              </span>
+            </div>
 
-                  return (
-                    <tr key={student.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                      <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: 600 }}>
-                        <span>{student.firstName} {student.lastName}</span>
-                      </td>
-                      <td style={{ padding: '14px 16px', fontSize: '13px' }}>{student.phone}</td>
-                      <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', gap: '16px', alignItems: 'center' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELGAN' ? 600 : 400 }}>
-                            <input
-                              type="radio"
-                              name={`att-${student.id}`}
-                              value="KELGAN"
-                              checked={currentStatus === 'KELGAN'}
-                              onChange={() => handleStatusChange(student.id, 'KELGAN')}
-                              style={{ accentColor: '#2b7fff' }}
-                            />
-                            <Badge variant="success">KELGAN</Badge>
-                          </label>
+            <Button size="sm" variant="outline" onClick={handleMarkAllPresent}>
+              <CheckCheck size={15} /> Barchasini kelgan qilish
+            </Button>
+          </div>
+        )
+      )}
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KELMAGAN' ? 600 : 400 }}>
-                            <input
-                              type="radio"
-                              name={`att-${student.id}`}
-                              value="KELMAGAN"
-                              checked={currentStatus === 'KELMAGAN'}
-                              onChange={() => handleStatusChange(student.id, 'KELMAGAN')}
-                              style={{ accentColor: '#dc2626' }}
-                            />
-                            <Badge variant="danger">KELMAGAN</Badge>
-                          </label>
+      {/* Students Attendance Table Card */}
+      <Card>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {groupDetail ? `${groupDetail.name} — O'quvchilar ro'yxati (${studentsList.length} nafar)` : "O'quvchilar ro'yxati"}
+            </h3>
+            {groupDetail && (
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Kurs: {groupDetail.course?.name || '-'} | Xona: {groupDetail.room?.name || '-'}
+                {groupDetail.startTime && ` | Vaqti: ${groupDetail.startTime.slice(0, 5)} - ${groupDetail.endTime ? groupDetail.endTime.slice(0, 5) : '--:--'}`}
+              </span>
+            )}
+          </div>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: currentStatus === 'KECHIKKAN' ? 600 : 400 }}>
-                            <input
-                              type="radio"
-                              name={`att-${student.id}`}
-                              value="KECHIKKAN"
-                              checked={currentStatus === 'KECHIKKAN'}
-                              onChange={() => handleStatusChange(student.id, 'KECHIKKAN')}
-                              style={{ accentColor: '#ca8a04' }}
-                            />
-                            <Badge variant="warning">KECHIKKAN</Badge>
-                          </label>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* Action Button */}
+          {!hasAnySavedAttendance ? (
+            <Button
+              icon={<Save size={16} />}
+              isLoading={bulkMutation.isPending}
+              onClick={handleSave}
+              disabled={
+                !selectedGroupId ||
+                studentsList.length === 0 ||
+                !timeEligibility.canTakeAttendance
+              }
+            >
+              {timeEligibility.status === 'TIME_EXPIRED'
+                ? `VAQT TUGAGAN (${timeEligibility.deadlineTime || ''} GACHA)`
+                : timeEligibility.status === 'PAST_DATE'
+                ? "O'TGAN SANA"
+                : timeEligibility.status === 'TOO_EARLY'
+                ? `DARS BOSHLANMAGAN (${timeEligibility.startTime || ''})`
+                : 'DAVOMATNI SAQLASH'}
+            </Button>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', padding: '6px 12px', borderRadius: '8px' }}>
+              <Lock size={14} /> Davomat qulflangan
+            </div>
+          )}
+        </div>
+
+        {/* Loading state */}
+        {isGroupLoading || isAttendanceLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} height="56px" />
+            ))}
+          </div>
+        ) : !selectedGroupId ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+            Iltimos, yuqoridagi ro'yxatdan guruhni tanlang.
+          </div>
+        ) : studentsList.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+            Ushbu guruhga hali o'quvchilar biriktirilmagan.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {studentsList.map((sg: any, idx: number) => {
+              const student = sg.student;
+              if (!student) return null;
+
+              const studentId = student.id;
+              const currentStatus = studentStatuses[studentId] || 'KELGAN';
+              const saved = savedAttendancesMap[studentId];
+
+              return (
+                <div
+                  key={studentId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: 'var(--background)',
+                    border: '1px solid var(--border)',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}
+                >
+                  {/* Student info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'var(--surface)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>
+                        {student.firstName} {student.lastName}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {formatPhone(student.phone)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Attendance Controls */}
+                  <div>
+                    {hasAnySavedAttendance && saved ? (
+                      /* SAVED VIEW: Locked statuses + only KELMAGAN can be modified to KECHIKKAN */
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {saved.status === 'KELGAN' && (
+                          <Badge variant="success">
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={14} /> KELGAN
+                            </span>
+                          </Badge>
+                        )}
+
+                        {saved.status === 'KECHIKKAN' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                            <Badge variant="warning">
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={14} /> KECHIKKAN
+                              </span>
+                            </Badge>
+                            {saved.note && (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                Sababi: {saved.note}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {saved.status === 'KELMAGAN' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Badge variant="danger">
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <XCircle size={14} /> KELMAGAN
+                              </span>
+                            </Badge>
+
+                            {/* Allowed action: Absent student came late */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              style={{
+                                color: '#d97706',
+                                borderColor: 'rgba(245, 158, 11, 0.4)',
+                                background: 'rgba(245, 158, 11, 0.08)',
+                                fontWeight: 600,
+                              }}
+                              onClick={() =>
+                                handleOpenLateModal(
+                                  studentId,
+                                  `${student.firstName} ${student.lastName}`
+                                )
+                              }
+                            >
+                              <Clock size={14} /> Kechikib keldi
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* INITIAL TAKING CONTROLS: Choose Kelgan or Kelmagan */
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          disabled={!timeEligibility.canTakeAttendance}
+                          onClick={() => handleStatusChange(studentId, 'KELGAN')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
+                            opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            border:
+                              currentStatus === 'KELGAN'
+                                ? '2px solid #10b981'
+                                : '1px solid var(--border)',
+                            background:
+                              currentStatus === 'KELGAN' ? '#10b981' : 'var(--surface)',
+                            color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text)',
+                          }}
+                        >
+                          <CheckCircle2 size={15} /> Kelgan
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={!timeEligibility.canTakeAttendance}
+                          onClick={() => handleStatusChange(studentId, 'KELMAGAN')}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
+                            opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            border:
+                              currentStatus === 'KELMAGAN'
+                                ? '2px solid #ef4444'
+                                : '1px solid var(--border)',
+                            background:
+                              currentStatus === 'KELMAGAN' ? '#ef4444' : 'var(--surface)',
+                            color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text)',
+                          }}
+                        >
+                          <XCircle size={15} /> Kelmagan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
+
+      {/* Late Reason Modal (KELMAGAN -> KECHIKKAN) */}
+      <Modal
+        isOpen={!!lateModalStudent}
+        onClose={() => setLateModalStudent(null)}
+        title="O'quvchini kechikkan deb qayd etish"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
+            <strong style={{ color: 'var(--text)' }}>{lateModalStudent?.name}</strong> darsga kechikib keldi. Kechikish sababini kiriting:
+          </p>
+
+          <Input
+            label="Kechikish sababi (majburiy)"
+            required
+            placeholder="Masalan: 15 minut, tirbandlik yoki uzrli sabab..."
+            value={lateReason}
+            onChange={(e) => setLateReason(e.target.value)}
+          />
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+            <Button variant="secondary" onClick={() => setLateModalStudent(null)}>
+              Bekor qilish
+            </Button>
+            <Button
+              isLoading={bulkMutation.isPending}
+              onClick={handleConfirmLate}
+              style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
+            >
+              Kechikkan deb saqlash
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

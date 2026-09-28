@@ -57,6 +57,7 @@ export const en = {
   financeSummary: 'Analytics',
   financeExpenses: 'Expenses',
   financePayments: 'Payments',
+  aiAssistant: 'AI Assistant',
   profile: 'Profile',
 
   // Sections

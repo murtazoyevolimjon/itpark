@@ -13,6 +13,8 @@ import {
   Lock,
   CheckCheck,
   AlertCircle,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -26,6 +28,10 @@ import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { AttendanceStatus } from '../types';
 import { formatPhone } from '../utils/phoneMask';
+import {
+  getTashkentDateString,
+  checkAttendanceTimeEligibility,
+} from '../utils/attendanceTime';
 
 export const TeacherAttendance: React.FC = () => {
   const router = useRouter();
@@ -35,10 +41,9 @@ export const TeacherAttendance: React.FC = () => {
 
   const queryGroupId = searchParams.get('groupId') || '';
 
+  const todayStr = useMemo(() => getTashkentDateString(), []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(queryGroupId);
-  const [attendanceDate, setAttendanceDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
 
   // Form statuses state: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -67,7 +72,7 @@ export const TeacherAttendance: React.FC = () => {
     }
   }, [groups, queryGroupId, selectedGroupId]);
 
-  // Fetch group details (to get students)
+  // Fetch group details (to get students, start time, etc.)
   const { data: groupDetail, isLoading: isGroupLoading } = useQuery({
     queryKey: ['teacherGroupDetail', selectedGroupId],
     queryFn: () => groupsApi.getOne(selectedGroupId),
@@ -86,10 +91,16 @@ export const TeacherAttendance: React.FC = () => {
   });
 
   // Map of saved attendances: studentId -> { status, note }
+  // Only considers attendances matching the selected attendanceDate!
   const savedAttendancesMap = useMemo(() => {
     const map: Record<string, { status: AttendanceStatus; note?: string }> = {};
     if (Array.isArray(existingAttendance)) {
+      const cleanDate = attendanceDate.split('T')[0];
       existingAttendance.forEach((att: any) => {
+        const attDateStr = att.date ? att.date.split('T')[0] : '';
+        if (attDateStr && attDateStr !== cleanDate) {
+          return;
+        }
         if (att.studentId && att.status) {
           map[att.studentId] = {
             status: att.status,
@@ -99,9 +110,14 @@ export const TeacherAttendance: React.FC = () => {
       });
     }
     return map;
-  }, [existingAttendance]);
+  }, [existingAttendance, attendanceDate]);
 
   const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Time eligibility check for taking initial attendance on this group & date
+  const timeEligibility = useMemo(() => {
+    return checkAttendanceTimeEligibility(attendanceDate, groupDetail);
+  }, [attendanceDate, groupDetail]);
 
   // Initialize student statuses for initial taking
   useEffect(() => {
@@ -147,7 +163,7 @@ export const TeacherAttendance: React.FC = () => {
 
   // Handle changing status when taking NEW attendance
   const handleInitialStatusChange = (studentId: string, status: AttendanceStatus) => {
-    if (hasAnySavedAttendance) return;
+    if (hasAnySavedAttendance || !timeEligibility.canTakeAttendance) return;
     setStudentStatuses((prev) => ({
       ...prev,
       [studentId]: status,
@@ -156,7 +172,7 @@ export const TeacherAttendance: React.FC = () => {
 
   // Mark all as KELGAN (only when taking initial attendance)
   const handleMarkAllPresent = () => {
-    if (hasAnySavedAttendance) return;
+    if (hasAnySavedAttendance || !timeEligibility.canTakeAttendance) return;
     if (!groupDetail?.studentGroups) return;
 
     const allPresent: Record<string, AttendanceStatus> = {};
@@ -173,6 +189,11 @@ export const TeacherAttendance: React.FC = () => {
   const handleSaveInitialAttendance = () => {
     if (hasAnySavedAttendance) {
       error("Ushbu sana uchun davomat allaqachon saqlangan va qayta olib bo'lmaydi!");
+      return;
+    }
+
+    if (!timeEligibility.canTakeAttendance) {
+      error(timeEligibility.message);
       return;
     }
 
@@ -345,14 +366,56 @@ export const TeacherAttendance: React.FC = () => {
             <Lock size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
               <strong style={{ color: '#d97706', display: 'block', fontSize: '14px', marginBottom: '2px' }}>
-                Davomat saqlangan! (Qayta olib bo'lmaydi)
+                Davomat saqlangan! (Qulflangan)
               </strong>
-              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchilar saqlangan davomatni qayta o'zgartira olmaydi.{' '}
+              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchi yoki admin saqlangan davomatni qayta o'zgartira olmaydi.{' '}
               <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
             </div>
           </div>
+        ) : !timeEligibility.canTakeAttendance ? (
+          /* TIME RESTRICTION OR PAST DATE BANNER */
+          <div
+            style={{
+              padding: '14px 18px',
+              borderRadius: '12px',
+              background: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                ? 'rgba(239, 68, 68, 0.08)'
+                : 'rgba(245, 158, 11, 0.08)',
+              border: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                ? '1px solid rgba(239, 68, 68, 0.3)'
+                : '1px solid rgba(245, 158, 11, 0.3)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+            }}
+          >
+            {timeEligibility.status === 'TIME_EXPIRED' ? (
+              <Clock size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            ) : (
+              <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            )}
+            <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
+              <strong
+                style={{
+                  color: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE' ? '#ef4444' : '#d97706',
+                  display: 'block',
+                  fontSize: '14px',
+                  marginBottom: '2px',
+                }}
+              >
+                {timeEligibility.status === 'TIME_EXPIRED'
+                  ? 'Davomat olish vaqti tugagan!'
+                  : timeEligibility.status === 'PAST_DATE'
+                  ? "O'tgan sana uchun yangi davomat saqlab bo'lmaydi!"
+                  : timeEligibility.status === 'FUTURE_DATE'
+                  ? "Kelgusi sana uchun davomat olinmaydi!"
+                  : 'Dars hali boshlanmagan!'}
+              </strong>
+              {timeEligibility.message}
+            </div>
+          </div>
         ) : (
-          /* INITIAL TAKING BANNER */
+          /* INITIAL TAKING BANNER (WITHIN ALLOWED TIME) */
           <div
             style={{
               padding: '14px 18px',
@@ -370,6 +433,11 @@ export const TeacherAttendance: React.FC = () => {
               <CalendarCheck size={18} color="#3b82f6" />
               <span style={{ fontSize: '13px', color: 'var(--text)' }}>
                 Darsga kelganlarni <strong>"Kelgan"</strong>, hali kelmaganlarni <strong>"Kelmagan"</strong> deb belgilang va <strong>"Davomatni saqlash"</strong> tugmasini bosing.
+                {timeEligibility.deadlineTime && (
+                  <span style={{ color: '#2563eb', fontWeight: 600, marginLeft: '6px' }}>
+                    (Soat {timeEligibility.deadlineTime} gacha)
+                  </span>
+                )}
               </span>
             </div>
 
@@ -396,22 +464,33 @@ export const TeacherAttendance: React.FC = () => {
             <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
               {groupDetail ? `${groupDetail.name} — O'quvchilar ro'yxati (${studentsList.length} nafar)` : "O'quvchilar ro'yxati"}
             </h3>
-            {groupDetail?.course && (
+            {groupDetail && (
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Kurs: {groupDetail.course.name} | Xona: {groupDetail.room?.name || '-'}
+                Kurs: {groupDetail.course?.name || '-'} | Xona: {groupDetail.room?.name || '-'}
+                {groupDetail.startTime && ` | Vaqti: ${groupDetail.startTime.slice(0, 5)} - ${groupDetail.endTime ? groupDetail.endTime.slice(0, 5) : '--:--'}`}
               </span>
             )}
           </div>
 
-          {/* Action Button: Only visible when taking initial attendance */}
+          {/* Action Button */}
           {!hasAnySavedAttendance ? (
             <Button
               icon={<Save size={16} />}
               isLoading={saveMutation.isPending}
               onClick={handleSaveInitialAttendance}
-              disabled={!selectedGroupId || studentsList.length === 0}
+              disabled={
+                !selectedGroupId ||
+                studentsList.length === 0 ||
+                !timeEligibility.canTakeAttendance
+              }
             >
-              DAVOMATNI SAQLASH
+              {timeEligibility.status === 'TIME_EXPIRED'
+                ? `VAQT TUGAGAN (${timeEligibility.deadlineTime || ''} GACHA)`
+                : timeEligibility.status === 'PAST_DATE'
+                ? "O'TGAN SANA"
+                : timeEligibility.status === 'TOO_EARLY'
+                ? `DARS BOSHLANMAGAN (${timeEligibility.startTime || ''})`
+                : 'DAVOMATNI SAQLASH'}
             </Button>
           ) : (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', padding: '6px 12px', borderRadius: '8px' }}>
@@ -552,13 +631,15 @@ export const TeacherAttendance: React.FC = () => {
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           type="button"
+                          disabled={!timeEligibility.canTakeAttendance}
                           onClick={() => handleInitialStatusChange(studentId, 'KELGAN')}
                           style={{
                             padding: '8px 14px',
                             borderRadius: '8px',
                             fontSize: '13px',
                             fontWeight: 600,
-                            cursor: 'pointer',
+                            cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
+                            opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
@@ -577,13 +658,15 @@ export const TeacherAttendance: React.FC = () => {
 
                         <button
                           type="button"
+                          disabled={!timeEligibility.canTakeAttendance}
                           onClick={() => handleInitialStatusChange(studentId, 'KELMAGAN')}
                           style={{
                             padding: '8px 14px',
                             borderRadius: '8px',
                             fontSize: '13px',
                             fontWeight: 600,
-                            cursor: 'pointer',
+                            cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
+                            opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',

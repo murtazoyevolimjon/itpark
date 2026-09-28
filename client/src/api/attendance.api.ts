@@ -5,8 +5,16 @@ export const attendanceApi = {
     const res = await api.post('/attendance/bulk', data);
     return res.data;
   },
-  getByGroup: async (groupId: string, from?: string, to?: string) => {
-    const res = await api.get(`/attendance/group/${groupId}`, { params: { from, to } });
+  getByGroup: async (groupId: string, dateOrFrom?: string, to?: string) => {
+    const params: Record<string, string | undefined> = {};
+    if (to) {
+      params.from = dateOrFrom;
+      params.to = to;
+    } else if (dateOrFrom) {
+      params.date = dateOrFrom;
+      params.from = dateOrFrom;
+    }
+    const res = await api.get(`/attendance/group/${groupId}`, { params });
     return res.data;
   },
   getStats: async (params?: number | { days?: number; date?: string }) => {

@@ -13,7 +13,9 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date');
+    const dateParam = searchParams.get('date');
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
 
     const supabase = createServerSupabaseClient();
     let query = supabase
@@ -22,11 +24,18 @@ export async function GET(
       .eq('groupId', params.groupId)
       .eq('centerId', authUser.centerId);
 
-    if (date) {
-      const cleanDate = date.split('T')[0];
+    const targetDate = dateParam || (fromParam && !toParam ? fromParam : null);
+    if (targetDate) {
+      const cleanDate = targetDate.split('T')[0];
       const startOfDay = `${cleanDate}T00:00:00.000Z`;
       const endOfDay = `${cleanDate}T23:59:59.999Z`;
       query = query.gte('date', startOfDay).lte('date', endOfDay);
+    } else if (fromParam && toParam) {
+      const cleanFrom = fromParam.split('T')[0];
+      const cleanTo = toParam.split('T')[0];
+      query = query
+        .gte('date', `${cleanFrom}T00:00:00.000Z`)
+        .lte('date', `${cleanTo}T23:59:59.999Z`);
     }
 
     const { data, error } = await query;

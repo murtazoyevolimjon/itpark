@@ -57,6 +57,7 @@ export const uz = {
   financeSummary: 'Statistika',
   financeExpenses: 'Chiqimlar',
   financePayments: 'To\'lovlar',
+  aiAssistant: 'AI Yordamchi',
   profile: 'Profil',
 
   // Sections

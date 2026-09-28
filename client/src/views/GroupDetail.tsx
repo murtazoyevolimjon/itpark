@@ -28,7 +28,9 @@ import {
   Sparkles,
   ArrowRightLeft,
   Lock,
+  AlertCircle,
 } from 'lucide-react';
+import { getTashkentDateString, checkAttendanceTimeEligibility } from '../utils/attendanceTime';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
@@ -68,7 +70,7 @@ export const GroupDetail: React.FC = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'payments'>('attendanceTake');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(getTashkentDateString());
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
 
   // Attendance state for each student: { [studentId]: { status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN', note: '' } }
@@ -327,6 +329,10 @@ export const GroupDetail: React.FC = () => {
     });
   }, [hasAnySavedAttendance, group?.studentGroups, savedAttendancesMap, attendanceState]);
 
+  const timeEligibility = useMemo(() => {
+    return checkAttendanceTimeEligibility(selectedDate, group);
+  }, [selectedDate, group]);
+
   // Save attendance mutation
   const saveAttendanceMutation = useMutation({
     mutationFn: (payload: { groupId: string; date: string; records: any[] }) =>
@@ -528,6 +534,25 @@ export const GroupDetail: React.FC = () => {
       return;
     }
 
+    if (!hasAnySavedAttendance && !timeEligibility.canTakeAttendance) {
+      error(timeEligibility.message);
+      return;
+    }
+
+    // Kechikib kelgan o'quvchi uchun izoh (sabab) yozilganligini tekshirish
+    for (const [studentId, data] of Object.entries(attendanceState)) {
+      const savedStatus = savedAttendancesMap[studentId];
+      if (savedStatus === 'KELMAGAN' && data.status === 'KECHIKKAN' && (!data.note || !data.note.trim())) {
+        const studentObj = group.studentGroups.find(
+          (sg: any) => (sg.student?.id || sg.studentId) === studentId
+        )?.student;
+        error(
+          `${studentObj ? `${studentObj.firstName} ${studentObj.lastName}` : "O'quvchi"} uchun kechikish sababini yozish majburiy!`
+        );
+        return;
+      }
+    }
+
     const records = Object.entries(attendanceState).map(([studentId, data]) => ({
       studentId,
       status: data.status,
@@ -542,7 +567,7 @@ export const GroupDetail: React.FC = () => {
   };
 
   const handleMarkAll = (status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN') => {
-    if (!group?.studentGroups || hasAnySavedAttendance) return;
+    if (!group?.studentGroups || hasAnySavedAttendance || !timeEligibility.canTakeAttendance) return;
     const updated = { ...attendanceState };
     group.studentGroups.forEach((sg: any) => {
       const studentId = sg.student?.id || sg.studentId;
@@ -557,6 +582,11 @@ export const GroupDetail: React.FC = () => {
   };
 
   const handleStudentStatusChange = (studentId: string, status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN') => {
+    if (!hasAnySavedAttendance && !timeEligibility.canTakeAttendance) {
+      error(timeEligibility.message);
+      return;
+    }
+
     const savedStatus = savedAttendancesMap[studentId];
 
     if (savedStatus) {
@@ -1202,7 +1232,7 @@ export const GroupDetail: React.FC = () => {
                 <span style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '16px', backgroundColor: 'rgba(202, 138, 4, 0.15)', color: '#ca8a04', border: '1px solid rgba(202, 138, 4, 0.3)' }}>
                   Kechikkan: <strong>{lateCount}</strong>
                 </span>
-                {!hasAnySavedAttendance && (
+                {!hasAnySavedAttendance && timeEligibility.canTakeAttendance && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1215,8 +1245,8 @@ export const GroupDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Informative Banner when attendance already saved */}
-            {hasAnySavedAttendance && (
+            {/* Informative Banner */}
+            {hasAnySavedAttendance ? (
               <div
                 style={{
                   display: 'flex',
@@ -1233,10 +1263,43 @@ export const GroupDetail: React.FC = () => {
               >
                 <Lock size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
                 <div>
-                  <strong>Ushbu sana uchun davomat saqlangan.</strong> Qoidaga ko'ra uni qayta o'zgartirib bo'lmaydi. Faqat kelmagan talaba darsga yetib kelsa, uni <strong>"Kechikkan"</strong> deb belgilashingiz mumkin (bir marta).
+                  <strong>Ushbu sana uchun davomat saqlangan (Qulflangan).</strong> Qoidaga ko'ra uni qayta o'zgartirib bo'lmaydi. Faqat kelmagan talaba darsga yetib kelsa, uni <strong>"Kechikkan"</strong> deb sababini yozib belgilashingiz mumkin.
                 </div>
               </div>
-            )}
+            ) : !timeEligibility.canTakeAttendance ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  backgroundColor: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                    ? 'rgba(239, 68, 68, 0.08)'
+                    : 'rgba(245, 158, 11, 0.08)',
+                  border: timeEligibility.status === 'TIME_EXPIRED' || timeEligibility.status === 'PAST_DATE'
+                    ? '1px solid rgba(239, 68, 68, 0.25)'
+                    : '1px solid rgba(245, 158, 11, 0.25)',
+                  fontSize: '13px',
+                  color: 'var(--text)',
+                  marginBottom: '10px',
+                }}
+              >
+                <AlertCircle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+                <div>
+                  <strong style={{ color: '#ef4444' }}>
+                    {timeEligibility.status === 'TIME_EXPIRED'
+                      ? 'Davomat olish vaqti tugagan! '
+                      : timeEligibility.status === 'PAST_DATE'
+                      ? "O'tgan sana uchun yangi davomat saqlash taqiqlangan! "
+                      : timeEligibility.status === 'FUTURE_DATE'
+                      ? 'Kelgusi sana uchun davomat olinmaydi! '
+                      : 'Dars hali boshlanmagan! '}
+                  </strong>
+                  {timeEligibility.message}
+                </div>
+              </div>
+            ) : null}
 
             {/* Students Attendance List */}
             {totalStudents === 0 ? (
@@ -1439,12 +1502,23 @@ export const GroupDetail: React.FC = () => {
                     icon={hasAnySavedAttendance && !hasPendingAttendanceUpdates ? <Lock size={18} /> : <Save size={18} />}
                     isLoading={saveAttendanceMutation.isPending}
                     onClick={handleSaveAttendance}
-                    disabled={hasAnySavedAttendance && !hasPendingAttendanceUpdates}
+                    disabled={
+                      (hasAnySavedAttendance && !hasPendingAttendanceUpdates) ||
+                      (!hasAnySavedAttendance && !timeEligibility.canTakeAttendance)
+                    }
                     variant={hasAnySavedAttendance && hasPendingAttendanceUpdates ? 'primary' : (hasAnySavedAttendance ? 'outline' : 'primary')}
                     style={{ minWidth: '240px' }}
                   >
                     {hasAnySavedAttendance
                       ? (hasPendingAttendanceUpdates ? 'KECHIKKANLARNI SAQLASH' : 'DAVOMAT SAQLANGAN (QULFLANGAN)')
+                      : !timeEligibility.canTakeAttendance
+                      ? (timeEligibility.status === 'TIME_EXPIRED'
+                          ? `VAQT TUGAGAN (${timeEligibility.deadlineTime || ''} GACHA)`
+                          : timeEligibility.status === 'PAST_DATE'
+                          ? "O'TGAN SANA"
+                          : timeEligibility.status === 'TOO_EARLY'
+                          ? `DARS BOSHLANMAGAN (${timeEligibility.startTime || ''})`
+                          : "DAVOMAT OLIB BO'LMAYDI")
                       : 'DAVOMATNI SAQLASH'}
                   </Button>
                 </div>

@@ -24,7 +24,9 @@ import {
   Search,
   Calendar,
   Sparkles,
+  Bot,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Card } from '../components/ui/Card/Card';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
@@ -641,6 +643,80 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* AI Assistant Quick Banner */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          color: '#ffffff',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Bot size={22} color="#ffffff" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700 }}>Markaz CRM AI Yordamchisi</span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  padding: '2px 6px',
+                  borderRadius: '6px',
+                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                  color: '#ffffff',
+                }}
+              >
+                YANGI
+              </span>
+            </div>
+            <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
+              Markazning bugungi ko'rsatkichlari, qarzdorlik, davomat va yuklama bo'yicha sun'iy intellekt tahlili
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/ai-assistant"
+          style={{
+            padding: '8px 16px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            color: '#ffffff',
+            fontSize: '13px',
+            fontWeight: 700,
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Sparkles size={15} /> AI Tahlilini Ko'rish
+        </Link>
+      </div>
+
       {/* 1. 2x3 Stat Cards */}
       <div className={styles.statsGrid}>
         {statItems.map((item) => {

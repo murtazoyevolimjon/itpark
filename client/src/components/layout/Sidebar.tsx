@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -41,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const teacherNavItems = [
     { path: '/teacher', label: 'Mening guruhlarim', icon: Users },
     { path: '/teacher/attendance', label: 'Davomat olish', icon: CalendarCheck },
+    { path: '/ai-assistant', label: t('aiAssistant'), icon: Sparkles },
   ];
 
   const adminNavItems = [
@@ -52,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/attendance', label: t('attendance'), icon: CalendarCheck },
     { path: '/rooms', label: t('rooms'), icon: DoorOpen },
     { path: '/employees', label: t('employees'), icon: Briefcase },
+    { path: '/ai-assistant', label: t('aiAssistant'), icon: Sparkles },
   ];
 
   const mainNavItems = isTeacher ? teacherNavItems : adminNavItems;
@@ -122,9 +125,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   onClick={onClose}
                 >
                   <div className={styles.navItemLeft}>
-                    <Icon size={18} />
+                    <Icon size={18} color={item.path === '/ai-assistant' ? '#6366f1' : undefined} />
                     <span>{item.label}</span>
                   </div>
+                  {item.path === '/ai-assistant' && (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                        color: '#ffffff',
+                        letterSpacing: '0.5px',
+                        boxShadow: '0 2px 6px rgba(99, 102, 241, 0.4)',
+                      }}
+                    >
+                      AI
+                    </span>
+                  )}
                 </Link>
               );
             })}
