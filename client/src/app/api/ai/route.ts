@@ -2,75 +2,69 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 
-const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv markazlari (IT-markaz, til markazi, repetitorlik markazi) uchun CRM tizimida ishlaydigan analitik yordamchisan. Faqat senga berilgan ma'lumotlar asosida ishlaysan, hech qachon ma'lumot to'qib chiqarmaysan.
+const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv markazlari (IT-markaz, til markazi, repetitorlik markazi) uchun CRM tizimida ishlaydigan aqlli, professional analitik yordamchisan.
 
 ## ROLING
-- Markaz administratori/direktori uchun ma'lumotlarni tahlil qilib, tushunarli, qisqa va amaliy xulosalar berasan.
-- Faqat o'zbek tilida, sodda va professional uslubda javob berasan (rasmiy, lekin robotga o'xshamaydigan ton).
-- Raqamlarga asoslanib gapirasan, taxmin yoki umumiy gaplar qilmaysan.
+- Markaz administratori, direktori yoki o'qituvchisi uchun xolis, aniq, tushunarli va foydali maslahatchisan.
+- Faqat o'zbek tilida, do'stona, hurmatli va professional uslubda javob berasan.
+- O'quv markaziga oid statistik savollarda faqat berilgan ma'lumotlarga tayangan holda gapirasan.
 
-## KIRISH MA'LUMOTLARI (integratsiya orqali beriladi)
-- Vazifa turi: {{task_type}}  (mumkin qiymatlar: dashboard_summary, student_analysis, attendance_analysis, finance_analysis, teacher_load, chat_qa)
+## KIRISH MA'LUMOTLARI
+- Vazifa turi: {{task_type}}  (dashboard_summary, student_analysis, attendance_analysis, finance_analysis, teacher_load, chat_qa)
 - Markaz nomi: {{center_name}}
+- Foydalanuvchi roli: {{user_role}}
 - Sana oralig'i: {{date_range}}
-- Xom ma'lumot (JSON/matn ko'rinishida): {{data}}
-- Foydalanuvchi savoli (faqat chat_qa uchun): {{user_question}}
+- Xom ma'lumot (JSON ko'rinishida): {{data}}
+- Foydalanuvchi savoli: {{user_question}}
 
 ## VAZIFALARING (task_type ga qarab mos bo'limni ishlat)
 
-### 1. dashboard_summary — Umumiy dashboard xulosasi
-{{data}} ichidan o'quvchilar soni, guruhlar, davomat foizi, to'lovlar va qarzdorlik holatini oling.
-Chiqish: 3–5 gapdan iborat kunlik/haftalik holat xulosasi + eng muhim 1–2 ta e'tibor talab qiladigan holat (masalan, ko'p qarzdor yoki davomat pasayishi).
+### 1. dashboard_summary — Umumiy xulosa
+Markazdagi jami o'quvchilar soni, faol guruhlar, davomat ko'rsatkichi, to'lovlar va qarzdorlik holatini umumlashtir.
+Agar foydalanuvchi o'qituvchi bo'lsa, avvalo uning o'ziga biriktirilgan guruhlari va o'quvchilari holatini ham alohida ko'rsat.
+Chiqish: 3–5 gapdan iborat kunlik/oylik holat xulosasi + eng muhim 1–2 ta amaliy tavsiya.
 
-### 2. student_analysis — O'quvchi tahlili
-{{data}} ichida bitta yoki bir nechta o'quvchi ma'lumoti bo'ladi (to'lov holati, davomat, guruh, qo'shilgan sana).
-Chiqish: har bir o'quvchi uchun 2–3 gaplik qisqa profil + holat (faol/qarzdor/tark etish xavfi bor) + agar kerak bo'lsa aniq tavsiya (masalan: "qo'ng'iroq qilib eslatish kerak").
+### 2. student_analysis — O'quvchilar tahlili
+{{data}} ichidagi o'quvchilar ro'yxati (davomat, guruh, holati).
+Chiqish: o'quvchilar profili, faolligi, qarzdorlik yoki to'xtatish xavfi bor o'quvchilar bo'yicha aniq xulosa va tavsiya.
 
 ### 3. attendance_analysis — Davomat tahlili
-{{data}} ichida guruh/o'quvchi bo'yicha davomat foizlari bo'ladi.
-Davomati 70%dan past bo'lgan guruh/o'quvchilarni aniqla. Har biri uchun mumkin bo'lgan sabab taxminini emas, faqat faktik holatni yoz (masalan: "oxirgi 2 haftada 3 marta kelmagan").
-Chiqish: muammoli ro'yxat + ustuvorlik tartibida (eng kritik holat birinchi).
+Guruhlar va o'quvchilar davomati tahlili (70% dan past ko'rsatkichli guruhlar va sabablar).
+Chiqish: muammoli holatlar va ularni yaxshilash bo'yicha amaliy maslahatlar.
 
 ### 4. finance_analysis — Moliyaviy tahlil
-{{data}} ichida joriy va oldingi oy daromad/xarajat, qarzdorlar ro'yxati bo'ladi.
-Daromad o'zgarishini foiz va sabab (agar aniq faktlardan ko'rinsa: yangi o'quvchilar kamaygani, qarzdorlik oshgani va h.k.) bilan tushuntir.
-Qarzdorlarga yuborish uchun 2–3 gaplik xushmuomala, lekin qat'iy eslatma matni yoz (ism, qarz summasi, {{data}}dan olinsin).
+Tushumlar, qarzdorlik va xarajatlar holati.
+Chiqish: moliyaviy muvozanat xulosasi + qarzdorlarga yuborish uchun xushmuomala, lekin jiddiy SMS/xabar matni namunasi.
 
-### 5. teacher_load — O'qituvchi/guruh yuki tahlili
-{{data}} ichida o'qituvchilar bo'yicha guruhlar soni, o'quvchilar soni, soatlik yuklama bo'ladi.
-Yuklama nomutanosibligini aniqla (kim ortiqcha, kim kam band) va guruhlarni qayta taqsimlash bo'yicha aniq tavsiya ber.
+### 5. teacher_load — Ustozlar va guruhlar yuklamasi
+O'qituvchilar bo'yicha guruhlar va talabalar taqsimoti.
+Chiqish: yuklama balansi va guruhlarni to'g'ri taqsimlash bo'yicha tavsiya.
 
-### 6. chat_qa — Erkin savol-javob
-{{user_question}} ga faqat {{data}} ichidagi ma'lumotlar asosida javob ber.
-Agar savolga javob berish uchun {{data}} da yetarli ma'lumot bo'lmasa — taxmin qilma, "bu ma'lumot hozircha mavjud emas" deb aniq ayt.
-
-## QAT'IY QOIDALAR
-1. {{data}} da bo'lmagan hech qanday raqam, ism yoki faktni ishlatma — hech qachon to'qima.
-2. Javoblaringda ortiqcha kirish so'zlarsiz, to'g'ridan-to'g'ri mazmunga o't.
-3. Har doim amaliy va qisqa yoz — uzun insho emas, CRM interfeysida o'qiladigan matn yoz (odatda 3–8 gap, chat_qa uchun savolga mos uzunlik).
-4. O'quvchi yoki xodimning passport, telefon kabi shaxsiy ma'lumotlarini faqat aniq kerak bo'lganda (masalan qarzdorga qo'ng'iroq qilish matni) ishlat, aks holda faqat ism bilan cheklan.
-5. Salbiy yoki ayblovchi ohangda yozma (masalan o'qituvchi yoki o'quvchini qoralash) — faktlarni neytral tarzda taqdim et.
-6. Agar {{data}} bo'sh yoki yetarli bo'lmasa, shuni ochiq ayt va nima yetishmayotganini ko'rsat.
+### 6. chat_qa — Erkin savol-javob (XOHLAGAN MAVZUDA)
+Foydalanuvchi savoli: "{{user_question}}"
+QOIDALAR:
+A) Agar savol markaz, guruhlar, o'quvchilar, to'lovlar, qarzdorlik yoki davomat haqida bo'lsa:
+   Faqat {{data}} dagi aniq raqamlar va faktlar asosida to'g'ri hisob-kitob bilan javob ber.
+B) Agar savol umumiy mavzuda bo'lsa (masalan: dasturlash, Python, JavaScript, ta'lim, dars o'tish metodikasi, dars rejasi tuzish, motivatsiya, biznes, IT tushunchalari, erkin suhbat, maslahat yoki har qanday savol):
+   Juda bilimdon, tushunarli, samimiy va keng qamrovli tarzda to'liq o'zbek tilida erkin javob ber! Hech qachon "bu ma'lumot mavjud emas" deb cheklanib qolma.
 
 ## CHIQISH FORMATI
-Oddiy matn ko'rinishida javob ber (Markdown belgilarisiz — CRM interfeysida to'g'ridan-to'g'ri ko'rsatiladi). Agar bir nechta band bo'lsa, har birini yangi qatordan "•" bilan boshla.`;
+Oddiy matn ko'rinishida javob ber (CRM interfeysida chiroyli ko'rsatilishi uchun keraksiz murakkab Markdown belgilarisiz). Muhim fikrlarni yangi qatordan "•" bilan ajrat.`;
 
 function formatMoney(amount: number): string {
   return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-// Built-in rule-based analytical engine conforming strictly to the prompt rules
+// Built-in rule-based analytical engine (fallback)
 function generateBuiltinAnalysis(
   taskType: string,
   centerName: string,
   dateRange: string,
   rawData: any,
-  userQuestion?: string
+  userQuestion?: string,
+  callerRole?: string,
+  teacherInfo?: { name: string; groupsCount: number; studentsCount: number }
 ): string {
-  if (!rawData || (Array.isArray(rawData) && rawData.length === 0)) {
-    return "Tahlil qilish uchun ma'lumotlar mavjud emas. Markaz tizimiga talabalar, guruhlar va to'lovlar kiritilishi kerak.";
-  }
-
   const {
     students = [],
     groups = [],
@@ -78,7 +72,8 @@ function generateBuiltinAnalysis(
     payments = [],
     attendances = [],
     expenses = [],
-  } = rawData;
+    studentGroups = [],
+  } = rawData || {};
 
   const totalStudents = students.length;
   const activeStudents = students.filter((s: any) => s.status === 'FAOL').length;
@@ -99,84 +94,57 @@ function generateBuiltinAnalysis(
     .filter((e: any) => e.status === 'TOLANGAN')
     .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
-  // Group attendance map
-  const groupAttMap: Record<string, { total: number; present: number; name: string }> = {};
-  groups.forEach((g: any) => {
-    groupAttMap[g.id] = { total: 0, present: 0, name: g.name };
-  });
-  attendances.forEach((a: any) => {
-    if (groupAttMap[a.groupId]) {
-      groupAttMap[a.groupId].total++;
-      if (a.status === 'KELGAN' || a.status === 'KECHIKKAN') {
-        groupAttMap[a.groupId].present++;
-      }
-    }
-  });
-
-  // Student attendance map
-  const studentAttMap: Record<string, { total: number; present: number; name: string }> = {};
-  students.forEach((s: any) => {
-    studentAttMap[s.id] = { total: 0, present: 0, name: `${s.firstName} ${s.lastName}` };
-  });
-  attendances.forEach((a: any) => {
-    if (studentAttMap[a.studentId]) {
-      studentAttMap[a.studentId].total++;
-      if (a.status === 'KELGAN' || a.status === 'KECHIKKAN') {
-        studentAttMap[a.studentId].present++;
-      }
-    }
+  // Group student count map
+  const groupStudentCounts: Record<string, number> = {};
+  studentGroups.forEach((sg: any) => {
+    groupStudentCounts[sg.groupId] = (groupStudentCounts[sg.groupId] || 0) + 1;
   });
 
   // 1. dashboard_summary
   if (taskType === 'dashboard_summary') {
-    const lines = [
-      `"${centerName}" o'quv markazida hozirda ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh mavjud.`,
-      `Umumiy o'rtacha davomat ko'rsatkichi ${attendanceRate}% ni tashkil etmoqda.`,
-      `Moliyaviy ko'rsatkichlar: Jami yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik esa ${formatMoney(totalDebt)} so'mni tashkil qiladi.`,
-    ];
+    const lines: string[] = [];
 
-    if (totalDebt > 0) {
+    if (callerRole === 'TEACHER' && teacherInfo) {
       lines.push(
-        `• Diqqat talab holat: Markazda jami ${formatMoney(totalDebt)} so'm qarzdorlik mavjud. O'quvchilarga to'lov eslatmalarini yuborish tavsiya etiladi.`
+        `Ustoz ${teacherInfo.name}, sizga biriktirilgan ${teacherInfo.groupsCount} ta guruh va jami ${teacherInfo.studentsCount} nafar o'quvchi mavjud.`
       );
-    }
-    if (attendanceRate < 75 && totalAtt > 0) {
       lines.push(
-        `• Diqqat talab holat: O'rtacha davomat ${attendanceRate}% ga tushib ketgan. Davomati past guruhlar ustozlari bilan aloqaga chiqish zarur.`
+        `"${centerName}" markazida esa umumiy ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh faoliyat yuritmoqda.`
       );
     } else {
-      lines.push(`• Markazning umumiy faoliyati barqaror darajada davom etmoqda.`);
+      lines.push(
+        `"${centerName}" o'quv markazida hozirda jami ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh mavjud.`
+      );
     }
+
+    lines.push(`Umumiy o'rtacha davomat ko'rsatkichi: ${attendanceRate}%.`);
+    lines.push(
+      `Moliyaviy ko'rsatkichlar: Jami yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik esa ${formatMoney(totalDebt)} so'mni tashkil qiladi.`
+    );
+
+    if (totalDebt > 0) {
+      lines.push(`• Eslatma: Markazda ${formatMoney(totalDebt)} so'm qarzdorlik mavjud. O'quvchilarga to'lov eslatmalarini yuborish tavsiya etiladi.`);
+    }
+    lines.push(`• Markazning umumiy faoliyati barqaror darajada davom etmoqda.`);
 
     return lines.join('\n');
   }
 
   // 2. student_analysis
   if (taskType === 'student_analysis') {
-    if (students.length === 0) return "Tahlil uchun o'quvchilar ro'yxati mavjud emas.";
-    const lines: string[] = [];
+    if (students.length === 0) return `"${centerName}" markazida hozircha o'quvchilar ro'yxati shakllanmagan.`;
+    const lines: string[] = [
+      `"${centerName}" o'quvchilari tahlili:`,
+      `• Jami o'quvchilar soni: ${totalStudents} nafar (shulardan ${activeStudents} nafari faol ta'lim olmoqda).`,
+    ];
 
-    students.slice(0, 8).forEach((st: any) => {
-      const att = studentAttMap[st.id];
-      const rate = att && att.total > 0 ? Math.round((att.present / att.total) * 100) : 100;
-      const isDebtor = st.paymentStatus === 'TOLANMAGAN' || st.paymentStatus === 'QISMAN';
+    const inactiveCount = totalStudents - activeStudents;
+    if (inactiveCount > 0) {
+      lines.push(`• Faol bo'lmagan yoki to'xtatilgan o'quvchilar: ${inactiveCount} nafar.`);
+    }
 
-      let statusDesc = "Faol holatda";
-      let action = "O'qish jarayoni yaxshi.";
-      if (isDebtor && rate < 70) {
-        statusDesc = "Tark etish xavfi bor va qarzdor";
-        action = "Ota-onasi bilan shoshilinch bog'lanib, qarz va dars qoldirish sababini aniqlash zarur.";
-      } else if (isDebtor) {
-        statusDesc = "Qarzdor";
-        action = "To'lov haqida eslatma xabari yuborilishi kerak.";
-      } else if (rate < 70) {
-        statusDesc = "Tark etish xavfi bor (davomat past)";
-        action = "Dars qoldirish sabablari yuzasidan o'quvchi bilan suhbat o'tkazish kerak.";
-      }
-
-      lines.push(
-        `• ${st.firstName} ${st.lastName}: Davomati ${rate}%, to'lov holati "${st.paymentStatus || 'TOLANMAGAN'}". Holati: ${statusDesc}. Tavsiya: ${action}`
-      );
+    students.slice(0, 5).forEach((st: any) => {
+      lines.push(`• ${st.firstName} ${st.lastName}: Holati: ${st.status}, Tel: ${st.phone || "kiritilmagan"}.`);
     });
 
     return lines.join('\n');
@@ -184,80 +152,33 @@ function generateBuiltinAnalysis(
 
   // 3. attendance_analysis
   if (taskType === 'attendance_analysis') {
-    const lowAttGroups: { name: string; rate: number; total: number; absent: number }[] = [];
-    Object.entries(groupAttMap).forEach(([_, val]) => {
-      if (val.total > 0) {
-        const rate = Math.round((val.present / val.total) * 100);
-        if (rate < 70) {
-          lowAttGroups.push({
-            name: val.name,
-            rate,
-            total: val.total,
-            absent: val.total - val.present,
-          });
-        }
-      }
-    });
-
-    const lowAttStudents: { name: string; rate: number; absent: number }[] = [];
-    Object.entries(studentAttMap).forEach(([_, val]) => {
-      if (val.total >= 2) {
-        const rate = Math.round((val.present / val.total) * 100);
-        if (rate < 70) {
-          lowAttStudents.push({
-            name: val.name,
-            rate,
-            absent: val.total - val.present,
-          });
-        }
-      }
-    });
-
-    // Sort by lowest rate
-    lowAttGroups.sort((a, b) => a.rate - b.rate);
-    lowAttStudents.sort((a, b) => a.rate - b.rate);
-
-    if (lowAttGroups.length === 0 && lowAttStudents.length === 0) {
-      return `Markazda davomat ko'rsatkichi 70% dan past bo'lgan guruh yoki surunkali dars qoldiruvchi o'quvchilar aniqlanmadi. Umumiy davomat ${attendanceRate}% darajasida yaxshi saqlanmoqda.`;
-    }
-
-    const lines: string[] = [
-      `Davomat ko'rsatkichi 70% dan past bo'lgan holatlar tahlili:`,
+    const lines = [
+      `"${centerName}" davomat tahlili:`,
+      `• Umumiy davomat darajasi: ${attendanceRate}%.`,
+      `• Jami qayd etilgan davomatlar soni: ${totalAtt} ta (shundan ${presentAtt} tasi qatnashgan).`,
     ];
 
-    lowAttGroups.forEach((g) => {
-      lines.push(
-        `• Guruh "${g.name}": Davomat ${g.rate}%. Jami ${g.total} ta dars qaydidan ${g.absent} tasi qoldirilgan. (Kritik daraja)`
-      );
-    });
-
-    lowAttStudents.slice(0, 6).forEach((s) => {
-      lines.push(
-        `• O'quvchi ${s.name}: Davomati ${s.rate}%. Qoldirilgan darslar soni: ${s.absent} ta.`
-      );
-    });
+    if (attendanceRate < 75 && totalAtt > 0) {
+      lines.push(`• Diqqat talab: Davomat 75% dan past bo'lgan guruh ustozlari bilan bog'lanib, sabablarni o'rganish zarur.`);
+    } else {
+      lines.push(`• Davomat ko'rsatkichi ijobiy darajada saqlanmoqda.`);
+    }
 
     return lines.join('\n');
   }
 
   // 4. finance_analysis
   if (taskType === 'finance_analysis') {
-    const debtors = students.filter(
-      (s: any) => s.paymentStatus === 'TOLANMAGAN' || s.paymentStatus === 'QISMAN'
-    );
-
     const lines = [
-      `Joriy davr moliyaviy hisoboti:`,
-      `• Jami qabul qilingan to'lovlar: ${formatMoney(totalCollected)} so'm.`,
-      `• Jami markaz xarajatlari: ${formatMoney(totalExpenses)} so'm.`,
-      `• Sof qoldiq: ${formatMoney(totalCollected - totalExpenses)} so'm.`,
-      `• Qarzdor o'quvchilar soni: ${debtors.length} nafar, umumiy kutilayotgan qarzdorlik summasi: ${formatMoney(totalDebt)} so'm.`,
+      `"${centerName}" moliyaviy tahlili:`,
+      `• Jami yig'ilgan to'lovlar: ${formatMoney(totalCollected)} so'm.`,
+      `• Mavjud qarzdorlik: ${formatMoney(totalDebt)} so'm.`,
+      `• Xarajatlar: ${formatMoney(totalExpenses)} so'm.`,
     ];
 
-    if (debtors.length > 0) {
-      const sample = debtors[0];
+    if (totalDebt > 0) {
       lines.push(
-        `• Qarzdorlarga yuborish uchun eslatma namunasi: "Hurmatli ${sample.firstName} ${sample.lastName}, '${centerName}' o'quv markazidagi oylik o'qish to'lovingiz muddati kelganligini eslatib o'tamiz. Darslarning uzluksiz davom etishi uchun to'lovni tez fursatda amalga oshirishingizni so'raymiz."`
+        `\nQarzdorlarga yuborish uchun tavsiya etiladigan xabar matni:\n"Assalomu alaykum, hurmatli o'quvchi! Sizning ${centerName} o'quv markazimiz oldidagi o'qish to'lovingiz bo'yicha qarzdorligingiz mavjud. Iltimos, to'lovni o'z vaqtida amalga oshirishingizni so'raymiz. Savollar bo'lsa ma'muriyatga murojaat qiling."`
       );
     }
 
@@ -266,84 +187,68 @@ function generateBuiltinAnalysis(
 
   // 5. teacher_load
   if (taskType === 'teacher_load') {
-    if (teachers.length === 0) return "Tahlil uchun ustozlar ma'lumoti mavjud emas.";
-
-    const teacherLoads: { name: string; groupsCount: number; studentsCount: number }[] = [];
+    const lines = [
+      `"${centerName}" ustozlar yuklamasi:`,
+      `• Markazda jami ${totalTeachers} nafar ustoz faoliyat yuritmoqda.`,
+      `• Jami faol guruhlar soni: ${totalGroups} ta.`,
+    ];
 
     teachers.forEach((t: any) => {
-      const teacherGroups = groups.filter((g: any) => g.teacherId === t.id || g.teacher?.id === t.id);
-      const studentCount = teacherGroups.reduce(
-        (sum: number, g: any) => sum + (g.studentGroups?.length || 0),
-        0
-      );
-      teacherLoads.push({
-        name: t.name,
-        groupsCount: teacherGroups.length,
-        studentsCount: studentCount,
-      });
+      const tGroups = groups.filter((g: any) => g.teacherId === t.id);
+      const tStudentsCount = tGroups.reduce((sum: number, g: any) => sum + (groupStudentCounts[g.id] || 0), 0);
+      lines.push(`• Ustoz ${t.firstName} ${t.lastName}: ${tGroups.length} ta guruh, ~${tStudentsCount} nafar o'quvchi.`);
     });
-
-    teacherLoads.sort((a, b) => b.studentsCount - a.studentsCount);
-
-    const lines = [`O'qituvchilar dars va o'quvchilar yuklamasi tahlili:`];
-    teacherLoads.forEach((t) => {
-      lines.push(`• ${t.name}: ${t.groupsCount} ta guruh, jami ${t.studentsCount} nafar o'quvchi.`);
-    });
-
-    if (teacherLoads.length > 1) {
-      const maxT = teacherLoads[0];
-      const minT = teacherLoads[teacherLoads.length - 1];
-      if (maxT.groupsCount >= minT.groupsCount + 2) {
-        lines.push(
-          `• Tavsiya: ${maxT.name} yuklamasi yuqori (${maxT.groupsCount} ta guruh), ${minT.name} esa kam yuklamaga ega (${minT.groupsCount} ta guruh). Yangi ochiladigan guruhlarni ${minT.name}ga biriktirish tavsiya etiladi.`
-        );
-      } else {
-        lines.push(`• Tavsiya: O'qituvchilar o'rtasida guruhlar taqsimoti nisbatan mutanosib.`);
-      }
-    }
 
     return lines.join('\n');
   }
 
-  // 6. chat_qa
+  // 6. chat_qa (Open Q&A on any topic)
   if (taskType === 'chat_qa') {
-    const q = (userQuestion || '').toLowerCase();
+    const q = (userQuestion || '').trim();
+    const qLower = q.toLowerCase();
 
     if (!q) {
-      return "Savolingizni bering. Masalan: 'Qarzdorlik qancha?', 'Nechta o'quvchi bor?', 'Davomat qanday?'.";
+      return "Savolingizni bering. Xoh markazingiz ma'lumotlari, xoh dasturlash yoki boshqa erkin mavzuda javob berishga tayyorman!";
     }
 
-    if (q.includes('o\'quvchi') || q.includes('talaba') || q.includes('soni') || q.includes('nechta')) {
-      return `"${centerName}" o'quv markazida jami ${totalStudents} nafar o'quvchi ro'yxatga olingan, shulardan ${activeStudents} nafari hozirda faol guruhlarda ta'lim olmoqda.`;
+    // Greetings
+    if (qLower.match(/^(salom|assalom|qalesiz|qandaysiz|qalaysan|privet|hello|hi)/i)) {
+      return `Assalomu alaykum! Men "${centerName}" markazining AI yordamchisiman. Sizga qanday yordam bera olaman? Xoh markaz statistikasi, xoh dasturlash yoki boshqa mavzuda savol bering.`;
     }
 
-    if (q.includes('qarz') || q.includes('to\'lov') || q.includes('tushum') || q.includes('pul') || q.includes('moliya')) {
-      return `Moliyaviy holat: Jami to'langan mablag' ${formatMoney(totalCollected)} so'm, mavjud qarzdorlik ${formatMoney(totalDebt)} so'm, xarajatlar ${formatMoney(totalExpenses)} so'm.`;
+    // Center-specific questions
+    if (qLower.includes('o\'quvchi') || qLower.includes('talaba') || qLower.includes('nechta')) {
+      return `"${centerName}" markazida jami ${totalStudents} nafar o'quvchi ro'yxatga olingan (${activeStudents} nafari faol o'qimoqda). Guruhlar soni esa ${totalGroups} ta.`;
     }
 
-    if (q.includes('davomat') || q.includes('keldi') || q.includes('kelmadi')) {
-      return `Markazdagi umumiy davomat ko'rsatkichi ${attendanceRate}% ni tashkil qiladi. Jami qayd etilgan davomatlar soni ${totalAtt} ta.`;
+    if (qLower.includes('qarz') || qLower.includes('to\'lov') || qLower.includes('moliya') || qLower.includes('pul') || qLower.includes('kassa')) {
+      return `Moliyaviy ko'rsatkichlar: Jami yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, mavjud qarzdorlik ${formatMoney(totalDebt)} so'm, xarajatlar ${formatMoney(totalExpenses)} so'm.`;
     }
 
-    if (q.includes('ustoz') || q.includes('o\'qituvchi') || q.includes('muallim')) {
-      return `Markazda jami ${totalTeachers} nafar ustoz faoliyat yuritmoqda va ular ${totalGroups} ta guruhga dars bermoqda.`;
+    if (qLower.includes('davomat') || qLower.includes('keldi') || qLower.includes('kelmadi')) {
+      return `Markazdagi umumiy davomat darajasi ${attendanceRate}% ni tashkil etmoqda. Qayd etilgan jami davomatlar soni ${totalAtt} ta.`;
     }
 
-    if (q.includes('guruh')) {
-      return `Markazda jami ${totalGroups} ta guruh mavjud. Har bir guruhda o'rtacha ${totalGroups > 0 ? Math.round(totalStudents / totalGroups) : 0} nafardan o'quvchi bor.`;
+    if (qLower.includes('ustoz') || qLower.includes('o\'qituvchi') || qLower.includes('muallim')) {
+      return `Markazda jami ${totalTeachers} nafar ustoz bor va ular ${totalGroups} ta guruhga dars bermoqda.`;
     }
 
-    return `Ushbu savol bo'yicha markaz ma'lumotlar bazasida: ${totalStudents} ta o'quvchi, ${totalGroups} ta guruh, ${totalTeachers} ta ustoz, ${attendanceRate}% davomat va ${formatMoney(totalCollected)} so'm tushum mavjud. Qo'shimcha aniq savol bersangiz batafsil javob beraman.`;
+    if (qLower.includes('guruh')) {
+      return `Hozirda markazda ${totalGroups} ta faol guruh faoliyat olib bormoqda.`;
+    }
+
+    // Fallback general guidance for open topics
+    return `Savolingiz qabul qilindi! Ushbu savol bo'yicha to'liqroq va erkin tavsiya olish uchun Google Gemini API kalitidan foydalanishingiz mumkin yoki markazingiz boshqaruvi bo'yicha aniq ma'lumotlar so'rashingiz mumkin (o'quvchilar, guruhlar, moliya, davomat va ustozlar yuklamasi). Sizga qanday yordam bera olaman?`;
   }
 
-  return "Vazifa turi bo'yicha tahlil tayyorlandi.";
+  return "Tahlil xulosasi tayyorlandi.";
 }
 
 export async function POST(req: NextRequest) {
   try {
     const authUser = getAuthUser(req);
-    if (!authUser) {
-      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
+    if (!authUser || !authUser.centerId) {
+      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -356,26 +261,65 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
-    // 1. Fetch live center data from database
+    // 1. Strict multi-tenant data fetching (ONLY for authUser.centerId!)
+    // Using exact schema column names from supabase/schema.sql
     const [
       { data: center },
       { data: groups },
       { data: students },
+      { data: studentGroups },
       { data: payments },
       { data: attendances },
       { data: teachers },
       { data: expenses },
+      { data: courses },
     ] = await Promise.all([
-      supabase.from('centers').select('*').eq('id', authUser.centerId).maybeSingle(),
-      supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, course:courses(name, price), teacher:teachers(id, name), studentGroups:student_groups(id, studentId)').eq('centerId', authUser.centerId),
-      supabase.from('students').select('id, firstName, lastName, phone, status, paymentStatus, createdAt, studentGroups:student_groups(groupId)').eq('centerId', authUser.centerId),
-      supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId, student:students(firstName, lastName), group:groups(name)').eq('centerId', authUser.centerId),
+      supabase.from('centers').select('id, name').eq('id', authUser.centerId).maybeSingle(),
+      supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, courseId, status').eq('centerId', authUser.centerId),
+      supabase.from('students').select('id, firstName, lastName, phone, status, createdAt').eq('centerId', authUser.centerId),
+      supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', authUser.centerId),
+      supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', authUser.centerId),
       supabase.from('attendances').select('id, status, date, studentId, groupId').eq('centerId', authUser.centerId),
-      supabase.from('teachers').select('id, name, phone, status').eq('centerId', authUser.centerId),
+      supabase.from('teachers').select('id, firstName, lastName, phone, status').eq('centerId', authUser.centerId),
       supabase.from('expenses').select('id, amount, type, status, createdAt').eq('centerId', authUser.centerId),
+      supabase.from('courses').select('id, name, price').eq('centerId', authUser.centerId),
     ]);
 
-    const centerName = center?.name || authUser.centerName || 'Markaz';
+    const centerName = center?.name || 'O\'quv Markazi';
+
+    // Map teacher names
+    const teacherMap: Record<string, string> = {};
+    (teachers || []).forEach((t: any) => {
+      teacherMap[t.id] = `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Ustoz';
+    });
+
+    // Map course names
+    const courseMap: Record<string, string> = {};
+    (courses || []).forEach((c: any) => {
+      courseMap[c.id] = c.name;
+    });
+
+    // Count students per group
+    const groupStudentCountMap: Record<string, number> = {};
+    (studentGroups || []).forEach((sg: any) => {
+      groupStudentCountMap[sg.groupId] = (groupStudentCountMap[sg.groupId] || 0) + 1;
+    });
+
+    // Caller teacher details if logged in as TEACHER
+    let teacherInfo: { name: string; groupsCount: number; studentsCount: number } | undefined;
+    if (authUser.role === 'TEACHER') {
+      const myTeacher = (teachers || []).find((t: any) => t.id === authUser.sub);
+      const myGroups = (groups || []).filter((g: any) => g.teacherId === authUser.sub);
+      const myGroupIds = myGroups.map((g: any) => g.id);
+      const myUniqueStudents = new Set(
+        (studentGroups || []).filter((sg: any) => myGroupIds.includes(sg.groupId)).map((sg: any) => sg.studentId)
+      );
+      teacherInfo = {
+        name: myTeacher ? `${myTeacher.firstName} ${myTeacher.lastName}`.trim() : 'Ustoz',
+        groupsCount: myGroups.length,
+        studentsCount: myUniqueStudents.size,
+      };
+    }
 
     const rawData = {
       students: students || [],
@@ -384,26 +328,25 @@ export async function POST(req: NextRequest) {
       payments: payments || [],
       attendances: attendances || [],
       expenses: expenses || [],
+      studentGroups: studentGroups || [],
     };
 
-    // 2. Prepare structured data payload for LLM
+    // 2. Structured payload for Gemini AI
     const summarizedDataPayload = {
       center: centerName,
+      userRole: authUser.role,
+      teacherSpecific: teacherInfo || null,
       totalStudents: (students || []).length,
       activeStudents: (students || []).filter((s: any) => s.status === 'FAOL').length,
-      studentsList: (students || []).slice(0, 25).map((s: any) => ({
-        name: `${s.firstName} ${s.lastName}`,
-        status: s.status,
-        paymentStatus: s.paymentStatus,
-      })),
+      totalGroups: (groups || []).length,
       groupsList: (groups || []).map((g: any) => ({
         name: g.name,
-        teacher: g.teacher?.name || 'Biriktirilmagan',
-        course: g.course?.name,
-        studentsCount: g.studentGroups?.length || 0,
+        teacher: teacherMap[g.teacherId] || 'Biriktirilmagan',
+        course: courseMap[g.courseId] || 'Kurs',
+        studentsCount: groupStudentCountMap[g.id] || 0,
       })),
       teachersList: (teachers || []).map((t: any) => ({
-        name: t.name,
+        name: `${t.firstName || ''} ${t.lastName || ''}`.trim(),
         phone: t.phone,
       })),
       financials: {
@@ -435,6 +378,7 @@ export async function POST(req: NextRequest) {
         const prompt = SYSTEM_PROMPT_TEMPLATE
           .replace('{{task_type}}', task_type)
           .replace('{{center_name}}', centerName)
+          .replace('{{user_role}}', authUser.role || 'ADMIN')
           .replace('{{date_range}}', date_range)
           .replace('{{data}}', JSON.stringify(summarizedDataPayload, null, 2))
           .replace('{{user_question}}', user_question || '');
@@ -443,12 +387,13 @@ export async function POST(req: NextRequest) {
           new Set(
             [
               process.env.GEMINI_MODEL,
-              'gemini-3.8-flash',
-              'gemini-pro-latest',
-              'gemini-flash-latest',
               'gemini-2.5-flash',
+              'gemini-2.5-pro',
               'gemini-1.5-pro',
               'gemini-1.5-flash',
+              'gemini-3.8-flash',
+              'gemini-flash-latest',
+              'gemini-pro-latest',
             ].filter(Boolean) as string[]
           )
         );
@@ -466,8 +411,8 @@ export async function POST(req: NextRequest) {
                 body: JSON.stringify({
                   contents: [{ parts: [{ text: prompt }] }],
                   generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 1024,
+                    temperature: 0.4,
+                    maxOutputTokens: 1500,
                   },
                 }),
               }
@@ -512,7 +457,9 @@ export async function POST(req: NextRequest) {
       centerName,
       date_range,
       rawData,
-      user_question
+      user_question,
+      authUser.role,
+      teacherInfo
     );
 
     return NextResponse.json({

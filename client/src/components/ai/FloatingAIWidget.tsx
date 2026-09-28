@@ -18,6 +18,7 @@ import {
   CalendarCheck,
   CreditCard,
   Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 import { aiApi, AITaskType } from '@/api/ai.api';
 import styles from './FloatingAIWidget.module.css';
@@ -240,7 +241,7 @@ export const FloatingAIWidget: React.FC = () => {
                   <Sparkles size={12} color="#facc15" />
                 </h3>
                 <p className={styles.headerSubtitle}>
-                  {context.icon} {context.label}
+                  {context.icon} {context.label} <span style={{ opacity: 0.5 }}>•</span> <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#86efac' }}><ShieldCheck size={11} /> 100% Maxfiy</span>
                 </p>
               </div>
             </div>
