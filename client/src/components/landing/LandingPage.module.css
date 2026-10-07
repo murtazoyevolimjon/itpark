@@ -1,0 +1,1201 @@
+/* LandingPage.module.css - IT PARK CRM Ultra-Modern Showcase & Guide */
+
+.container {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #070d19;
+  color: #f1f5f9;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 10% 40%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+}
+
+/* ------------------- NAVBAR ------------------- */
+.navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 72px;
+  background: rgba(7, 13, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.brandLogo {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.45);
+  border: 1.5px solid rgba(56, 189, 248, 0.5);
+  transition: transform 0.3s ease;
+}
+
+.navBrand:hover .brandLogo {
+  transform: rotate(15deg) scale(1.05);
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandTitle {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ffffff 30%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brandSubtitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #0ea5e9;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLink {
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+  padding: 6px 0;
+}
+
+.navLink:hover {
+  color: #ffffff;
+}
+
+.navLink:hover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #0ea5e9;
+  border-radius: 2px;
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.resetBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.resetBtn:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.loginCtaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #00d2b4 100%);
+  color: #04101d;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 18px rgba(0, 210, 180, 0.35);
+}
+
+.loginCtaBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 210, 180, 0.5);
+  filter: brightness(1.08);
+}
+
+/* ------------------- HERO SECTION ------------------- */
+.heroSection {
+  padding: 56px 40px 72px 40px;
+  max-width: 1340px;
+  margin: 0 auto;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Top Pill Badge with working code replaced by Telegram @OlimjonOtabekovich */
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9999px;
+  width: fit-content;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.badgeLogo {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.5);
+}
+
+.badgeText {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.badgeDivider {
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: 300;
+}
+
+.badgeVersion {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+/* Telegram link replacing "working code" */
+.badgeTelegram {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #38bdf8;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 3px 10px;
+  background: rgba(34, 158, 217, 0.18);
+  border: 1px solid rgba(34, 158, 217, 0.4);
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.badgeTelegram:hover {
+  background: rgba(34, 158, 217, 0.35);
+  border-color: #38bdf8;
+  color: #7dd3fc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+}
+
+.badgeTelegram svg {
+  flex-shrink: 0;
+}
+
+.heroTitle {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -1.2px;
+  color: #ffffff;
+  margin: 0;
+}
+
+.heroTitleHighlight {
+  background: linear-gradient(135deg, #38bdf8 0%, #00d2b4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heroDesc {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.heroBtnGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.primaryHeroBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #00d2b4 100%);
+  color: #04101d;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 13px 28px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(0, 210, 180, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.primaryHeroBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 210, 180, 0.5);
+  filter: brightness(1.08);
+}
+
+.secondaryHeroBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.7);
+  color: #f1f5f9;
+  font-size: 14.5px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.secondaryHeroBtn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.forgotHeroBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: color 0.2s ease;
+}
+
+.forgotHeroBtn:hover {
+  color: #cbd5e1;
+}
+
+/* 4 Quick Stats beneath hero buttons */
+.heroStatsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.statCard {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+.statCard:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-2px);
+  background: rgba(20, 31, 54, 0.8);
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  display: block;
+}
+
+.statLabel {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 4px;
+  display: block;
+  line-height: 1.35;
+}
+
+/* ------------------- HERO RIGHT CARD ------------------- */
+.heroRight {
+  display: flex;
+  flex-direction: column;
+}
+
+.guideNavigatorCard {
+  background: rgba(13, 22, 39, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 22px;
+  padding: 26px 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(14, 165, 233, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardTopHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tezBadge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardHeading {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.cardSubtitle {
+  font-size: 12.5px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.guideRoleList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guideRoleItem {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.guideRoleItem:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateX(4px);
+}
+
+.guideRoleItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guideRoleTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.guideRoleAction {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #00d2b4;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guideRoleDesc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.guideCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.guideCardStatus {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.guideCardActionBtn {
+  background: linear-gradient(135deg, #10b981 0%, #00d2b4 100%);
+  color: #032117;
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guideCardActionBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* ------------------- SECTION 2: GUIDES (QO'LLANMALAR) ------------------- */
+.sectionWrapper {
+  padding: 60px 40px;
+  max-width: 1340px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.sectionBreadcrumb {
+  font-size: 12px;
+  font-weight: 700;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.8px;
+  margin: 0;
+}
+
+.sectionSubtitle {
+  font-size: 14.5px;
+  color: #94a3b8;
+  max-width: 680px;
+  margin: 4px 0 0 0;
+}
+
+.searchBox {
+  position: relative;
+  min-width: 320px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 16px 12px 42px;
+  color: #ffffff;
+  font-size: 13.5px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.25);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.searchInput::placeholder {
+  color: #64748b;
+}
+
+/* Role Tabs */
+.tabsRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.tabBtn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #94a3b8;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.tabBtn:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tabBtnActive {
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.35);
+}
+
+.tabDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+}
+
+.tabBtnActive .tabDot {
+  background: #ffffff;
+}
+
+/* Featured Guide Container */
+.featuredGuideContainer {
+  background: rgba(11, 18, 33, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+}
+
+.guideBannerTop {
+  background: #090f1d;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.guideBannerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guideBannerTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.guideBannerSub {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.guideBannerBtn {
+  background: linear-gradient(135deg, #0ea5e9 0%, #00d2b4 100%);
+  color: #04101d;
+  font-size: 13.5px;
+  font-weight: 800;
+  padding: 9px 20px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guideBannerBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* 6 Step Cards (Grid 3x2) */
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  padding: 28px;
+}
+
+.stepCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px 20px;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e2e8f0;
+}
+
+.stepCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  border-color: #38bdf8;
+}
+
+.stepCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stepBadge {
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.stepRoleTag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.stepTitle {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.stepDesc {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.stepNoteBox {
+  background: #f1f5f9;
+  border-left: 3px solid #3b82f6;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.stepNoteText {
+  font-size: 11.5px;
+  color: #334155;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.stepNoteHighlight {
+  font-weight: 700;
+  color: #1e40af;
+}
+
+/* ------------------- SECTION 3: FEATURES (IMKONIYATLAR) ------------------- */
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+  margin-top: 10px;
+}
+
+.featureCard {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 28px 26px;
+  color: #0f172a;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.25s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  border-color: #0ea5e9;
+}
+
+.featureMeta {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.featureTitle {
+  font-size: 18.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.featureDesc {
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.featureTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.featureTag {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* ------------------- SECTION 4: 24-BANDLI DOSYE ------------------- */
+.dossierGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.dossierCol {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px 18px;
+  color: #0f172a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.dossierColHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.dossierColRange {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0ea5e9;
+  letter-spacing: 0.5px;
+}
+
+.dossierColTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.dossierList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossierItem {
+  font-size: 12.5px;
+  color: #334155;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.dossierNum {
+  font-weight: 700;
+  color: #64748b;
+  min-width: 20px;
+}
+
+/* ------------------- FOOTER ------------------- */
+.footer {
+  background: #040812;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 50px 40px 32px 40px;
+  margin-top: 40px;
+}
+
+.footerContent {
+  max-width: 1340px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footerLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+}
+
+.footerBrandTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.footerBrandDesc {
+  font-size: 12.5px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.telegramFooterBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(34, 158, 217, 0.15);
+  border: 1px solid rgba(34, 158, 217, 0.4);
+  border-radius: 9999px;
+  color: #38bdf8;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.telegramFooterBtn:hover {
+  background: rgba(34, 158, 217, 0.3);
+  border-color: #38bdf8;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 158, 217, 0.4);
+}
+
+.footerCopy {
+  max-width: 1340px;
+  margin: 30px auto 0 auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* ------------------- LOGIN MODAL ------------------- */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 18, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.modalContent {
+  width: 100%;
+  max-width: 440px;
+  background: #0c1629;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 24px;
+  padding: 36px 32px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(14, 165, 233, 0.2);
+  position: relative;
+  animation: scaleUp 0.25s ease-out;
+}
+
+.modalCloseBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.modalHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.modalLogo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.5);
+  border: 2px solid rgba(56, 189, 248, 0.6);
+  margin-bottom: 14px;
+}
+
+.modalTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modalSubtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 6px 0 0 0;
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalSubmitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #00d2b4 100%);
+  color: #04101d;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 210, 180, 0.35);
+  transition: all 0.2s ease;
+  margin-top: 6px;
+}
+
+.modalSubmitBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.modalSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------- RESPONSIVENESS ------------------- */
+@media (max-width: 1024px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .stepsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dossierGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .heroTitle {
+    font-size: 36px;
+  }
+
+  .navLinks {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+    height: 64px;
+  }
+
+  .heroSection {
+    padding: 32px 20px 48px 20px;
+  }
+
+  .sectionWrapper {
+    padding: 40px 20px;
+  }
+
+  .heroTitle {
+    font-size: 28px;
+  }
+
+  .heroStatsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stepsGrid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dossierGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer {
+    padding: 40px 20px 24px 20px;
+  }
+
+  .searchBox {
+    min-width: 100%;
+  }
+
+  .sectionTitle {
+    font-size: 25px;
+  }
+}

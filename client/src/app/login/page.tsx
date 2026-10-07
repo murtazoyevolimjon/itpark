@@ -1,7 +1,7 @@
 'use client';
 
-import { Login } from '@/views/Login';
+import { LandingPage } from '@/components/landing/LandingPage';
 
 export default function LoginPage() {
-  return <Login />;
+  return <LandingPage initialLoginOpen={true} />;
 }

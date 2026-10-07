@@ -79,9 +79,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className={styles.logoArea}>
           {isItPark ? (
             <img
-              src="/itpark-logo.png"
-              alt="IT Park"
+              src="/crm-logo.png"
+              alt="IT Park CRM"
               className={styles.logoImg}
+              style={{ borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : (
             <div

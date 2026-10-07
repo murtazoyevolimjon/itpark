@@ -78,8 +78,23 @@ export const Login: React.FC = () => {
       </div>
 
       <div className={styles.card}>
-        <h1 className={styles.title}>{t('appName')}</h1>
-        <p className={styles.subtitle}>{t('loginSub')}</p>
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <img
+            src="/crm-logo.png"
+            alt="IT Park CRM Logo"
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              margin: '0 auto 12px auto',
+              display: 'block',
+              boxShadow: '0 0 24px rgba(14, 165, 233, 0.45)',
+              border: '2px solid rgba(56, 189, 248, 0.4)',
+            }}
+          />
+          <h1 className={styles.title}>IT Park CRM</h1>
+          <p className={styles.subtitle}>{t('loginSub')}</p>
+        </div>
 
         <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
           <Input

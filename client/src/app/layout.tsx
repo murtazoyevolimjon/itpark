@@ -4,8 +4,12 @@ import { Providers } from './providers';
 import '../styles/global.css';
 
 export const metadata: Metadata = {
-  title: 'IT-Park Academy CRM',
-  description: "O'quv markazlari uchun professional CRM tizimi",
+  title: 'IT-Park Academy CRM | Yagona boshqaruv tizimi',
+  description: "IT Park o'quv markazlari uchun professional CRM tizimi",
+  icons: {
+    icon: '/crm-logo.png',
+    apple: '/crm-logo.png',
+  },
 };
 
 export default function RootLayout({
