@@ -21,6 +21,7 @@ import {
   Brain,
   Phone,
   Instagram,
+  HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast/Toast';
@@ -383,8 +384,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               </a>
             </li>
             <li>
-              <a href="#modullar" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('imkoniyatlar'); }}>
-                AI va Moliya
+              <a href="#faq" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('faq'); }}>
+                Savol-javoblar
               </a>
             </li>
             <li>
@@ -866,7 +867,80 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
         </div>
       </section>
 
-      {/* ------------------- SECTION 5: CONTACT & AUTHOR (BOG'LANISH) ------------------- */}
+      {/* ------------------- SECTION 5: FAQ (SAVOL-JAVOBLAR & SEO) ------------------- */}
+      <section id="faq" className={`${styles.sectionWrapper} ${styles.faqSection}`}>
+        <div className={styles.sectionHeader}>
+          <span className={styles.sectionBreadcrumb}>Ko'p beriladigan savollar</span>
+          <h2 className={styles.sectionTitle}>Markaz CRM Haqida Eng Ko'p Beriladigan Savollar</h2>
+          <p className={styles.sectionSubtitle}>
+            O'quv markazlari egalari, administratorlar va o'qituvchilar tomonidan eng ko'p beriladigan savollarga aniq javoblar:
+          </p>
+        </div>
+
+        <div className={styles.faqGrid}>
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>Markaz CRM qaysi turdagi o'quv markazlariga mos keladi?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              Tizim barcha ta'lim yo'nalishlariga moslashtirilgan: xorijiy til markazlari (IELTS, CEFR, Ingliz, Rus, Koreys), IT va dasturlash akademiyalari, abituriyent tayyorlov markazlari, maktab fanlari, bolalar to'garaklari va xususiy repetitorlik faoliyati uchun 100% qulay.
+            </p>
+          </div>
+
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>Kunlik davomat olish qanday amalga oshiriladi?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              O'qituvchi yoki mentor o'z shaxsiy profiliga kirib, bir necha soniya ichida o'quvchilarni "Bor", "Yo'q", "Kech qoldi" yoki "Sababli" deb belgilaydi. Dars davomati foizi va oylik jurnallar real vaqt rejimida avtomatik hisoblanadi.
+            </p>
+          </div>
+
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>Sun'iy Intellekt (AI) qanday amaliy yordam beradi?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              O'rnatilgan AI yordamchi markazning umumiy holatini tahlil qiladi, muntazam dars qoldirayotgan yoki o'qishni to'xtatish xavfi bor o'quvchilarni erta aniqlaydi, davomati past guruhlar bo'yicha maslahat beradi va qarzdorlarga xabar tayyorlashda yordam beradi.
+            </p>
+          </div>
+
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>Tizimdan telefon va planshetda foydalanish mumkinmi?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              Albatta! Platforma to'liq bulutli texnologiyada qurilgan bo'lib, har qanday smartfon, planshet, noutbuk va kompyuter brauzerlarida 24/7 rejimda qulay va tezkor ishlaydi. Alohida og'ir dastur o'rnatish shart emas.
+            </p>
+          </div>
+
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>Moliya va qarzdorlik qanday nazorat qilinadi?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              O'quvchilarning oylik kurs to'lovlari (naqd, karta yoki bank o'tkazmasi) bir zumda kassa balansiga qayd etiladi. To'lov muddati kelgan yoki o'tgan qarzdor talabalar ro'yxati alohida ko'rsatiladi va markazning sof foydasi shaffof hisoblanadi.
+            </p>
+          </div>
+
+          <div className={styles.faqItem}>
+            <h3 className={styles.faqQuestion}>
+              <HelpCircle size={20} className={styles.faqIcon} />
+              <span>O'quv markazimizga tizimni qanday ulaymiz va sinab ko'ramiz?</span>
+            </h3>
+            <p className={styles.faqAnswer}>
+              Saytda keltirilgan Telegram (@OlimjonOtabekovich) yoki to'g'ridan-to'g'ri telefon (+998 88 579 03 09) orqali dasturchi bilan bog'lanishingiz mumkin. O'quv markazingiz uchun tizim qisqa vaqt ichida to'liq sozlab, ishga tushirib beriladi.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------- SECTION 6: CONTACT & AUTHOR (BOG'LANISH) ------------------- */}
       <section id="aloqa" className={styles.sectionWrapper}>
         <div className={styles.contactCard}>
           <div className={styles.contactHeader}>
