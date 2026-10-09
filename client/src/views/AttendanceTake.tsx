@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
-import { Select } from '../components/ui/Select/Select';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { Input } from '../components/ui/Input/Input';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Modal } from '../components/ui/Modal/Modal';
@@ -313,12 +313,14 @@ export const AttendanceTake: React.FC = () => {
 
       {/* Selectors Card */}
       <Card>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          <Select
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', alignItems: 'flex-start' }}>
+          <GroupCardSelect
             label="Guruhni tanlang"
-            options={groupOptions}
+            groups={groups?.data || []}
             value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
+            onChange={(groupId) => setSelectedGroupId(groupId)}
+            placeholder="Guruhni tanlang..."
+            searchPlaceholder="Guruh, fan yoki o'qituvchi bo'yicha qidirish..."
           />
           <Input
             label="Dars sanasi"

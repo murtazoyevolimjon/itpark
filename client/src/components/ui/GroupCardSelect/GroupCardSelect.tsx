@@ -95,7 +95,7 @@ export const getGroupTime = (startTime?: string, groupName?: string): string => 
     return startTime.slice(0, 5);
   }
   if (groupName) {
-    const match = groupName.match(/^(\d{1,2}:\d{2})/);
+    const match = groupName.match(/\b(\d{1,2}:\d{2})\b/);
     if (match) return match[1].padStart(5, '0');
   }
   return '--:--';
@@ -106,9 +106,11 @@ export const getGroupTime = (startTime?: string, groupName?: string): string => 
  */
 export const cleanGroupTitle = (name?: string, courseName?: string): string => {
   if (!name) return courseName || 'Guruh';
-  const cleaned = name.replace(/^\d{1,2}:\d{2}\s*/, '').trim();
+  let cleaned = name.replace(/\s*\([^)]*\)$/, '').trim();
+  cleaned = cleaned.replace(/^(dush-chor-juma|sesh-pay-shan|dush|sesh|chor|pay|jum|shan)\s+/i, '').trim();
+  cleaned = cleaned.replace(/^\d{1,2}:\d{2}\s*/, '').trim();
   if (cleaned.length > 0) {
-    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    return cleaned;
   }
   return name;
 };
@@ -292,8 +294,12 @@ export const GroupCardSelect: React.FC<GroupCardSelectProps> = ({
     let teacherStr = "O'qituvchi biriktirilmagan";
     if (isProbaEmpty) {
       teacherStr = "Sinov darsi / biriktirilmagan";
+    } else if (group.teacher && group.room?.name) {
+      teacherStr = `${group.teacher.firstName} ${group.teacher.lastName} • ${group.room.name}`;
     } else if (group.teacher) {
       teacherStr = `${group.teacher.firstName} ${group.teacher.lastName}`.trim();
+    } else if (group.room?.name) {
+      teacherStr = `Xona: ${group.room.name}`;
     } else if (group.course?.name) {
       teacherStr = group.course.name;
     }

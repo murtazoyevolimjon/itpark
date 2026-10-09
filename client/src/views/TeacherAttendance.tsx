@@ -18,12 +18,18 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
-import { Select } from '../components/ui/Select/Select';
 import { Input } from '../components/ui/Input/Input';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useToast } from '../components/ui/Toast/Toast';
+import {
+  GroupCardSelect,
+  getCourseBadge,
+  getGroupTime,
+  cleanGroupTitle,
+  formatGroupDays,
+} from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { AttendanceStatus } from '../types';
@@ -32,6 +38,28 @@ import {
   getTashkentDateString,
   checkAttendanceTimeEligibility,
 } from '../utils/attendanceTime';
+
+const checkIsClassDay = (group: any, dateStr: string): boolean => {
+  if (!dateStr) return false;
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return false;
+  const [y, m, d] = parts.map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const dayMap = ['YAK', 'DUSH', 'SESH', 'CHOR', 'PAY', 'JU', 'SHAN'];
+  const dayCode = dayMap[dateObj.getDay()];
+
+  if (Array.isArray(group.days) && group.days.includes(dayCode)) {
+    return true;
+  }
+  const name = (group.name || '').toLowerCase();
+  if (dayCode === 'DUSH' && name.includes('dush')) return true;
+  if (dayCode === 'SESH' && name.includes('sesh')) return true;
+  if (dayCode === 'CHOR' && name.includes('chor')) return true;
+  if (dayCode === 'PAY' && name.includes('pay')) return true;
+  if (dayCode === 'JU' && (name.includes('jum') || name.includes('ju'))) return true;
+  if (dayCode === 'SHAN' && name.includes('shan')) return true;
+  return false;
+};
 
 export const TeacherAttendance: React.FC = () => {
   const router = useRouter();
@@ -263,14 +291,6 @@ export const TeacherAttendance: React.FC = () => {
     );
   };
 
-  const groupOptions = [
-    { label: 'Guruhni tanlang', value: '' },
-    ...groups.map((g) => ({
-      label: `${g.name} (${g.course?.name || 'Kurs'})`,
-      value: g.id,
-    })),
-  ];
-
   const studentsList = groupDetail?.studentGroups || [];
 
   // Summary counts
@@ -332,12 +352,21 @@ export const TeacherAttendance: React.FC = () => {
 
       {/* Group & Date Selectors */}
       <Card>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          <Select
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px',
+            alignItems: 'flex-start',
+          }}
+        >
+          <GroupCardSelect
             label="Guruhni tanlang"
-            options={groupOptions}
+            groups={groups}
             value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
+            onChange={(newId) => setSelectedGroupId(newId)}
+            placeholder="Guruhni tanlang"
+            searchPlaceholder="Guruh, fan yoki dars vaqti bo'yicha qidirish..."
           />
           <Input
             label="Dars sanasi"
@@ -346,6 +375,98 @@ export const TeacherAttendance: React.FC = () => {
             onChange={(e) => setAttendanceDate(e.target.value)}
           />
         </div>
+
+        {/* Quick select chips for teacher's groups */}
+        {groups.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '16px',
+              flexWrap: 'wrap',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--border)',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+              }}
+            >
+              Tezkor tanlash:
+            </span>
+            {groups.map((g: any) => {
+              const isSelected = selectedGroupId === g.id;
+              const badge = getCourseBadge(g.course?.name, g.name);
+              const time = getGroupTime(g.startTime, g.name);
+              const title = cleanGroupTitle(g.name, g.course?.name);
+              const isClassDay = checkIsClassDay(g, attendanceDate);
+
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setSelectedGroupId(g.id)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12.5px',
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    border: isSelected
+                      ? `2px solid ${badge.border}`
+                      : '1px solid var(--border)',
+                    background: isSelected
+                      ? 'rgba(59, 130, 246, 0.15)'
+                      : 'var(--card-subtle)',
+                    color: isSelected ? 'var(--text)' : 'var(--text-muted)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      color: badge.color,
+                      backgroundColor: badge.bg,
+                    }}
+                  >
+                    {badge.tag}
+                  </span>
+                  <span>{title}</span>
+                  {time !== '--:--' && (
+                    <span style={{ fontSize: '11px', opacity: 0.85 }}>
+                      ({time})
+                    </span>
+                  )}
+                  {isClassDay && (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        color: '#10b981',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        fontWeight: 700,
+                      }}
+                      title="Bugun dars bor"
+                    >
+                      Bugun
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Status Banner */}
