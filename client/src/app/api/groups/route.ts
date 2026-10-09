@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
+    const teacherId = searchParams.get('teacherId');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const sortBy = searchParams.get('sortBy') || 'createdAt';
@@ -26,6 +27,8 @@ export async function GET(req: NextRequest) {
     // If teacher, only return their own groups!
     if (authUser.role === 'TEACHER') {
       query = query.eq('teacherId', authUser.sub);
+    } else if (teacherId) {
+      query = query.eq('teacherId', teacherId);
     }
 
     if (search) {

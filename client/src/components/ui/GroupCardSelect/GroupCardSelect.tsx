@@ -291,15 +291,25 @@ export const GroupCardSelect: React.FC<GroupCardSelectProps> = ({
     const timeStr = isProbaEmpty ? '--:--' : getGroupTime(group.startTime, group.name);
     const titleStr = isProbaEmpty ? (emptyOptionLabel || 'Guruhsiz') : cleanGroupTitle(group.name, group.course?.name);
 
+    const teacherFullName = group.teacher
+      ? (typeof group.teacher === 'string'
+          ? group.teacher
+          : `${group.teacher.firstName || ''} ${group.teacher.lastName || ''}`.trim() || group.teacher.name || '')
+      : (group.teacherName || '');
+
+    const roomName = group.room?.name
+      ? (group.room.name.toLowerCase().includes('xona') ? group.room.name : `Xona: ${group.room.name}`)
+      : '';
+
     let teacherStr = "O'qituvchi biriktirilmagan";
     if (isProbaEmpty) {
       teacherStr = "Sinov darsi / biriktirilmagan";
-    } else if (group.teacher && group.room?.name) {
-      teacherStr = `${group.teacher.firstName} ${group.teacher.lastName} • ${group.room.name}`;
-    } else if (group.teacher) {
-      teacherStr = `${group.teacher.firstName} ${group.teacher.lastName}`.trim();
-    } else if (group.room?.name) {
-      teacherStr = `Xona: ${group.room.name}`;
+    } else if (teacherFullName && roomName) {
+      teacherStr = `${teacherFullName} • ${roomName}`;
+    } else if (teacherFullName) {
+      teacherStr = teacherFullName;
+    } else if (roomName) {
+      teacherStr = roomName;
     } else if (group.course?.name) {
       teacherStr = group.course.name;
     }

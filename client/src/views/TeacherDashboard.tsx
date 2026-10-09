@@ -21,6 +21,8 @@ import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Input } from '../components/ui/Input/Input';
+import { Modal } from '../components/ui/Modal/Modal';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { groupsApi } from '../api/groups.api';
 import { useAuth } from '../hooks/useAuth';
@@ -42,6 +44,7 @@ export const TeacherDashboard: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSelectGroupModalOpen, setIsSelectGroupModalOpen] = useState(false);
 
   const { data: groupsData, isLoading } = useQuery({
     queryKey: ['teacherGroups'],
@@ -133,7 +136,13 @@ export const TeacherDashboard: React.FC = () => {
             }}
           >
             <Button
-              onClick={() => router.push('/teacher/attendance')}
+              onClick={() => {
+                if (groups.length === 1) {
+                  router.push(`/teacher/attendance?groupId=${groups[0].id}`);
+                } else {
+                  setIsSelectGroupModalOpen(true);
+                }
+              }}
               icon={<CalendarCheck size={17} />}
               style={{
                 backgroundColor: '#3b82f6',
@@ -516,6 +525,71 @@ export const TeacherDashboard: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Group Select Modal for Attendance */}
+      <Modal
+        isOpen={isSelectGroupModalOpen}
+        onClose={() => setIsSelectGroupModalOpen(false)}
+        title="Davomat Olish Uchun Guruhni Tanlang"
+        maxWidth="540px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '13px',
+              color: '#93c5fd',
+              lineHeight: 1.4,
+            }}
+          >
+            <CalendarCheck size={18} style={{ flexShrink: 0, color: '#3b82f6' }} />
+            <span>
+              Davomat olishni boshlash uchun kerakli guruh ustiga bosing:
+            </span>
+          </div>
+
+          {groups.length === 0 ? (
+            <div
+              style={{
+                padding: '28px 16px',
+                textAlign: 'center',
+                backgroundColor: 'var(--card-subtle)',
+                borderRadius: '12px',
+                border: '1px dashed var(--border)',
+                color: 'var(--text-muted)',
+                fontSize: '13.5px',
+              }}
+            >
+              Sizga hozircha guruh biriktirilmagan.
+            </div>
+          ) : (
+            <GroupCardSelect
+              inline={true}
+              groups={groups}
+              value=""
+              onChange={(groupId) => {
+                if (groupId) {
+                  setIsSelectGroupModalOpen(false);
+                  router.push(`/teacher/attendance?groupId=${groupId}`);
+                }
+              }}
+              searchPlaceholder="Guruh nomi, fan yoki dars vaqti bo'yicha qidirish..."
+            />
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <Button variant="secondary" onClick={() => setIsSelectGroupModalOpen(false)}>
+              Yopish
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

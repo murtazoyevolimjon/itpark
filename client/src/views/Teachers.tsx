@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -10,16 +11,19 @@ import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { Badge } from '../components/ui/Badge/Badge';
+import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
 import { teachersApi } from '../api/teachers.api';
+import { groupsApi } from '../api/groups.api';
 import { Teacher } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Teachers: React.FC = () => {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
   const pagination = usePagination();
@@ -32,6 +36,17 @@ export const Teachers: React.FC = () => {
   // Password reset modal state
   const [passwordModalTeacher, setPasswordModalTeacher] = useState<Teacher | null>(null);
   const [newPassword, setNewPassword] = useState('');
+
+  // Attendance & groups modal state
+  const [attendanceTeacher, setAttendanceTeacher] = useState<Teacher | null>(null);
+
+  // Fetch groups for selected teacher in modal
+  const { data: teacherGroupsData, isLoading: isTeacherGroupsLoading } = useQuery({
+    queryKey: ['teacherGroupsModal', attendanceTeacher?.id],
+    queryFn: () => groupsApi.getAll({ teacherId: attendanceTeacher?.id, limit: 100 }),
+    enabled: !!attendanceTeacher?.id,
+  });
+  const teacherGroups = teacherGroupsData?.data || [];
 
   // Eye toggle states
   const [showFormPassword, setShowFormPassword] = useState(false);
@@ -210,7 +225,33 @@ export const Teachers: React.FC = () => {
     {
       key: 'groupsCount',
       header: 'GURUHLAR',
-      render: (row) => `${row._count?.groups || 0} ta`,
+      render: (row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setAttendanceTeacher(row);
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 12px',
+            borderRadius: '8px',
+            background: 'rgba(59, 130, 246, 0.12)',
+            border: '1px solid rgba(59, 130, 246, 0.28)',
+            color: '#60a5fa',
+            fontSize: '12.5px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          title="Guruhlarni ko'rish va davomat olish"
+        >
+          <CalendarCheck size={13} />
+          <span>{row._count?.groups || 0} ta guruh</span>
+        </button>
+      ),
     },
     {
       key: 'status',
@@ -226,6 +267,18 @@ export const Teachers: React.FC = () => {
       header: 'ACTION',
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
+          <Button
+            size="sm"
+            variant="outline"
+            title="Guruhlar va davomat"
+            style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setAttendanceTeacher(row);
+            }}
+          >
+            <CalendarCheck size={14} />
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -604,6 +657,75 @@ export const Teachers: React.FC = () => {
           >
             Ha, o'chirish
           </Button>
+        </div>
+      </Modal>
+
+      {/* Teacher Groups & Attendance Selection Modal */}
+      <Modal
+        isOpen={!!attendanceTeacher}
+        onClose={() => setAttendanceTeacher(null)}
+        title={`${attendanceTeacher?.firstName || ''} ${attendanceTeacher?.lastName || ''} — Guruhlari va Davomat`}
+        maxWidth="540px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '13px',
+              color: '#93c5fd',
+              lineHeight: 1.4,
+            }}
+          >
+            <CalendarCheck size={18} style={{ flexShrink: 0, color: '#3b82f6' }} />
+            <span>
+              Davomat olish uchun kerakli guruh ustiga bosing:
+            </span>
+          </div>
+
+          {isTeacherGroupsLoading ? (
+            <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Guruhlar yuklanmoqda...
+            </div>
+          ) : teacherGroups.length === 0 ? (
+            <div
+              style={{
+                padding: '28px 16px',
+                textAlign: 'center',
+                backgroundColor: 'var(--card-subtle)',
+                borderRadius: '12px',
+                border: '1px dashed var(--border)',
+                color: 'var(--text-muted)',
+                fontSize: '13.5px',
+              }}
+            >
+              Ushbu ustozga hozircha guruh biriktirilmagan.
+            </div>
+          ) : (
+            <GroupCardSelect
+              inline={true}
+              groups={teacherGroups}
+              value=""
+              onChange={(groupId) => {
+                if (groupId) {
+                  setAttendanceTeacher(null);
+                  router.push(`/attendance/take?groupId=${groupId}`);
+                }
+              }}
+              searchPlaceholder="Guruh nomi, fan yoki vaqt bo'yicha qidirish..."
+            />
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <Button variant="secondary" onClick={() => setAttendanceTeacher(null)}>
+              Yopish
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>
