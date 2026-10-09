@@ -7,7 +7,6 @@ import {
   Search,
   ArrowRight,
   Shield,
-  FileSpreadsheet,
   Users,
   CheckCircle2,
   Clock,
@@ -17,9 +16,9 @@ import {
   Eye,
   EyeOff,
   X,
-  Send,
-  HelpCircle,
-  ExternalLink,
+  BookOpen,
+  DollarSign,
+  Brain,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast/Toast';
@@ -64,229 +63,229 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Tab Guides Data
+  // Tab Guides Data - Real, practical workflows for modern learning centers
   const tabGuides: TabGuide[] = [
     {
       id: 'teacher',
-      title: "Sinf Rahbari (Mentor) Qo'llanmasi",
-      bannerTitle: "Sinf Rahbari (O'qituvchi / Mentor) Uchun To'liq Yo'riqnoma",
-      bannerSub: "Darsga biriktirilgan talabalar, kunlik interaktiv davomat, platformalar va eksport bo'yicha qadamma-qadam yo'riqnoma",
+      title: "O'qituvchi va Mentorlar",
+      bannerTitle: "O'qituvchi va Mentorlar Uchun Qadamma-qadam Yo'riqnoma",
+      bannerSub: "Darsga biriktirilgan o'quvchilar, kunlik interaktiv davomat, dars jadvali va oylik ko'rsatkichlar",
       steps: [
         {
           id: 't-1',
           stepNum: 'QADAM 01',
-          tag: 'Mentor Kabineti',
-          title: "Kabinetga kirish va 4 xonali PIN-kod o'rnatish",
-          desc: "Administrator tomonidan berilgan login va parol orqali tizimga kiring. Xavfsizlik uchun parolingizni yangilang va tezkor kirish uchun shaxsiy 4 xonali PIN-kod o'rnating.",
-          note: "Login va parolni begonalarga bermang. Har bir kirish xavfsiz audit tizimida qayd etiladi.",
+          tag: 'Shaxsiy Kabinet',
+          title: 'Shaxsiy kabinetga kirish',
+          desc: "Administrator tomonidan berilgan login va parol orqali tizimga kiring. Shaxsiy profilingizda faqat o'zingizga biriktirilgan guruhlar va darslar ko'rinadi.",
+          note: "Har bir o'qituvchi faqat o'ziga tegishli darslar va talabalar ma'lumotlarini mustaqil boshqaradi.",
         },
         {
           id: 't-2',
           stepNum: 'QADAM 02',
-          tag: 'Talabalar Bazasi',
-          title: "O'quvchi qo'shish va 24 bandli dosye yuritish",
-          desc: "Guruh ro'yxatidan yangi o'quvchini qo'shing yoki talabaning shaxsiy anketasini (F.I.SH, telefon, yo'nalish, to'lov holati, o'zlashtirish ko'rsatkichlari) shakllantiring.",
-          note: "Barcha talabalar ma'lumotlari bulutli bazada xavfsiz saqlanadi va real vaqtda sinxronlashadi.",
+          tag: "O'quvchilar Ro'yxati",
+          title: "Guruhlar va o'quvchilar ro'yxati",
+          desc: "Sizga biriktirilgan dars guruhlarini, har bir guruhdagi o'quvchilar tarkibini va ularning aloqa ma'lumotlarini qulay ko'ring.",
+          note: "Yangi talabalar guruhga biriktirilishi bilan ro'yxatingizda avtomatik paydo bo'ladi.",
         },
         {
           id: 't-3',
           stepNum: 'QADAM 03',
           tag: 'Davomat Nazorati',
-          title: "Kunlik davomat olish va Mas'ul Mentor qoidasi",
-          desc: "Har bir dars boshida talabalar ro'yxatida Bor / Yo'q / Kech qoldi / Sababli holatlarini bir bosishda belgilang. Tizim dars davomati foizini avtomatik hisoblaydi.",
-          note: "Davomat saqlangach, o'quvchining umumiy davomat reytingi va oylik ko'rsatkichlari yangilanadi.",
+          title: 'Kunlik interaktiv davomat olish',
+          desc: "Har bir dars boshida talabalar ro'yxatida Bor / Yo'q / Kech qoldi / Sababli holatlarini 1 ta klikda belgilang. Tizim davomat foizini avtomatik hisoblaydi.",
+          note: "Davomat saqlangach, o'quvchining umumiy davomat reytingi va oylik ko'rsatkichlari real vaqtda yangilanadi.",
         },
         {
           id: 't-4',
           stepNum: 'QADAM 04',
-          tag: 'SMS Xabarnomalar',
-          title: '"Sababli" deb belgilash va Ota-onaga SMS yuborish',
-          desc: "Darsga kelmagan talaba sababli bo'lsa izoh qoldiring. Agar sababsiz dars qoldirsa, tizim ota-onasining telefon raqamiga avtomatik SMS xabarnoma yuboradi.",
-          note: "SMS xabarnomalar orqali ota-onalar farzandining darsga kelmaganini darhol bilib oladilar.",
+          tag: 'Sababli Holatlar',
+          title: 'Sababli qoldirish va maxsus izohlar',
+          desc: "Darsga kelmagan talaba sababli bo'lsa, izoh qoldiring. Bu ma'lumot markaz ma'muriyati va umumiy hisobotlarda aniq aks etadi.",
+          note: "O'quvchilarning dars qoldirish sabablari tizimda tartibli saqlanib, shaffoflik ta'minlanadi.",
         },
         {
           id: 't-5',
           stepNum: 'QADAM 05',
-          tag: 'Zaxira Tizimi',
-          title: 'Navbatchi kela olmay qolganda Avto-Zaxira tizimi',
-          desc: "Agar biriktirilgan mentor darsga kela olmay qolsa, ma'muriyat zaxira o'qituvchini biriktiradi yoki dars vaqtini boshqa bo'sh xonaga o'tkazadi.",
-          note: "Xonalar bandligi va dars jadvali to'qnashuvi tizim tomonidan avtomatik tekshirib boriladi.",
+          tag: 'Dars Jadvali',
+          title: 'Dars jadvali va xonalar nazorati',
+          desc: "Dars kunlari (toq yoki juft), dars vaqtlari hamda ajratilgan dars xonasini o'z profilingizda doimo nazorat qilib boring.",
+          note: "Xonalar bandligi va dars vaqtlari to'qnashuvi tizim tomonidan oldindan bartaraf etiladi.",
         },
         {
           id: 't-6',
           stepNum: 'QADAM 06',
-          tag: 'Hisobot & Eksport',
-          title: 'Oylik jurnallar va Word / Excel / PDF eksport',
-          desc: "Guruhlar bo'yicha kunlik davomat varaqalarini, oylik to'lovlar holatini va yakuniy imtihon natijalarini 1 bosishda Word, Excel yoki PDF formatida yuklab oling.",
-          note: "Chop etish uchun tayyor standart jadvallar, hujjat yozishga sarflanadigan vaqtni 90% ga tejaydi.",
+          tag: 'Oylik Monitoring',
+          title: 'Oylik davomat jurnali va xulosasi',
+          desc: "Guruhlar bo'yicha kunlik davomat varaqalarini va oylik umumiy ko'rsatkichlarni bir zumda tahlil qiling.",
+          note: "Qog'oz jurnallar yuritishga hojat qolmaydi, barcha hisobotlar avtomatik to'planadi.",
         },
       ],
     },
     {
       id: 'admin',
-      title: "Markaz Admini Qo'llanmasi",
-      bannerTitle: "Markaz Administratori va Menejerlar Uchun Qo'llanma",
-      bannerSub: "Yangi kurslar ochish, guruhlar shakllantirish, mentorlar taqsimoti va talabalar monitoringi",
+      title: 'Markaz Administratsiyasi',
+      bannerTitle: 'Markaz Administratori va Menejerlar Uchun Qo\'llanma',
+      bannerSub: 'Yangi kurslar ochish, talabalar qabuli, guruhlar shakllantirish va o\'qituvchilar taqsimoti',
       steps: [
         {
           id: 'a-1',
           stepNum: 'QADAM 01',
-          tag: 'Kurslar & Guruhlar',
-          title: 'Yangi IT kurslar va guruhlarni tizimda yaratish',
-          desc: 'Frontend, Backend, Python, Foundation, Grafik Dizayn kurslarini yarating, narxlarini belgilang va yangi guruhlar oching.',
-          note: 'Har bir guruh uchun dars kunlari (toq/juft) va dars vaqtlari avtomatlashtirilgan tarzda kiritiladi.',
+          tag: 'Kurslar & Yo\'nalishlar',
+          title: 'Kurslar va ta\'lim yo\'nalishlarini yaratish',
+          desc: 'Til kurslari (Ingliz tili, IELTS), IT yo\'nalishlari, maktab fanlari yoki bolalar to\'garaklarini yarating, narxlarini belgilang.',
+          note: 'Har qanday ta\'lim yo\'nalishi uchun moslashuvchan kurslar va davomiylik kiritish mumkin.',
         },
         {
           id: 'a-2',
           stepNum: 'QADAM 02',
           tag: 'Talabalar Qabuli',
-          title: 'Talabalarni qabul qilish va guruhlarga taqsimlash',
-          desc: "Markazga murojaat qilgan yangi o'quvchilarni ro'yxatga oling, bilim darajasiga ko'ra mos guruhlarga biriktiring va shartnomalar tuzing.",
-          note: "Talabaning to'lov shartlari va belgilangan chegirmalari biriktirish chog'ida ko'rsatiladi.",
+          title: 'Talabalarni qabul qilish va guruhlarga joylashtirish',
+          desc: "Markazga murojaat qilgan yangi o'quvchilarni ro'yxatga oling, bilim darajasi va smenasiga qarab mos guruhlarga biriktiring.",
+          note: 'Talabalar bazasi qulay qidiruv va filtrlash imkoniyati bilan doimo qo\'l ostingizda bo\'ladi.',
         },
         {
           id: 'a-3',
           stepNum: 'QADAM 03',
-          tag: 'Mentorlar Taqsimoti',
+          tag: 'O\'qituvchilar',
           title: "O'qituvchilarni guruhlarga biriktirish",
-          desc: "Har bir o'quv guruhiga tajribali mentorni biriktiring. Mentor faqat o'ziga tegishli guruhlarni ko'rish va boshqarish huquqiga ega bo'ladi.",
-          note: "O'qituvchilar reytingi va dars o'tish dinamikasi doimiy ravishda hisoblab boriladi.",
+          desc: "Har bir o'quv guruhiga mas'ul o'qituvchini biriktiring. O'qituvchi o'z shaxsiy profilida faqat o'z guruhlari bilan ishlaydi.",
+          note: "O'qituvchilar yuklamasi va dars soatlari to'g'ri taqsimlanadi.",
         },
         {
           id: 'a-4',
           stepNum: 'QADAM 04',
           tag: 'Xonalar Boshqaruvi',
-          title: 'Dars xonalari sig\u2019imi va bandlik jadvali',
-          desc: 'Oquv markazidagi barcha xonalarni jihozlar soni va sigimi boyicha shakllantiring. Guruhlar dars jadvali toqnashuvi avtomatik oldi olinadi.',
-          note: 'Bir vaqtda bitta xonaga ikki xil dars belgilanishiga tizim yol qoymaydi.',
+          title: "Dars xonalari sig'imi va bandlik jadvali",
+          desc: "O'quv markazidagi barcha xonalarni sig'imi bo'yicha shakllantiring. Guruhlar dars jadvali to'qnashuvining avtomatik oldi olinadi.",
+          note: "Bir vaqtda bitta xonaga ikki xil dars belgilanishiga tizim yo'l qo'ymaydi.",
         },
         {
           id: 'a-5',
           stepNum: 'QADAM 05',
           tag: 'Xodimlar & Rollar',
-          title: 'Xodimlar hisobi va tizim huquqlarini sozlash',
-          desc: 'Administrator, Menejer, Oqituvchi va Kassir rollari boyicha tizimga yangi xodimlarni biriktiring va kirish parollarini bering.',
-          note: 'Har bir xodim faqat o‘z vakolatidagi sahifalar va malumotlar bilan ishlay oladi.',
+          title: 'Xodimlar hisobi va tizim huquqlari',
+          desc: "Administrator, Menejer va O'qituvchi rollari bo'yicha yangi xodimlarni biriktiring va kirish huquqlarini belgilang.",
+          note: 'Har bir xodim faqat o‘z vakolatidagi sahifalar va ma\'lumotlar bilan xavfsiz ishlay oladi.',
         },
         {
           id: 'a-6',
           stepNum: 'QADAM 06',
           tag: 'Umumiy Tahlil',
-          title: 'Filial umumiy statistikasi va oylik xulosa',
-          desc: 'Faol talabalar soni, oqishni bitirganlar, yangi kelganlar va oylik daromad boyicha korgazmali grafiklar tahlilini oling.',
-          note: 'Diagrammalar real vaqt rejimida yangilanadi va oylik hisobot uchun qulay.',
+          title: 'Markaz umumiy tahlili va monitoring',
+          desc: "Faol talabalar soni, yangi o'quvchilar, guruhlar dinamikasi va markazning o'sish ko'rsatkichlarini real vaqtda kuzating.",
+          note: 'Diagramma va ko\'rsatkichlar boshqaruv qarorlarini tez va aniq qabul qilishga yordam beradi.',
         },
       ],
     },
     {
       id: 'finance',
-      title: 'Moliya, Kassa va To\u2019lovlar',
-      bannerTitle: 'Moliya Bolimi va Kassa Boshqaruvi Yoriqnomasi',
-      bannerSub: 'Tolovlarni qabul qilish, elektron kvitansiyalar, qarzdorlik nazorati va markaz sof foydasi',
+      title: 'Moliya va To\'lovlar',
+      bannerTitle: 'Moliya Bo\'limi va Kassa Boshqaruvi Yo\'riqnomasi',
+      bannerSub: 'To\'lovlarni qabul qilish, qarzdorlik nazorati, xarajatlar va markazning sof foydasi',
       steps: [
         {
           id: 'f-1',
           stepNum: 'QADAM 01',
-          tag: 'Tolov Qabuli',
-          title: 'Naqd, karta va otkazma orqali tolovlarni qabul qilish',
-          desc: 'Talabaning oylik tolovini bir bosishda qabul qiling. Tizim tolov usulini (naqd, Payme, Click, Uzum, Bank) qayd etadi.',
-          note: 'Qabul qilingan summa shu zahotiyoq markaz umumiy kassa balansiga qoshiladi.',
+          tag: 'To\'lov Qabuli',
+          title: 'Talabalar to\'lovlarini tezkor qabul qilish',
+          desc: 'Talabaning oylik to\'lovini bir bosishda qabul qiling: naqd, bank kartasi yoki o\'tkazma orqali to\'lovlar qulay qayd etiladi.',
+          note: 'Qabul qilingan summa shu zahotiyoq markaz umumiy kassa balansiga qo\'shiladi.',
         },
         {
           id: 'f-2',
           stepNum: 'QADAM 02',
-          tag: 'Kvitansiya',
-          title: 'Avtomatlashtirilgan elektron kvitansiya berish',
-          desc: 'Tolov amalga oshirilishi bilan unikal raqamli elektron chek shakllanadi va uni chop etish yoki PDF da yuklab olish mumkin.',
-          note: 'Kvitansiyada talaba ismi, kursi, guruhi, summasi va tolov sanasi aniq aks etadi.',
+          tag: 'To\'lovlar Tarixi',
+          title: 'To\'lovlar tarixi va kassa tushumi',
+          desc: 'Har bir talaba bo\'yicha to\'lovlar tarixi, to\'langan sanasi va summasi to\'liq saqlanadi, istalgan paytda ko\'rish mumkin.',
+          note: 'Moliyaviy hisob-kitoblar aniq va shaffof yuritiladi.',
         },
         {
           id: 'f-3',
           stepNum: 'QADAM 03',
           tag: 'Qarzdorlik',
-          title: 'Qarzdor talabalar monitoringi va SMS eslatmalar',
-          desc: 'Oylik tolov muddati kelgan yoki otib ketgan talabalar royxatini korib, ularga avtomatik eslatma SMS yuboring.',
-          note: 'Qarzdorlik nazorati tufayli markaz tolov tushumi 30-40% ga yaxshilanadi.',
+          title: 'Qarzdor talabalar monitoringi',
+          desc: 'Oylik to\'lov muddati kelgan yoki o\'tib ketgan talabalar ro\'yxatini alohida ko\'rib, tezkor nazorat qiling.',
+          note: 'Qarzdorlik nazorati tufayli markaz to\'lov tushumi sezilarli darajada yaxshilanadi.',
         },
         {
           id: 'f-4',
           stepNum: 'QADAM 04',
           tag: 'Xarajatlar',
           title: 'Markaz kundalik xarajatlarini (Chiqim) yuritish',
-          desc: 'Ijara haqi, kommunal tolovlar, internet, oylik ish haqi va kantselyariya xarajatlarini toifalar boyicha kassa daftariga kiriting.',
-          note: 'Barcha chiqimlar cheklari va izohlari tizimda saqlanadi.',
+          desc: 'Ijara haqi, kommunal to\'lovlar, internet, oylik maoshlar va xo\'jalik xarajatlarini toifalar bo\'yicha kassa daftariga kiriting.',
+          note: 'Barcha chiqimlar va ularning izohlari tizimda qat\'iy saqlanadi.',
         },
         {
           id: 'f-5',
           stepNum: 'QADAM 05',
           tag: 'Oylik Maosh',
-          title: 'Oqituvchilar maoshi va foiz hisob-kitobi',
-          desc: 'Har bir mentorning oqitgan oquvchilari soni yoki kelishilgan foiz stavkasi asosida avtomatik ish haqini hisoblang.',
-          note: 'Murakkab qolda hisob-kitoblar talab etilmaydi, xatoliklar istisno qilinadi.',
+          title: 'O\'qituvchilar ish haqi hisob-kitobi',
+          desc: 'Har bir o\'qituvchining talabalari soni yoki kelishilgan foiz stavkasi asosida oylik hisob-kitobni osonlashtiring.',
+          note: 'Murakkab qo\'lda hisob-kitoblar kamayadi, xatoliklar bartaraf etiladi.',
         },
         {
           id: 'f-6',
           stepNum: 'QADAM 06',
-          tag: 'Balans & Excel',
-          title: 'Kassa qoldigi, sof foyda va Excel eksport',
-          desc: 'Oylik umumiy tushum, jami chiqim va sof foyda hisobotini bir zumda Excel formatida yuklab oling.',
-          note: 'Buxgalteriya va rahbar uchun tayyor rasmiy moliyaviy hisobot taqdim etiladi.',
+          tag: 'Balans & Foyda',
+          title: 'Kassa qoldig\'i va sof foyda hisoboti',
+          desc: 'Oylik umumiy tushum, jami chiqim va markazning sof foydasini real vaqt rejimida ko\'ring.',
+          note: 'Rahbar va administrator uchun markazning haqiqiy moliyaviy holati ochiq ko\'rinadi.',
         },
       ],
     },
     {
-      id: 'dossier',
-      title: '24 Bandli Dosye va Eksport',
-      bannerTitle: '24 Bandli Rasmiy Talaba Dosyesi Boyicha Qollanma',
-      bannerSub: 'Talabaning barcha shaxsiy, oqish, tolov va davomat malumotlarini toliq shakllantirish',
+      id: 'ai',
+      title: "Sun'iy Intellekt (AI Yordamchi)",
+      bannerTitle: "O'quv Markazi Boshqaruvi Uchun Sun'iy Intellekt (AI)",
+      bannerSub: "Markaz ko'rsatkichlari, tushib qolish xavfi bor o'quvchilar, davomat va moliyaviy tahlilni AI bilan avtomatlashtiring",
       steps: [
         {
-          id: 'd-1',
+          id: 'ai-1',
           stepNum: 'QADAM 01',
-          tag: 'Shaxsiy Profil',
-          title: 'Talabaning shaxsiy malumotlari (F.I.SH, telefon, manzil)',
-          desc: 'Talabaning toliq ismi, tugilgan sanasi, fotosurati, telefon raqami va yashash manzili kiritiladi.',
-          note: 'Malumotlar bir marta kiritiladi va butun oqish davomida avtomatik ishlatiladi.',
+          tag: 'AI Umumiy Xulosa',
+          title: 'Markaz holati bo\'yicha kunlik/oylik AI xulosa',
+          desc: 'Sun\'iy intellekt jami o\'quvchilar, faol guruhlar, to\'lovlar va davomat holatini umumlashtirib, bir necha jumlada aniq xulosa beradi.',
+          note: 'Rahbariyat markazdagi vaziyatni uzun jadvallarni titmasdan, bir zumda tushunadi.',
         },
         {
-          id: 'd-2',
+          id: 'ai-2',
           stepNum: 'QADAM 02',
-          tag: 'Oqish Yonalishi',
-          title: 'Tanlangan IT yonalishi, guruh va dars jadvali',
-          desc: 'Talaba oqiyotgan guruh, mentor, dars kunlari va ajratilgan xona malumotlari biriktiriladi.',
-          note: 'Talabani boshqa guruhga yoki yangi bosqichga kochirish 1 bosishda amalga oshadi.',
+          tag: 'O\'quvchilar Tahlili',
+          title: 'Xatarlarni erta aniqlash (Risk tahlili)',
+          desc: "Dars qoldirayotgan, o'zlashtirishi pasaygan yoki o'qishni to'xtatish xavfi yuqori bo'lgan o'quvchilarni AI erta aniqlab beradi.",
+          note: "O'quvchilar o'qishni tashlab ketishining oldini olish imkoniyati keskin oshadi.",
         },
         {
-          id: 'd-3',
+          id: 'ai-3',
           stepNum: 'QADAM 03',
-          tag: 'Ota-ona Bilan Aloqa',
-          title: 'Ota-onalar telefoni va SMS bildirishnoma sozlamasi',
-          desc: 'Ota-onaning telefon raqamlari, qoshimcha vakil va shartnoma raqami dosyoga kiritiladi.',
-          note: 'SMS xabarnomalar avtomatik tarzda korsatilgan telefon raqamiga yuboriladi.',
+          tag: 'Davomat Tahlili',
+          title: 'Past davomatli guruhlar va sabablar tahlili',
+          desc: "Davomati 70% dan past bo'lgan guruhlarni tahlil qilib, darsga qatnashishni yaxshilash bo'yicha amaliy uslubiy maslahatlar taqdim etadi.",
+          note: "O'qituvchilar va guruhlar bo'yicha davomat dinamikasi chuqur o'rganiladi.",
         },
         {
-          id: 'd-4',
+          id: 'ai-4',
           stepNum: 'QADAM 04',
-          tag: 'Tolov Tarixi',
-          title: 'Tolov balansi, chegirmalar va kvitansiyalar arxivi',
-          desc: 'Har bir oy boyicha toланган summalar, berilgan grant yoki chegirmalar tarixi saqlanadi.',
-          note: 'Qachon, qanday usulda va qancha tolov qilingani har doim ochiq korinadi.',
+          tag: 'Moliya & Xabarnoma',
+          title: 'Moliyaviy tahlil va qarzdorlar bilan ishlash',
+          desc: "Kassa tushumlari va qarzdorlik muvozanati bo'yicha xulosalar chiqaradi hamda qarzdorlarga yuborish uchun xushmuomala xabarlarni tayyorlaydi.",
+          note: "Moliyaviy intizom mustahkamlanadi va tushumlar o'sishi ta'minlanadi.",
         },
         {
-          id: 'd-5',
+          id: 'ai-5',
           stepNum: 'QADAM 05',
-          tag: 'Davomat Tarixi',
-          title: 'Kunlik davomat statistikasi va qoldirilgan darslar',
-          desc: 'Talaba qatnashgan darslar, sababli va sababsiz qoldirilgan darslar soni foizda korsatiladi.',
-          note: 'Davomat foizi 80% dan past bolganda tizim ogohlantiruvchi belgi korsatadi.',
+          tag: 'Ustozlar Yuklamasi',
+          title: 'O\'qituvchilar yuklamasi balansi',
+          desc: "O'qituvchilar o'rtasida guruhlar va o'quvchilar taqsimotini o'rganib, yuklama balansi bo'yicha tavsiyalar beradi.",
+          note: "Ustozlar haddan ortiq charchab qolmasligi va ta'lim sifati tushmasligi ta'minlanadi.",
         },
         {
-          id: 'd-6',
+          id: 'ai-6',
           stepNum: 'QADAM 06',
-          tag: 'Bitiruv & Sertifikat',
-          title: 'Yakuniy portfolio, sertifikat raqami va PDF dosye',
-          desc: 'Kurs oxirida talabaning bajargan loyihalari, sertifikat raqami qayd etiladi va toliq dosye PDF da chop etiladi.',
-          note: 'IT Park andozasidagi rasmiy sertifikat va bitiruvchi hujjati tayyorlanadi.',
+          tag: '24/7 AI Maslahatchi',
+          title: 'Har qanday mavzuda erkin savol-javob',
+          desc: "Dars metodikasi, yangi kurslar ochish, marketing, reja tuzish va boshqaruv bo'yicha har qanday savolingizga o'zbek tilida erkin javob oling.",
+          note: "O'rnatilgan AI yordamchi doim sizning yoningizda aqlli maslahatchi sifatida ishlaydi.",
         },
       ],
     },
@@ -300,7 +299,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
       return currentTabObj.steps;
     }
     const q = searchQuery.toLowerCase();
-    // Search across all tabs
     const allSteps = tabGuides.flatMap((tg) => tg.steps);
     return allSteps.filter(
       (s) =>
@@ -356,12 +354,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
         <div className={styles.navBrand} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <img
             src="/crm-logo.png"
-            alt="IT Park CRM Logo"
+            alt="CRM Logo"
             className={styles.brandLogo}
           />
           <div className={styles.brandText}>
-            <span className={styles.brandTitle}>IT PARK</span>
-            <span className={styles.brandSubtitle}>CRM PLATFORM</span>
+            <span className={styles.brandTitle}>MARKAZ CRM</span>
+            <span className={styles.brandSubtitle}>BOSHQARUV TIZIMI</span>
           </div>
         </div>
 
@@ -374,17 +372,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
             </li>
             <li>
               <a href="#qollanmalar" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('qollanmalar'); }}>
-                Qo'llanmalar
+                Yo'riqnomalar
               </a>
             </li>
             <li>
-              <a href="#dosye" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('dosye'); }}>
-                24 bandli dosye
+              <a href="#yonalishlar" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('yonalishlar'); }}>
+                Ta'lim markazlari
               </a>
             </li>
             <li>
-              <a href="#modullar" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('modullar'); }}>
-                Guruh va kurslar
+              <a href="#modullar" className={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('imkoniyatlar'); }}>
+                AI va Moliya
               </a>
             </li>
             <li>
@@ -431,10 +429,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
         <div className={styles.heroGrid}>
           {/* Left Column */}
           <div className={styles.heroLeft}>
-            {/* Top Pill Badge with working code replaced by Telegram @OlimjonOtabekovich */}
+            {/* Top Pill Badge */}
             <div className={styles.heroBadge}>
               <img src="/crm-logo.png" alt="CRM" className={styles.badgeLogo} />
-              <span className={styles.badgeText}>IT Park Ta'lim Markazi</span>
+              <span className={styles.badgeText}>O'quv Markazlari CRM Tizimi</span>
               <span className={styles.badgeDivider}>•</span>
               <span className={styles.badgeVersion}>v2.0</span>
               <span className={styles.badgeDivider}>•</span>
@@ -457,15 +455,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
 
             {/* Main Headline */}
             <h1 className={styles.heroTitle}>
-              O'quv markaz ma'lumotlari, kunlik davomat va{' '}
-              <span className={styles.heroTitleHighlight}>o'quvchilar dosyesi</span> yagona tizimda
+              Barcha o'quv markazlar, kunlik davomat va{' '}
+              <span className={styles.heroTitleHighlight}>aqlli AI tizimi</span> yagona platformada
             </h1>
 
             {/* Description */}
             <p className={styles.heroDesc}>
-              IT Park CRM — o'quv markazlar, IT kurslar va filiallar faoliyatini to'liq raqamlashtirish tizimi.
-              Talabalar qabuli, guruhlar, kunlik davomat, oylik to'lovlar va hisobotlar bulutli bazada xavfsiz saqlanadi
-              hamda telefon, planshet va kompyuterda birdek qulay ishlaydi.
+              Til maktablari, IT akademiyalar, repetitorlik va o'quv markazlari uchun universal boshqaruv tizimi.
+              O'quvchilar qabuli, guruhlar jadvali, bir klikda davomat, kassa va to'lovlar hamda o'rnatilgan Sun'iy Intellekt (AI) yordamchi bir joyda!
             </p>
 
             {/* CTA Buttons */}
@@ -510,20 +507,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
             {/* 4 Quick Stats */}
             <div className={styles.heroStatsRow}>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>24 band</span>
-                <span className={styles.statLabel}>Doimiy talaba dosyesi</span>
+                <span className={styles.statValue}>AI Yordamchi</span>
+                <span className={styles.statLabel}>Aqlli tahlil va maslahat</span>
               </div>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>3 format</span>
-                <span className={styles.statLabel}>Word, Excel va PDF</span>
+                <span className={styles.statValue}>1-klikda</span>
+                <span className={styles.statLabel}>Tezkor kunlik davomat</span>
               </div>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>3 himoya</span>
-                <span className={styles.statLabel}>Parol, PIN va Sessiya</span>
+                <span className={styles.statValue}>Kassa & Moliya</span>
+                <span className={styles.statLabel}>To'lovlar va qarzdorlik</span>
               </div>
               <div className={styles.statCard}>
-                <span className={styles.statValue}>24/7</span>
-                <span className={styles.statLabel}>Uzluksiz faol bulut</span>
+                <span className={styles.statValue}>24/7 Bulut</span>
+                <span className={styles.statLabel}>Istalgan qurilmada qulay</span>
               </div>
             </div>
           </div>
@@ -535,7 +532,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                 <span className={styles.tezBadge}>TEZ</span>
                 <div>
                   <h3 className={styles.cardHeading}>Kimga Qanday Qo'llanma Kerak?</h3>
-                  <p className={styles.cardSubtitle}>Kerakli bo'lim ustiga bosing yoki tanlang</p>
+                  <p className={styles.cardSubtitle}>Kerakli bo'lim ustiga bosing va yo'riqnomani ko'ring</p>
                 </div>
               </div>
 
@@ -548,13 +545,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                   }}
                 >
                   <div className={styles.guideRoleItemTop}>
-                    <span className={styles.guideRoleTitle}>01. Sinf rahbari (O'qituvchi / Mentor)</span>
+                    <span className={styles.guideRoleTitle}>01. O'qituvchi va Mentorlar</span>
                     <span className={styles.guideRoleAction}>
                       Qo'llanmani ko'rish <ArrowRight size={14} />
                     </span>
                   </div>
                   <p className={styles.guideRoleDesc}>
-                    O'quvchilar ro'yxati, 24 bandli anketa, interaktiv kunlik davomat olish, dars jadvali va baholar jurnali.
+                    O'quvchilar ro'yxati, dars jadvali, bir klikda kunlik davomat olish va dars statistikasi.
                   </p>
                 </div>
 
@@ -572,7 +569,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                     </span>
                   </div>
                   <p className={styles.guideRoleDesc}>
-                    Talabalar qabuli, yangi IT guruhlar ochish, xonalar bandligi, mentorlar taqsimoti va oylik hisobotlar.
+                    Talabalar qabuli, yangi guruhlar ochish, xonalar bandligi, ustozlar taqsimoti va oylik hisobotlar.
                   </p>
                 </div>
 
@@ -590,7 +587,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                     </span>
                   </div>
                   <p className={styles.guideRoleDesc}>
-                    Oylik to'lovlar qabuli, avtomatik cheklar, qarzdorlar ro'yxati, markaz xarajatlari va sof foyda.
+                    Oylik to'lovlar qabuli, qarzdorlar ro'yxati, xarajatlar daftari va markazning sof foyda balansi.
+                  </p>
+                </div>
+
+                <div
+                  className={styles.guideRoleItem}
+                  onClick={() => {
+                    setActiveTab('ai');
+                    scrollToSection('qollanmalar');
+                  }}
+                >
+                  <div className={styles.guideRoleItemTop}>
+                    <span className={styles.guideRoleTitle}>04. Sun'iy Intellekt (AI Yordamchi)</span>
+                    <span className={styles.guideRoleAction}>
+                      Qo'llanmani ko'rish <ArrowRight size={14} />
+                    </span>
+                  </div>
+                  <p className={styles.guideRoleDesc}>
+                    Markaz umumiy holati, davomati past guruhlar va o'qishni to'xtatish xavfi bor o'quvchilar tahlili.
                   </p>
                 </div>
               </div>
@@ -602,7 +617,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                   className={styles.guideCardActionBtn}
                   onClick={() => scrollToSection('qollanmalar')}
                 >
-                  <span>O'tishga o'tish</span>
+                  <span>Qo'llanmalarga o'tish</span>
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -617,9 +632,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
           <span className={styles.sectionBreadcrumb}>Bosh sahifa / Yo'riqnoma modullari</span>
           <div className={styles.sectionTitleRow}>
             <div>
-              <h2 className={styles.sectionTitle}>IT Park CRM Tizimidan Foydalanish Qo'llanmalari</h2>
+              <h2 className={styles.sectionTitle}>O'quv Markaz CRM Tizimidan Foydalanish Qo'llanmalari</h2>
               <p className={styles.sectionSubtitle}>
-                Kerakli 4 ta bo'limdan birortasini tanlang yoki qidiruv maydoniga kalit so'z yozing (Masalan: davomat, PIN, SMS, PDF, to'lov).
+                Kerakli 4 ta bo'limdan birortasini tanlang yoki qidiruv maydoniga kalit so'z yozing (Masalan: davomat, AI, guruh, moliya, to'lov).
               </p>
             </div>
 
@@ -703,80 +718,82 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
       <section id="imkoniyatlar" className={styles.sectionWrapper}>
         <div className={styles.sectionHeader}>
           <span className={styles.sectionBreadcrumb}>Platforma modullari</span>
-          <h2 className={styles.sectionTitle}>IT Park CRM Asosiy Imkoniyatlari va Afzalliklari</h2>
+          <h2 className={styles.sectionTitle}>O'quv Markazlar Uchun Asosiy Imkoniyatlar va Modullar</h2>
           <p className={styles.sectionSubtitle}>
-            Markaz ma'muriyati va o'qituvchilarning kundalik ishini soddalashtiruvchi 4 ta asosiy texnologik modul
+            Markaz ma'muriyati, o'qituvchilar va rahbarlarning kundalik ishini to'liq yengillashtiruvchi 4 ta asosiy texnologik modul
           </p>
         </div>
 
         <div className={styles.featuresGrid}>
           {/* Card 01 */}
           <div className={styles.featureCard}>
-            <span className={styles.featureMeta}>Asosiy modul • Avto-anketa (CRM) va monitoring</span>
-            <h3 className={styles.featureTitle}>01. 24 bandli Rasmiy O'quvchi Dosyesi va Anketasi</h3>
+            <span className={styles.featureMeta}>Sun'iy Intellekt • Aqlli tahlil va maslahatchi</span>
+            <h3 className={styles.featureTitle}>01. O'rnatilgan Sun'iy Intellekt (AI) Yordamchi</h3>
             <p className={styles.featureDesc}>
-              Har bir o'quvchi uchun 24 ta rasmiy banddan iborat shaxsiy anketa yuritiladi: F.I.SH, tug'ilgan sanasi, telefon raqami, ota-onasi, tanlangan IT kursi, guruhi, dars jadvali, to'lov holati va davomat ko'rsatkichlari. Ma'lumot kiritish paytida sahifa yangilanib ketmaydi hamda ma'lumotlar yo'qolmaydi.
+              Markaz ko'rsatkichlarini chuqur tahlil qiluvchi, o'quvchilar davomati va to'lovlar dinamikasini o'rganib, amaliy tavsiyalar beruvchi o'rnatilgan sun'iy intellekt. O'qituvchilar va direktor uchun 24/7 aqlli maslahatchi.
             </p>
             <div className={styles.featureTags}>
-              <span className={styles.featureTag}>Elektron anketa</span>
-              <span className={styles.featureTag}>24 bandli dosye</span>
-              <span className={styles.featureTag}>Ota-ona pasporti va tel</span>
-              <span className={styles.featureTag}>To'lov monitoringi</span>
+              <span className={styles.featureTag}>AI tahlil</span>
+              <span className={styles.featureTag}>Aqlli maslahatchi</span>
+              <span className={styles.featureTag}>Xatarlarni erta aniqlash</span>
+              <span className={styles.featureTag}>To'liq o'zbek tilida</span>
             </div>
           </div>
 
           {/* Card 02 */}
           <div className={styles.featureCard}>
-            <span className={styles.featureMeta}>Eksport moduli • Arxiv va hisobotlar</span>
-            <h3 className={styles.featureTitle}>02. Word, Excel va PDF Hujjatlar Generatsiyasi</h3>
+            <span className={styles.featureMeta}>Kunlik nazorat • 1-klikda davomat</span>
+            <h3 className={styles.featureTitle}>02. Interaktiv Kunlik Davomat va Jurnallar</h3>
             <p className={styles.featureDesc}>
-              Dars o'quvchilari ro'yxati, kunlik davomat varaqlari, to'lov kvitansiyalari, shartnomalar va oylik yakuniy hisobotlar 1 bosishda Word (.docx), Excel (.xlsx) yoki PDF formatida shakllantiriladi va yuklab olinadi.
+              Dars boshida tezkor davomat olish (Bor, Yo'q, Kech qoldi, Sababli). O'quvchilarning umumiy davomat reytingi va oylik ko'rsatkichlari avtomatik hisoblanadi. Qog'oz jurnallarga ehtiyoj qolmaydi.
             </p>
             <div className={styles.featureTags}>
-              <span className={styles.featureTag}>Rasmiy hujjat formati</span>
-              <span className={styles.featureTag}>1-klikda eksport</span>
-              <span className={styles.featureTag}>Avto-jadval shakllanishi</span>
+              <span className={styles.featureTag}>Tezkor yo'qlama</span>
+              <span className={styles.featureTag}>Davomat foizi</span>
+              <span className={styles.featureTag}>Oylik jurnallar</span>
+              <span className={styles.featureTag}>Mobil qulaylik</span>
             </div>
           </div>
 
           {/* Card 03 */}
           <div className={styles.featureCard}>
-            <span className={styles.featureMeta}>Moliya moduli • Kassa va to'lovlar balansi</span>
-            <h3 className={styles.featureTitle}>03. Avtomatlashtirilgan Kassa, To'lovlar va Qarzdorlik Tizimi</h3>
+            <span className={styles.featureMeta}>Ta'lim boshqaruvi • Guruhlar va dars jadvali</span>
+            <h3 className={styles.featureTitle}>03. Talabalar, Guruhlar va Dars Xonalari</h3>
             <p className={styles.featureDesc}>
-              O'quv markazining barcha to'lovlarini qulay boshqarish: naqd va karta orqali qabul, chegirmalar hisobi, qarzdor talabalar ro'yxati, o'qituvchilar oylik ish haqi va markazning sof foyda hisoboti to'liq avtomatlashtirilgan.
+              Yangi talabalarni qabul qilish, toq va juft kunlar bo'yicha guruhlar ochish, dars xonalari sig'imi va o'qituvchilar yuklamasini qulay boshqarish. Dars to'qnashuvlarining oldi avtomatik olinadi.
             </p>
             <div className={styles.featureTags}>
-              <span className={styles.featureTag}>Kassa nazorati</span>
-              <span className={styles.featureTag}>Qarzdorlar monitoringi</span>
-              <span className={styles.featureTag}>Elektron cheklar</span>
+              <span className={styles.featureTag}>O'quvchilar bazasi</span>
+              <span className={styles.featureTag}>Guruhlar jadvali</span>
+              <span className={styles.featureTag}>Xonalar nazorati</span>
+              <span className={styles.featureTag}>Ustozlar taqsimoti</span>
             </div>
           </div>
 
           {/* Card 04 */}
           <div className={styles.featureCard}>
-            <span className={styles.featureMeta}>Nazorat va Davomat • QR-kod va SMS bildirishnoma</span>
-            <h3 className={styles.featureTitle}>04. Kunlik Davomat, Avto-Zaxira va Ota-onalarga SMS</h3>
+            <span className={styles.featureMeta}>Moliya moduli • Kassa va balans</span>
+            <h3 className={styles.featureTitle}>04. Avtomatlashtirilgan Kassa va Qarzdorlik Tizimi</h3>
             <p className={styles.featureDesc}>
-              Dars boshida tezkor davomat olish, darsga kelmagan talabalar ota-onalariga avtomatik SMS yuborish, sun'iy intellekt (AI) orqali o'quvchilar o'zlashtirishini tahlil qilish va dars o'tish sifatini baholash imkoniyati.
+              Markazning barcha to'lovlarini qulay boshqarish: naqd va karta orqali qabul, qarzdor talabalar ro'yxati, markaz xarajatlari va sof foyda balansi real vaqt rejimida shaffof ko'rinadi.
             </p>
             <div className={styles.featureTags}>
-              <span className={styles.featureTag}>Tezkor davomat</span>
-              <span className={styles.featureTag}>SMS bildirishnoma</span>
-              <span className={styles.featureTag}>AI yordamchi</span>
-              <span className={styles.featureTag}>Mobil optimallashtirish</span>
+              <span className={styles.featureTag}>Kassa nazorati</span>
+              <span className={styles.featureTag}>Qarzdorlar monitoringi</span>
+              <span className={styles.featureTag}>Chiqimlar hisobi</span>
+              <span className={styles.featureTag}>Sof foyda</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ------------------- SECTION 4: 24-BANDLI DOSYE ------------------- */}
-      <section id="dosye" className={styles.sectionWrapper}>
+      {/* ------------------- SECTION 4: EDUCATIONAL DIRECTIONS (MOSLASHUVCHAN TIZIM) ------------------- */}
+      <section id="yonalishlar" className={styles.sectionWrapper}>
         <div className={styles.sectionHeader}>
-          <span className={styles.sectionBreadcrumb}>Ma'lumotlar standarti</span>
-          <h2 className={styles.sectionTitle}>O'quvchining 24 Bandli Rasmiy Dosyesiga Nimalar Kiradi?</h2>
+          <span className={styles.sectionBreadcrumb}>Barcha o'quv markazlari uchun universal platforma</span>
+          <h2 className={styles.sectionTitle}>Har Qanday Ta'lim Yo'nalishi Uchun Moslashuvchan Tizim</h2>
           <p className={styles.sectionSubtitle}>
-            IT Park CRM tizimida har bir o'quvchi bo'yicha quyidagi 4 ta asosiy blokdagi 24 ta ma'lumot to'liq shakllantiriladi:
+            Bizning CRM tizimimiz barcha o'quv markazlari, til maktablari va to'garaklarning talablariga to'liq javob beradi:
           </p>
         </div>
 
@@ -784,64 +801,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
           {/* Column 1 */}
           <div className={styles.dossierCol}>
             <div className={styles.dossierColHeader}>
-              <span className={styles.dossierColRange}>01-06 (1-6-bandlar)</span>
-              <h4 className={styles.dossierColTitle}>Shaxsiy Ma'lumotlar</h4>
+              <span className={styles.dossierColRange}>01. Chet tillari & IELTS</span>
+              <h4 className={styles.dossierColTitle}>Til O'rgatish Markazlari</h4>
             </div>
             <ul className={styles.dossierList}>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>01.</span> Familiyasi, ismi, sharifi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>02.</span> Tug'ilgan sanasi (kun, oy, yil)</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>03.</span> Jinsi va fuqaroligi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>04.</span> Shaxsiy telefon raqami</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>05.</span> Doimiy yashash manzili</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>06.</span> Elektron pochta (e-mail)</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>01.</span> Ingliz tili, CEFR, IELTS, Rus, Koreys, Arab tillari</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>02.</span> Guruhlar darajalari (Beginner dan Advanced gacha)</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>03.</span> Kunlik davomat va talabalar faolligi monitoringi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>04.</span> Dars smenalari (ertalabki, kunduzgi va kechki)</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>05.</span> Har oylik test sinovlari va o'zlashtirish tahlili</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>06.</span> Oylik to'lovlar va qarzdorlikni qat'iy nazorat qilish</li>
             </ul>
           </div>
 
           {/* Column 2 */}
           <div className={styles.dossierCol}>
             <div className={styles.dossierColHeader}>
-              <span className={styles.dossierColRange}>07-12 (7-12-bandlar)</span>
-              <h4 className={styles.dossierColTitle}>Kurs va Ta'lim Yo'nalishi</h4>
+              <span className={styles.dossierColRange}>02. IT & Dasturlash</span>
+              <h4 className={styles.dossierColTitle}>IT va Raqamli Texnologiyalar</h4>
             </div>
             <ul className={styles.dossierList}>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>07.</span> Tanlangan IT kursi / yo'nalishi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>08.</span> Biriktirilgan o'quv guruhi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>09.</span> Dars kunlari va dars vaqti</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>10.</span> Ajratilgan dars xonasi (Room)</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>11.</span> Dars beruvchi mentor / o'qituvchi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>12.</span> Kurs boshlanish va tugash sanasi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>07.</span> Frontend, Backend, Python, Foundation kurslari</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>08.</span> Grafik dizayn, 3D modellashtirish, SMM, Video montaj</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>09.</span> Mentorlar va yordamchi assistentlar dars yuklamasi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>10.</span> Kompyuter xonalari sig'imi va xonalar bandligi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>11.</span> Talabalar amaliy loyihalari va portfolio hisobi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>12.</span> Kurs bitiruvchilari va sertifikat berish monitoringi</li>
             </ul>
           </div>
 
           {/* Column 3 */}
           <div className={styles.dossierCol}>
             <div className={styles.dossierColHeader}>
-              <span className={styles.dossierColRange}>13-18 (13-18-bandlar)</span>
-              <h4 className={styles.dossierColTitle}>Ota-ona va Aloqa</h4>
+              <span className={styles.dossierColRange}>03. Fanlar & Repetitorlik</span>
+              <h4 className={styles.dossierColTitle}>Maktab va OTM Tayyorlov</h4>
             </div>
             <ul className={styles.dossierList}>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>13.</span> Ota-onaning F.I.SH</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>14.</span> Ota-onaning telefon raqami</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>15.</span> Qo'shimcha aloqa vakili</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>16.</span> SMS xabarnomalar statusi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>17.</span> Maxsus eslatmalar va status</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>18.</span> Shartnoma raqami va sanasi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>13.</span> Matematika, Fizika, Kimyo, Biologiya, Tarix fanlari</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>14.</span> Abituriyentlar va Prezident maktabiga tayyorlov</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>15.</span> Katta guruhlar uchun tezkor davomat olish</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>16.</span> Ota-onalar bilan muntazam aloqa va nazorat</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>17.</span> Sinov testlari (DTM / Mock) natijalari tahlili</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>18.</span> Oylik to'lovlar, chegirmalar va kassa intizomi</li>
             </ul>
           </div>
 
           {/* Column 4 */}
           <div className={styles.dossierCol}>
             <div className={styles.dossierColHeader}>
-              <span className={styles.dossierColRange}>19-24 (19-24-bandlar)</span>
-              <h4 className={styles.dossierColTitle}>Moliya, Davomat va Natijalar</h4>
+              <span className={styles.dossierColRange}>04. Ijod & Rivojlanish</span>
+              <h4 className={styles.dossierColTitle}>Bolalar va Kasb To'garaklari</h4>
             </div>
             <ul className={styles.dossierList}>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>19.</span> Kurs oylik to'lov summasi</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>20.</span> Berilgan chegirma yoki grant</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>21.</span> To'lov balansi va qarzdorlik</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>22.</span> Kunlik davomat davriy foizi (%)</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>23.</span> Yakuniy loyihalar va portfolio</li>
-              <li className={styles.dossierItem}><span className={styles.dossierNum}>24.</span> Bitiruvchi sertifikati raqami</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>19.</span> Mental arifmetika, Shaxmat, Tez o'qish (Skorochteniye)</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>20.</span> Robototexnika, Lego-konstruktorlik va bolalar IT</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>21.</span> Yosh toifalariga ko'ra guruhlarni qulay shakllantirish</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>22.</span> Dars qoldirgan bolalarni o'z vaqtida aniqlash</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>23.</span> Chegirmalar, oilaviy paketlar va imtiyozlar hisobi</li>
+              <li className={styles.dossierItem}><span className={styles.dossierNum}>24.</span> Markazning oylik sof daromadi va xarajatlari hisoboti</li>
             </ul>
           </div>
         </div>
@@ -853,9 +870,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
           <div className={styles.footerLeft}>
             <img src="/crm-logo.png" alt="CRM Logo" className={styles.footerLogo} />
             <div>
-              <div className={styles.footerBrandTitle}>IT PARK CRM PLATFORM</div>
+              <div className={styles.footerBrandTitle}>MARKAZ CRM PLATFORM</div>
               <div className={styles.footerBrandDesc}>
-                O'quv markazlari va IT akademiyalar uchun yagona professional boshqaruv tizimi
+                Barcha turdagi o'quv markazlari, til maktablari va akademiyalar uchun yagona aqlli boshqaruv tizimi
               </div>
             </div>
           </div>
@@ -889,7 +906,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
         </div>
 
         <div className={styles.footerCopy}>
-          <span>© 2026 IT Park CRM. Barcha huquqlar himoyalangan.</span>
+          <span>© 2026 CRM Platform. Barcha huquqlar himoyalangan.</span>
           <span>Dasturchi: @OlimjonOtabekovich</span>
         </div>
       </footer>
@@ -915,7 +932,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
             <div className={styles.modalHeader}>
               <img src="/crm-logo.png" alt="CRM Logo" className={styles.modalLogo} />
               <h3 className={styles.modalTitle}>Tizimga kirish</h3>
-              <p className={styles.modalSubtitle}>IT Park CRM shaxsiy kabinetingizga kiring</p>
+              <p className={styles.modalSubtitle}>O'quv markaz shaxsiy kabinetingizga kiring</p>
             </div>
 
             <form onSubmit={handleLoginSubmit} className={styles.modalForm} autoComplete="off">
