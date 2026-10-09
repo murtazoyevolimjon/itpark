@@ -918,6 +918,201 @@
   min-width: 20px;
 }
 
+/* ------------------- SECTION 5: CONTACT (BOG'LANISH) ------------------- */
+.contactCard {
+  background: rgba(13, 22, 39, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 24px;
+  padding: 44px 36px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(14, 165, 233, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.contactHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 740px;
+}
+
+.contactTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.contactSubtitle {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.contactRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.contactItem {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 24px 22px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.contactItem::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.phoneContactItem::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.tgContactItem::before {
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+}
+
+.instaContactItem::before {
+  background: linear-gradient(90deg, #f43f5e, #ec4899, #f59e0b);
+}
+
+.contactItem:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.contactItem:hover::before {
+  opacity: 1;
+}
+
+.phoneContactItem:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 14px 32px rgba(16, 185, 129, 0.2);
+}
+
+.tgContactItem:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 14px 32px rgba(14, 165, 233, 0.2);
+}
+
+.instaContactItem:hover {
+  border-color: rgba(244, 63, 94, 0.45);
+  box-shadow: 0 14px 32px rgba(244, 63, 94, 0.2);
+}
+
+.contactIconWrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+}
+
+.phoneContactItem .contactIconWrap {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tgContactItem .contactIconWrap {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.instaContactItem .contactIconWrap {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.contactItem:hover .contactIconWrap {
+  transform: scale(1.08);
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contactLabel {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contactValue {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  word-break: break-all;
+}
+
+.contactActionText {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-top: 4px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.contactItem:hover .contactActionText {
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+.contactFooterPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.contactFooterPill:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: translateY(-2px);
+}
+
 /* ------------------- FOOTER ------------------- */
 .footer {
   background: #040812;
@@ -1197,5 +1392,24 @@
 
   .sectionTitle {
     font-size: 25px;
+  }
+
+  .contactRow {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .contactCard {
+    padding: 28px 20px;
+    gap: 20px;
+  }
+
+  .contactTitle {
+    font-size: 23px;
+  }
+
+  .footerRight {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }

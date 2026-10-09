@@ -19,6 +19,8 @@ import {
   BookOpen,
   DollarSign,
   Brain,
+  Phone,
+  Instagram,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast/Toast';
@@ -864,8 +866,80 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
         </div>
       </section>
 
+      {/* ------------------- SECTION 5: CONTACT & AUTHOR (BOG'LANISH) ------------------- */}
+      <section id="aloqa" className={styles.sectionWrapper}>
+        <div className={styles.contactCard}>
+          <div className={styles.contactHeader}>
+            <span className={styles.sectionBreadcrumb}>Muallif va aloqa</span>
+            <h2 className={styles.contactTitle}>Savollar yoki Hamkorlik Uchun Bog'lanish</h2>
+            <p className={styles.contactSubtitle}>
+              Tizimni o'quv markazingizga joriy qilish, individual funksiyalar qo'shish yoki savollar bo'yicha to'g'ridan-to'g'ri dasturchi bilan bog'laning:
+            </p>
+          </div>
+
+          <div className={styles.contactRow}>
+            {/* Phone Card */}
+            <a href="tel:+998885790309" className={`${styles.contactItem} ${styles.phoneContactItem}`}>
+              <div className={styles.contactIconWrap}>
+                <Phone size={24} />
+              </div>
+              <div className={styles.contactInfo}>
+                <span className={styles.contactLabel}>Telefon raqam</span>
+                <span className={styles.contactValue}>+998 88 579 03 09</span>
+              </div>
+              <span className={styles.contactActionText}>
+                Qo'ng'iroq qilish <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Telegram Card */}
+            <a
+              href="https://t.me/OlimjonOtabekovich"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${styles.contactItem} ${styles.tgContactItem}`}
+            >
+              <div className={styles.contactIconWrap}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </div>
+              <div className={styles.contactInfo}>
+                <span className={styles.contactLabel}>Telegram profil</span>
+                <span className={styles.contactValue}>@OlimjonOtabekovich</span>
+              </div>
+              <span className={styles.contactActionText}>
+                Xabar yozish <ArrowRight size={14} />
+              </span>
+            </a>
+
+            {/* Instagram Card */}
+            <a
+              href="https://instagram.com/murtazoyev0limjon"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${styles.contactItem} ${styles.instaContactItem}`}
+            >
+              <div className={styles.contactIconWrap}>
+                <Instagram size={24} />
+              </div>
+              <div className={styles.contactInfo}>
+                <span className={styles.contactLabel}>Instagram profil</span>
+                <span className={styles.contactValue}>murtazoyev0limjon</span>
+              </div>
+              <span className={styles.contactActionText}>
+                Kuzatish <ArrowRight size={14} />
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ------------------- FOOTER ------------------- */}
-      <footer id="aloqa" className={styles.footer}>
+      <footer className={styles.footer}>
         <div className={styles.footerContent}>
           <div className={styles.footerLeft}>
             <img src="/crm-logo.png" alt="CRM Logo" className={styles.footerLogo} />
@@ -879,19 +953,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
 
           <div className={styles.footerRight}>
             <a
+              href="tel:+998885790309"
+              className={styles.contactFooterPill}
+              title="Telefon orqali bog'lanish"
+            >
+              <Phone size={15} />
+              <span>+998 88 579 03 09</span>
+            </a>
+
+            <a
               href="https://t.me/OlimjonOtabekovich"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.telegramFooterBtn}
-              title="Dasturchi bilan Telegram orqali bog'lanish"
+              className={styles.contactFooterPill}
+              title="Telegram orqali bog'lanish"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"
                   fill="#38bdf8"
                 />
               </svg>
               <span>@OlimjonOtabekovich</span>
+            </a>
+
+            <a
+              href="https://instagram.com/murtazoyev0limjon"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.contactFooterPill}
+              title="Instagram profilni ko'rish"
+            >
+              <Instagram size={15} />
+              <span>murtazoyev0limjon</span>
             </a>
 
             <button
@@ -907,7 +1001,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
 
         <div className={styles.footerCopy}>
           <span>© 2026 CRM Platform. Barcha huquqlar himoyalangan.</span>
-          <span>Dasturchi: @OlimjonOtabekovich</span>
+          <span>Dasturchi: Olimjon Murtazoyev (@OlimjonOtabekovich)</span>
         </div>
       </footer>
 
