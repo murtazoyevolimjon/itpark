@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { FloatingAIWidget } from '../ai/FloatingAIWidget';
+import { TeacherLayout } from './TeacherLayout';
 import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
@@ -46,6 +47,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (user?.role === 'TEACHER' || pathname.startsWith('/teacher')) {
+    return <TeacherLayout>{children}</TeacherLayout>;
   }
 
   return (

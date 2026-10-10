@@ -178,7 +178,7 @@
   gap: 24px;
 }
 
-/* Top Pill Badge with working code replaced by Telegram @OlimjonOtabekovich */
+/* Top Pill Badge with working code replaced by Telegram @Olimjon_Otabekovich */
 .heroBadge {
   display: inline-flex;
   align-items: center;
@@ -1265,16 +1265,30 @@
   animation: fadeIn 0.25s ease-out;
 }
 
-.modalContent {
+.modalCardWrapper {
   width: 100%;
-  max-width: 440px;
-  background: #0c1629;
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 24px;
-  padding: 36px 32px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(14, 165, 233, 0.2);
+  max-width: 1060px;
+  max-height: 94vh;
+  overflow-y: auto;
+  background: rgba(10, 15, 30, 0.9);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 32px 32px;
+  box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.85), 0 0 60px rgba(99, 102, 241, 0.22);
   position: relative;
-  animation: scaleUp 0.25s ease-out;
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalGlowBar {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #6366f1, #a855f7, #38bdf8, transparent);
+  pointer-events: none;
 }
 
 .modalCloseBtn {
@@ -1282,86 +1296,448 @@
   top: 18px;
   right: 18px;
   background: rgba(255, 255, 255, 0.08);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94a3b8;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  z-index: 20;
 }
 
 .modalCloseBtn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  transform: rotate(90deg);
+}
+
+/* 2-Column Grid */
+.modalGrid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+/* ================= LEFT COLUMN: 3-RASM SHOWCASE ================= */
+.showcaseColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 24px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.showcaseHeader {
+  margin-bottom: 8px;
+}
+
+.showcaseTitle {
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.4px;
+  background: linear-gradient(135deg, #ffffff 40%, #e2e8f0 75%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.showcaseSubtitle {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin: 8px 0 0 0;
+}
+
+/* Interactive 3D Tilt Container */
+.heroTiltContainer {
+  position: relative;
+  margin: 18px 0 16px 0;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.heroTiltAmbient {
+  animation: cardFloatAmbient 7s ease-in-out infinite;
+}
+
+.heroAuraBackdrop {
+  position: absolute;
+  inset: -6px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.35), rgba(6, 182, 212, 0.25));
+  border-radius: 22px;
+  filter: blur(16px);
+  opacity: 0.75;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.heroInnerCard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #090e1a;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
+  max-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.heroTiltContainer:hover .heroImage {
+  transform: scale(1.03);
+}
+
+.heroGlare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 5;
+  border-radius: 18px;
+}
+
+/* Floating Badges */
+.floatingBadge {
+  position: absolute;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  background: rgba(10, 15, 30, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 15px rgba(99, 102, 241, 0.15);
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.badgeTopRight {
+  top: -12px;
+  right: -8px;
+  animation: badgeFloat1 4.5s ease-in-out infinite;
+}
+
+.badgeBottomLeft {
+  bottom: -12px;
+  left: -8px;
+  animation: badgeFloat2 5s ease-in-out infinite;
+}
+
+.badgeIconIndigo {
+  padding: 6px;
+  background: rgba(99, 102, 241, 0.22);
+  color: #818cf8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.badgeIconEmerald {
+  padding: 6px;
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.badgeLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1;
+  margin: 0 0 3px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badgeVal {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Showcase Status Footer */
+.showcaseFooter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11.5px;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+}
+
+.statusPulseDot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+}
+
+.statusPing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #10b981;
+  opacity: 0.75;
+  animation: pingPulse 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.statusDot {
+  position: relative;
+  display: inline-flex;
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+}
+
+.statusLabel {
+  color: #94a3b8;
+}
+
+.statusDivider {
+  color: #475569;
+}
+
+.versionItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #94a3b8;
+}
+
+.versionVal {
+  color: #818cf8;
+  font-weight: 700;
+}
+
+/* ================= RIGHT COLUMN: LOGIN FORM ================= */
+.formColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.loginFormCard {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  padding: 30px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.formHeader {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.loginBrandIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 60%, #a855f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5), 0 0 20px rgba(168, 85, 247, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: transform 0.3s ease;
+}
+
+.loginBrandIcon:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.gradCapIcon {
   color: #ffffff;
 }
 
-.modalHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.modalLogo {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 25px rgba(14, 165, 233, 0.5);
-  border: 2px solid rgba(56, 189, 248, 0.6);
-  margin-bottom: 14px;
-}
-
-.modalTitle {
-  font-size: 22px;
+.formTitle {
+  font-size: 23px;
   font-weight: 800;
   color: #ffffff;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
-.modalSubtitle {
+.formSubtitle {
   font-size: 13px;
   color: #94a3b8;
-  margin: 6px 0 0 0;
+  margin: 5px 0 0 0;
 }
 
 .modalForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 15px;
 }
 
-.modalSubmitBtn {
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.textInput {
+  width: 100%;
+  padding: 12px 42px 12px 42px;
+  background: rgba(3, 7, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 13.5px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.textInput:focus {
+  border-color: #6366f1;
+  background: rgba(3, 7, 18, 0.95);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.eyeBtn:hover {
+  color: #cbd5e1;
+}
+
+.loginActionBtn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #0ea5e9 0%, #00d2b4 100%);
-  color: #04101d;
-  font-size: 15px;
-  font-weight: 800;
+  width: 100%;
   padding: 13px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 700;
   border-radius: 12px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 210, 180, 0.35);
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
+  transition: all 0.25s ease;
+  margin-top: 4px;
+}
+
+.loginActionBtn:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.6);
+}
+
+.loginActionBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.telegramLinkWrap {
+  display: flex;
+  justify-content: center;
   margin-top: 6px;
 }
 
-.modalSubmitBtn:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+.telegramBadgeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 16px;
+  background: rgba(34, 158, 217, 0.1);
+  border: 1px solid rgba(34, 158, 217, 0.3);
+  border-radius: 9999px;
+  color: #38bdf8;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.modalSubmitBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.telegramBadgeBtn:hover {
+  background: rgba(34, 158, 217, 0.2);
+  border-color: rgba(34, 158, 217, 0.6);
+  color: #7dd3fc;
+  transform: translateY(-1px);
 }
 
 /* Animations */
@@ -1371,8 +1747,66 @@
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cardFloatAmbient {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px);
+  }
+  25% {
+    transform: perspective(1000px) rotateX(1.8deg) rotateY(-2.2deg) translateY(-5px);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(-1.2deg) rotateY(1.8deg) translateY(-2px);
+  }
+  75% {
+    transform: perspective(1000px) rotateX(1.4deg) rotateY(2.2deg) translateY(-6px);
+  }
+}
+
+@keyframes badgeFloat1 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes badgeFloat2 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes pingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70%, 100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 960px) {
+  .modalGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .showcaseColumn {
+    display: none;
+  }
+  .modalCardWrapper {
+    max-width: 460px;
+    padding: 24px 20px;
+  }
 }
 
 /* ------------------- RESPONSIVENESS ------------------- */

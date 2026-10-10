@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   authors: [
     {
       name: 'Olimjon Murtazoyev',
-      url: 'https://t.me/OlimjonOtabekovich',
+      url: 'https://t.me/Olimjon_Otabekovich',
     },
   ],
   generator: 'Next.js',
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     description:
       "O'quv markazlar, til maktablari va IT akademiyalar uchun yagona aqlli CRM va AI davomat tizimi.",
     images: ['/crm-logo.png'],
-    creator: '@OlimjonOtabekovich',
+    creator: '@Olimjon_Otabekovich',
   },
   robots: {
     index: true,
@@ -120,7 +120,7 @@ const jsonLd = {
   author: {
     '@type': 'Person',
     name: 'Olimjon Murtazoyev',
-    url: 'https://t.me/OlimjonOtabekovich',
+    url: 'https://t.me/Olimjon_Otabekovich',
     telephone: '+998885790309',
   },
   offers: {
@@ -179,7 +179,7 @@ const faqJsonLd = {
       name: "O'quv markazimizga tizimni qanday ulaymiz va sinab ko'ramiz?",
       acceptedAnswer: {
         '@type': 'Answer',
-        text: "Dasturchi bilan telefon (+998 88 579 03 09) yoki Telegram (@OlimjonOtabekovich) orqali bog'lanishingiz mumkin. Tizim qisqa vaqtda sozlab beriladi.",
+        text: "Dasturchi bilan telefon (+998 88 579 03 09) yoki Telegram (@Olimjon_Otabekovich) orqali bog'lanishingiz mumkin. Tizim qisqa vaqtda sozlab beriladi.",
       },
     },
   ],

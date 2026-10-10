@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   LogIn,
@@ -22,6 +22,7 @@ import {
   Phone,
   Instagram,
   HelpCircle,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast/Toast';
@@ -65,6 +66,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Interactive 3D Parallax Tilt state for Hero Showcase Card
+  const [heroTilt, setHeroTilt] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50 });
+  const [heroHovered, setHeroHovered] = useState(false);
+  const heroCardRef = useRef<HTMLDivElement>(null);
+
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!heroCardRef.current) return;
+    const rect = heroCardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - y) * 16;
+    const rotateY = (x - 0.5) * 16;
+    setHeroTilt({
+      rotateX,
+      rotateY,
+      glareX: x * 100,
+      glareY: y * 100,
+    });
+  };
+
+  const handleHeroMouseLeave = () => {
+    setHeroHovered(false);
+    setHeroTilt({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50 });
+  };
 
   // Tab Guides Data - Real, practical workflows for modern learning centers
   const tabGuides: TabGuide[] = [
@@ -400,7 +426,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
           <button
             type="button"
             className={styles.resetBtn}
-            onClick={() => info("Parolni tiklash uchun tizim administratori yoki Telegram (@OlimjonOtabekovich) orqali murojaat qiling.")}
+            onClick={() => info("Parolni tiklash uchun tizim administratori yoki Telegram (@Olimjon_Otabekovich) orqali murojaat qiling.")}
           >
             Parolni tiklash
           </button>
@@ -440,7 +466,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               <span className={styles.badgeVersion}>v2.0</span>
               <span className={styles.badgeDivider}>•</span>
               <a
-                href="https://t.me/OlimjonOtabekovich"
+                href="https://t.me/Olimjon_Otabekovich"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.badgeTelegram}
@@ -452,7 +478,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                     fill="#38bdf8"
                   />
                 </svg>
-                <span>@OlimjonOtabekovich</span>
+                <span>@Olimjon_Otabekovich</span>
               </a>
             </div>
 
@@ -501,7 +527,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               <button
                 type="button"
                 className={styles.forgotHeroBtn}
-                onClick={() => info("Parolni tiklash uchun @OlimjonOtabekovich profiliga yozing.")}
+                onClick={() => info("Parolni tiklash uchun @Olimjon_Otabekovich profiliga yozing.")}
               >
                 Parolni unutdingizmi?
               </button>
@@ -934,7 +960,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               <span>O'quv markazimizga tizimni qanday ulaymiz va sinab ko'ramiz?</span>
             </h3>
             <p className={styles.faqAnswer}>
-              Saytda keltirilgan Telegram (@OlimjonOtabekovich) yoki to'g'ridan-to'g'ri telefon (+998 88 579 03 09) orqali dasturchi bilan bog'lanishingiz mumkin. O'quv markazingiz uchun tizim qisqa vaqt ichida to'liq sozlab, ishga tushirib beriladi.
+              Saytda keltirilgan Telegram (@Olimjon_Otabekovich) yoki to'g'ridan-to'g'ri telefon (+998 88 579 03 09) orqali dasturchi bilan bog'lanishingiz mumkin. O'quv markazingiz uchun tizim qisqa vaqt ichida to'liq sozlab, ishga tushirib beriladi.
             </p>
           </div>
         </div>
@@ -968,7 +994,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
 
             {/* Telegram Card */}
             <a
-              href="https://t.me/OlimjonOtabekovich"
+              href="https://t.me/Olimjon_Otabekovich"
               target="_blank"
               rel="noopener noreferrer"
               className={`${styles.contactItem} ${styles.tgContactItem}`}
@@ -983,7 +1009,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               </div>
               <div className={styles.contactInfo}>
                 <span className={styles.contactLabel}>Telegram profil</span>
-                <span className={styles.contactValue}>@OlimjonOtabekovich</span>
+                <span className={styles.contactValue}>@Olimjon_Otabekovich</span>
               </div>
               <span className={styles.contactActionText}>
                 Xabar yozish <ArrowRight size={14} />
@@ -1036,7 +1062,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
             </a>
 
             <a
-              href="https://t.me/OlimjonOtabekovich"
+              href="https://t.me/Olimjon_Otabekovich"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.contactFooterPill}
@@ -1048,7 +1074,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
                   fill="#38bdf8"
                 />
               </svg>
-              <span>@OlimjonOtabekovich</span>
+              <span>@Olimjon_Otabekovich</span>
             </a>
 
             <a
@@ -1075,11 +1101,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
 
         <div className={styles.footerCopy}>
           <span>© 2026 CRM Platform. Barcha huquqlar himoyalangan.</span>
-          <span>Dasturchi: Olimjon Murtazoyev (@OlimjonOtabekovich)</span>
+          <span>Dasturchi: Olimjon Murtazoyev (@Olimjon_Otabekovich)</span>
         </div>
       </footer>
 
-      {/* ------------------- INTERACTIVE LOGIN MODAL ------------------- */}
+      {/* ------------------- INTERACTIVE 2-COLUMN LOGIN MODAL ------------------- */}
       {isLoginModalOpen && (
         <div
           className={styles.modalOverlay}
@@ -1087,7 +1113,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
             if (e.target === e.currentTarget) setIsLoginModalOpen(false);
           }}
         >
-          <div className={styles.modalContent}>
+          <div className={styles.modalCardWrapper}>
+            {/* Top ambient highlight line */}
+            <div className={styles.modalGlowBar} />
+
+            {/* Modal Close Button */}
             <button
               type="button"
               className={styles.modalCloseBtn}
@@ -1097,116 +1127,195 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
               <X size={18} />
             </button>
 
-            <div className={styles.modalHeader}>
-              <img src="/crm-logo.png" alt="CRM Logo" className={styles.modalLogo} />
-              <h3 className={styles.modalTitle}>Tizimga kirish</h3>
-              <p className={styles.modalSubtitle}>O'quv markaz shaxsiy kabinetingizga kiring</p>
-            </div>
-
-            <form onSubmit={handleLoginSubmit} className={styles.modalForm} autoComplete="off">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1' }}>
-                  Login
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Loginni kiriting"
-                    value={loginInput}
-                    onChange={(e) => setLoginInput(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px 12px 42px',
-                      background: 'rgba(15, 23, 42, 0.75)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '12px',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
-                  />
+            <div className={styles.modalGrid}>
+              {/* LEFT COLUMN: 3-rasm Interactive Animated Showcase Card */}
+              <div className={styles.showcaseColumn}>
+                <div className={styles.showcaseHeader}>
+                  <h2 className={styles.showcaseTitle}>
+                    O'quv markazingizni yangi bosqichga olib chiqing
+                  </h2>
+                  <p className={styles.showcaseSubtitle}>
+                    Barcha o'quvchilar, o'qituvchilar, guruhlar, dars jadvallari va oylik to'lovlar tahlilini yagona aqlli tizim orqali samarali boshqaring.
+                  </p>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1' }}>
-                  Parol
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Parolni kiriting"
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
+                {/* Interactive 3D Parallax Tilt Card */}
+                <div
+                  ref={heroCardRef}
+                  className={`${styles.heroTiltContainer} ${!heroHovered ? styles.heroTiltAmbient : ''}`}
+                  onMouseMove={handleHeroMouseMove}
+                  onMouseEnter={() => setHeroHovered(true)}
+                  onMouseLeave={handleHeroMouseLeave}
+                  style={{
+                    transform: heroHovered
+                      ? `perspective(1000px) rotateX(${heroTilt.rotateX}deg) rotateY(${heroTilt.rotateY}deg) scale3d(1.02, 1.02, 1.02)`
+                      : undefined,
+                  }}
+                >
+                  {/* Glowing backlight aura */}
+                  <div className={styles.heroAuraBackdrop} />
+
+                  {/* Card wrapper */}
+                  <div className={styles.heroInnerCard}>
+                    <img
+                      src="/login-hero.png"
+                      alt="EDU CRM Dashboard Illustration"
+                      className={styles.heroImage}
+                    />
+
+                    {/* Interactive Glare overlay */}
+                    {heroHovered && (
+                      <div
+                        className={styles.heroGlare}
+                        style={{
+                          background: `radial-gradient(circle at ${heroTilt.glareX}% ${heroTilt.glareY}%, rgba(255, 255, 255, 0.22) 0%, rgba(99, 102, 241, 0.12) 35%, transparent 65%)`,
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Floating Badge Top-Right: Himoya - Xavfsiz Kirish Tizimi */}
+                  <div
+                    className={`${styles.floatingBadge} ${styles.badgeTopRight}`}
                     style={{
-                      width: '100%',
-                      padding: '12px 42px 12px 42px',
-                      background: 'rgba(15, 23, 42, 0.75)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '12px',
-                      color: '#ffffff',
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: 14,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      padding: 0,
-                      display: 'flex',
+                      transform: heroHovered
+                        ? `translate3d(${heroTilt.rotateY * 0.9}px, ${-heroTilt.rotateX * 0.9}px, 35px)`
+                        : undefined,
                     }}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+                    <div className={styles.badgeIconIndigo}>
+                      <Shield size={16} />
+                    </div>
+                    <div>
+                      <p className={styles.badgeLabel}>Himoya</p>
+                      <p className={styles.badgeVal}>Xavfsiz Kirish Tizimi</p>
+                    </div>
+                  </div>
+
+                  {/* Floating Badge Bottom-Left: Tizim holati - 99.9% Ishonchli & Tezkor */}
+                  <div
+                    className={`${styles.floatingBadge} ${styles.badgeBottomLeft}`}
+                    style={{
+                      transform: heroHovered
+                        ? `translate3d(${-heroTilt.rotateY * 0.9}px, ${heroTilt.rotateX * 0.9}px, 35px)`
+                        : undefined,
+                    }}
+                  >
+                    <div className={styles.badgeIconEmerald}>
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <div>
+                      <p className={styles.badgeLabel}>Tizim holati</p>
+                      <p className={styles.badgeVal}>99.9% Ishonchli & Tezkor</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom status line */}
+                <div className={styles.showcaseFooter}>
+                  <div className={styles.statusItem}>
+                    <span className={styles.statusPulseDot}>
+                      <span className={styles.statusPing} />
+                      <span className={styles.statusDot} />
+                    </span>
+                    <span className={styles.statusLabel}>Backend API: Ishlamoqda</span>
+                  </div>
+                  <span className={styles.statusDivider}>|</span>
+                  <div className={styles.versionItem}>
+                    <span>Versiya:</span>
+                    <span className={styles.versionVal}>v2.5.0</span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={styles.modalSubmitBtn}
-              >
-                {isLoading ? (
-                  <span>Tekshirilmoqda...</span>
-                ) : (
-                  <>
-                    <LogIn size={18} />
-                    <span>Kirish</span>
-                  </>
-                )}
-              </button>
+              {/* RIGHT COLUMN: Sleek Login Form Card */}
+              <div className={styles.formColumn}>
+                <div className={styles.loginFormCard}>
+                  <div className={styles.formHeader}>
+                    <div className={styles.loginBrandIcon}>
+                      <GraduationCap size={28} className={styles.gradCapIcon} />
+                    </div>
+                    <h3 className={styles.formTitle}>EDU CRM</h3>
+                  </div>
 
-              <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-                <a
-                  href="https://t.me/OlimjonOtabekovich"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.badgeTelegram}
-                  style={{ fontSize: '13px', padding: '6px 16px' }}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"
-                      fill="#38bdf8"
-                    />
-                  </svg>
-                  <span>@OlimjonOtabekovich</span>
-                </a>
+                  <form onSubmit={handleLoginSubmit} className={styles.modalForm} autoComplete="off">
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>
+                        TELEFON RAQAM / LOGIN
+                      </label>
+                      <div className={styles.inputWrap}>
+                        <User size={18} className={styles.inputIcon} />
+                        <input
+                          type="text"
+                          required
+                          placeholder="+998901234567 yoki Login"
+                          value={loginInput}
+                          onChange={(e) => setLoginInput(e.target.value)}
+                          className={styles.textInput}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>
+                        PAROL
+                      </label>
+                      <div className={styles.inputWrap}>
+                        <Lock size={18} className={styles.inputIcon} />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          placeholder="••••••••"
+                          value={passwordInput}
+                          onChange={(e) => setPasswordInput(e.target.value)}
+                          className={styles.textInput}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={styles.eyeBtn}
+                          aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className={styles.loginActionBtn}
+                    >
+                      {isLoading ? (
+                        <span>Tekshirilmoqda...</span>
+                      ) : (
+                        <>
+                          <LogIn size={18} />
+                          <span>Tizimga kirish</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className={styles.telegramLinkWrap}>
+                      <a
+                        href="https://t.me/Olimjon_Otabekovich"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.telegramBadgeBtn}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"
+                            fill="#38bdf8"
+                          />
+                        </svg>
+                        <span>@Olimjon_Otabekovich</span>
+                      </a>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
