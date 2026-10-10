@@ -24,9 +24,20 @@ export async function GET(req: NextRequest) {
       .select('*, course:courses(*), teacher:teachers(*), room:rooms(*), studentGroups:student_groups(count)', { count: 'exact' })
       .eq('centerId', authUser.centerId);
 
-    // If teacher, only return their own groups!
+    // If teacher, return their assigned groups
     if (authUser.role === 'TEACHER') {
-      query = query.eq('teacherId', authUser.sub);
+      const { data: teacherRecord } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('centerId', authUser.centerId)
+        .or(`login.eq.${authUser.email},phone.eq.${authUser.email}`)
+        .maybeSingle();
+
+      if (teacherRecord) {
+        query = query.or(`teacherId.eq.${authUser.sub},teacherId.eq.${teacherRecord.id}`);
+      } else {
+        query = query.eq('teacherId', authUser.sub);
+      }
     } else if (teacherId) {
       query = query.eq('teacherId', teacherId);
     }

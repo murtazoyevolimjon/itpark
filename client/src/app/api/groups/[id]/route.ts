@@ -32,8 +32,8 @@ export async function GET(
       return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
     }
 
-    // Teacher can only view their own group
-    if (authUser.role === 'TEACHER' && group.teacherId !== authUser.sub) {
+    // Teacher access check: allow within the center
+    if (authUser.role === 'TEACHER' && group.centerId !== authUser.centerId) {
       return NextResponse.json({ message: "Siz faqat o'zingizning guruhingizni ko'ra olasiz" }, { status: 403 });
     }
 
