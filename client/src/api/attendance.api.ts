@@ -5,6 +5,10 @@ export const attendanceApi = {
     const res = await api.post('/attendance/bulk', data);
     return res.data;
   },
+  saveBulk: async (data: { groupId: string; date: string; records: any[] }) => {
+    const res = await api.post('/attendance/bulk', data);
+    return res.data;
+  },
   getByGroup: async (groupId: string, dateOrFrom?: string, to?: string) => {
     const params: Record<string, string | undefined> = {};
     if (to) {

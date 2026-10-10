@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   X,
   Plus,
   Trash2,
@@ -20,7 +21,9 @@ import {
   Search,
   Phone,
   DollarSign,
-  GraduationCap
+  GraduationCap,
+  Lock,
+  Clock3,
 } from 'lucide-react';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
@@ -28,6 +31,12 @@ import { studentsApi } from '../api/students.api';
 import { useAuth } from '../hooks/useAuth';
 import { Group, AttendanceStatus, Student } from '../types';
 import { formatMoney } from '../utils/formatMoney';
+import {
+  getTashkentDateString,
+  getTashkentTimeString,
+  checkAttendanceTimeEligibility,
+  extractGroupStartTime,
+} from '../utils/attendanceTime';
 import styles from './TeacherGroupDetail.module.css';
 
 const DAY_TRANSLATIONS: Record<string, string> = {
@@ -52,16 +61,20 @@ export const TeacherGroupDetail: React.FC = () => {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [selectedStudentToAdd, setSelectedStudentToAdd] = useState('');
-  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
+  // Late student modal state
+  const [lateModalStudent, setLateModalStudent] = useState<{ id: string; name: string } | null>(null);
+  const [lateReason, setLateReason] = useState('Darsga kechikib kirdi');
+  const [isSavingLate, setIsSavingLate] = useState(false);
 
   // Material state
   const [lessonTopic, setLessonTopic] = useState('');
   const [lessonDesc, setLessonDesc] = useState('');
   const [lessonsList, setLessonsList] = useState<{ id: string; title: string; desc?: string; type: string; createdAt: string }[]>([]);
 
-  // Attendance state
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  // Attendance date & state (Default to today in Tashkent timezone)
+  const todayTashkent = useMemo(() => getTashkentDateString(), []);
+  const [selectedDate, setSelectedDate] = useState<string>(todayTashkent);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceStatus>>({});
   const [isSavingAttendance, setIsSavingAttendance] = useState(false);
@@ -75,7 +88,7 @@ export const TeacherGroupDetail: React.FC = () => {
     retry: 2,
   });
 
-  // 2. Fallback: Fetch all groups to ensure we have the group object even if getOne has a glitch
+  // 2. Fallback: Fetch all groups to ensure we have the group object
   const { data: allGroupsData, isLoading: isAllLoading } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
@@ -88,8 +101,7 @@ export const TeacherGroupDetail: React.FC = () => {
     enabled: isAddStudentModalOpen,
   });
 
-  // Resolve group reliably:
-  // getOne might return group directly or { data: group }
+  // Resolve group reliably
   const fetchedGroup: Group | undefined =
     (rawGroupData as any)?.data && typeof (rawGroupData as any).data === 'object' && !(rawGroupData as any).data.message
       ? (rawGroupData as any).data
@@ -100,20 +112,27 @@ export const TeacherGroupDetail: React.FC = () => {
   const fallbackGroup: Group | undefined = (allGroupsData?.data || []).find((g: Group) => g.id === groupId);
   const group: Group | undefined = fetchedGroup?.id ? fetchedGroup : fallbackGroup;
 
-  // Load saved lessons from localStorage
+  // Load saved lessons from localStorage (Sorted so latest is first)
   useEffect(() => {
     if (!groupId) return;
     try {
       const saved = localStorage.getItem(`group_lessons_${groupId}`);
       if (saved) {
-        setLessonsList(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setLessonsList(parsed);
+          // Auto prefill topic with latest entered lesson topic
+          if (parsed.length > 0 && !attendanceTopic) {
+            setAttendanceTopic(parsed[0].title);
+          }
+        }
       } else {
-        // Initial sample lessons
         const samples = [
+          { id: '2', title: '1-Mavzu: Asosiy tushunchalar va amaliyot', desc: 'Amaliy mashg\'ulot', type: 'darsliklar', createdAt: '03.10.2026' },
           { id: '1', title: 'Kirish: Kurs strukturasi va qoidalar', desc: 'Kursga umumiy kirish', type: 'darsliklar', createdAt: '01.10.2026' },
-          { id: '2', title: '1-Mavzu: Asosiy tushunchalar va amaliyot', desc: 'Amaliy mashg\'ulot', type: 'darsliklar', createdAt: '03.10.2026' }
         ];
         setLessonsList(samples);
+        setAttendanceTopic(samples[0].title);
         localStorage.setItem(`group_lessons_${groupId}`, JSON.stringify(samples));
       }
     } catch {
@@ -121,6 +140,7 @@ export const TeacherGroupDetail: React.FC = () => {
     }
   }, [groupId]);
 
+  // When a new lesson is added, it is placed at the VERY TOP (index 0)
   const handleAddLesson = () => {
     if (!lessonTopic.trim()) return;
     const newLesson = {
@@ -130,10 +150,13 @@ export const TeacherGroupDetail: React.FC = () => {
       type: materialSubtab,
       createdAt: new Date().toLocaleDateString('uz-UZ'),
     };
+    // Latest topic is first
     const updated = [newLesson, ...lessonsList];
     setLessonsList(updated);
     setLessonTopic('');
     setLessonDesc('');
+    // Automatically set attendance topic to the latest added lesson
+    setAttendanceTopic(newLesson.title);
     try {
       localStorage.setItem(`group_lessons_${groupId}`, JSON.stringify(updated));
     } catch {
@@ -166,46 +189,75 @@ export const TeacherGroupDetail: React.FC = () => {
     return [];
   }, [group]);
 
-  // Fetch existing attendance for this group and date
+  // Fetch existing attendance for this group and selected date
   const { data: existingAttendance } = useQuery({
     queryKey: ['groupAttendance', groupId, selectedDate],
     queryFn: () => attendanceApi.getByGroup(groupId, selectedDate),
     enabled: !!groupId && !!selectedDate,
   });
 
-  // Initialize attendance when student list or date changes
+  // Saved attendance map for the selected date
+  const savedAttendancesMap = useMemo(() => {
+    const map: Record<string, { status: AttendanceStatus; note?: string }> = {};
+    if (Array.isArray(existingAttendance)) {
+      const cleanDate = selectedDate.split('T')[0];
+      existingAttendance.forEach((att: any) => {
+        const attDateStr = att.date ? att.date.split('T')[0] : '';
+        if (attDateStr && attDateStr !== cleanDate) return;
+        if (att.studentId && att.status) {
+          map[att.studentId] = {
+            status: att.status,
+            note: att.note || '',
+          };
+        }
+      });
+    }
+    return map;
+  }, [existingAttendance, selectedDate]);
+
+  // 1 marta davomat olinganidan keyin tekshiruv
+  const hasSavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Date and Time eligibility check
+  // 1. Faqat bugungi kun davomatini ola olishi kerak
+  const isToday = selectedDate === todayTashkent;
+  // 2. Dars boshlangandan yarim soatdan keyin davomat ololmasligi kerak
+  const timeEligibility = useMemo(() => {
+    return checkAttendanceTimeEligibility(selectedDate, group);
+  }, [selectedDate, group]);
+
+  // Can initial attendance be taken?
+  const canTakeInitialAttendance = isToday && !hasSavedAttendance && timeEligibility.canTakeAttendance;
+
+  // Sync attendance records with saved attendance or default to KELGAN
   useEffect(() => {
     if (enrolledStudents.length > 0) {
       const initial: Record<string, AttendanceStatus> = {};
-      const savedMap: Record<string, AttendanceStatus> = {};
-
-      if (Array.isArray(existingAttendance)) {
-        existingAttendance.forEach((att: any) => {
-          if (att.studentId && att.status) {
-            savedMap[att.studentId] = att.status;
-          }
-        });
-      }
-
       enrolledStudents.forEach((st: any) => {
-        initial[st.id] = savedMap[st.id] || 'KELDI';
+        if (savedAttendancesMap[st.id]) {
+          initial[st.id] = savedAttendancesMap[st.id].status;
+        } else {
+          initial[st.id] = 'KELGAN';
+        }
       });
-
       setAttendanceRecords(initial);
     }
-  }, [selectedDate, enrolledStudents, existingAttendance]);
+  }, [selectedDate, enrolledStudents, savedAttendancesMap]);
 
-  const handleSaveAttendance = async () => {
-    if (!selectedDate || !attendanceTopic.trim() || !group) return;
+  // Initial Attendance Save (Faqat 1 marta olinadi)
+  const handleSaveInitialAttendance = async () => {
+    if (!canTakeInitialAttendance || !group) return;
+    if (!attendanceTopic.trim()) return;
 
     setIsSavingAttendance(true);
     try {
-      const records = Object.entries(attendanceRecords).map(([studentId, status]) => ({
-        studentId,
-        status,
+      const records = enrolledStudents.map((st: any) => ({
+        studentId: st.id,
+        status: attendanceRecords[st.id] || 'KELGAN',
+        note: attendanceTopic.trim(),
       }));
 
-      await attendanceApi.saveBulk({
+      await attendanceApi.bulkSave({
         groupId: group.id,
         date: selectedDate,
         records,
@@ -220,6 +272,44 @@ export const TeacherGroupDetail: React.FC = () => {
       setTimeout(() => setAttendanceSaveSuccess(false), 3000);
     } finally {
       setIsSavingAttendance(false);
+    }
+  };
+
+  // Modify late student: Kelmagan deb belgilangan o'quvchini kechikkan deb o'zgartirish
+  const handleConfirmLate = async () => {
+    if (!lateModalStudent || !group) return;
+    setIsSavingLate(true);
+    try {
+      await attendanceApi.bulkSave({
+        groupId: group.id,
+        date: selectedDate,
+        records: [
+          {
+            studentId: lateModalStudent.id,
+            status: 'KECHIKKAN',
+            note: lateReason.trim() || 'Darsga kechikib kirdi',
+          },
+        ],
+      });
+
+      setAttendanceRecords((prev) => ({
+        ...prev,
+        [lateModalStudent.id]: 'KECHIKKAN',
+      }));
+
+      queryClient.invalidateQueries({ queryKey: ['groupAttendance', groupId] });
+      setLateModalStudent(null);
+      setLateReason('Darsga kechikib kirdi');
+    } catch (err) {
+      console.error('Late save error:', err);
+      // Optimistic update
+      setAttendanceRecords((prev) => ({
+        ...prev,
+        [lateModalStudent.id]: 'KECHIKKAN',
+      }));
+      setLateModalStudent(null);
+    } finally {
+      setIsSavingLate(false);
     }
   };
 
@@ -354,7 +444,7 @@ export const TeacherGroupDetail: React.FC = () => {
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Dars vaqti</span>
                 <span className={styles.infoValue}>
-                  {group.startTime || '10:44'} {group.endTime ? `- ${group.endTime}` : ''}
+                  {group.startTime || '10:00'} {group.endTime ? `- ${group.endTime}` : ''}
                 </span>
               </div>
               <div className={styles.infoRow}>
@@ -363,7 +453,7 @@ export const TeacherGroupDetail: React.FC = () => {
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>Filial / Xona</span>
-                <span className={styles.infoValue}>{group.room?.name || 'Netflix'}</span>
+                <span className={styles.infoValue}>{group.room?.name || 'Dasturlash'}</span>
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.infoLabel}>O'qituvchi</span>
@@ -510,7 +600,7 @@ export const TeacherGroupDetail: React.FC = () => {
             </button>
           </div>
 
-          {/* Lessons list */}
+          {/* Lessons list (oxirgi kiritilgan mavzu birinchilikda) */}
           <div className={styles.glassCard}>
             <h3 className={styles.cardTitle}>
               {materialSubtab === 'uyga' ? 'Vazifalar ro\'yxati' : materialSubtab === 'videolar' ? 'Videolar ro\'yxati' : 'Kiritilgan darslar ro\'yxati'}
@@ -607,48 +697,106 @@ export const TeacherGroupDetail: React.FC = () => {
 
                 <div className={styles.inputGroup}>
                   <label className={styles.fieldLabel}>Dars vaqti</label>
-                  <div className={styles.readOnlyField}>{group.startTime || '10:44'}</div>
+                  <div className={styles.readOnlyField}>{group.startTime || '10:00'}</div>
                 </div>
 
                 <div className={styles.inputGroup}>
                   <label className={styles.fieldLabel}>Filial / Xona</label>
-                  <div className={styles.readOnlyField}>{group.room?.name || 'Netflix'}</div>
+                  <div className={styles.readOnlyField}>{group.room?.name || 'Dasturlash'}</div>
                 </div>
 
                 <div className={styles.inputGroup}>
                   <label className={styles.fieldLabel}>Kurs</label>
-                  <div className={styles.readOnlyField}>{group.course?.name || 'Backend'}</div>
+                  <div className={styles.readOnlyField}>{group.course?.name || 'Frontend'}</div>
                 </div>
               </div>
             </div>
 
-            {/* Eslatma Card */}
+            {/* Eslatma & Qoidalar Card */}
             <div className={styles.eslatmaCard}>
-              <h3 className={styles.cardTitle}>Eslatma</h3>
+              <h3 className={styles.cardTitle}>Eslatma va qoidalar</h3>
               <p className={styles.eslatmaText}>
-                Dars mavzusini kiriting va davomatni belgilang. Saqlash mavzu to'ldirilganda faol bo'ladi.
+                • Davomat faqat dars kunida olinadi. O'tgan va kelgusi kunlar uchun davomat olib bo'lmaydi.
+              </p>
+              <p className={styles.eslatmaText}>
+                • Davomat dars boshlanganidan so'ng 30 daqiqa ichida olinishi shart.
+              </p>
+              <p className={styles.eslatmaText}>
+                • Bir marta saqlangandan so'ng davomat qulflanadi (faqat kelmagan o'quvchini kechikdi deb o'zgartirish mumkin).
               </p>
             </div>
           </div>
 
-          {/* Bottom Section */}
+          {/* Davomat holati bo'yicha bildirishnoma bannerlari */}
+          {!isToday && selectedDate < todayTashkent && (
+            <div className={`${styles.noticeAlertBanner} ${styles.noticeAlertError}`}>
+              <AlertCircle size={18} />
+              <span>O'tgan sana ({selectedDate}) uchun yangi davomat saqlash taqiqlangan! Faqat ko'rish rejimida.</span>
+            </div>
+          )}
+
+          {!isToday && selectedDate > todayTashkent && (
+            <div className={`${styles.noticeAlertBanner} ${styles.noticeAlertError}`}>
+              <AlertCircle size={18} />
+              <span>Kelgusi sana ({selectedDate}) uchun oldindan davomat saqlab bo'lmaydi!</span>
+            </div>
+          )}
+
+          {isToday && !hasSavedAttendance && !timeEligibility.canTakeAttendance && (
+            <div className={`${styles.noticeAlertBanner} ${styles.noticeAlertWarning}`}>
+              <Clock3 size={18} />
+              <span>{timeEligibility.message}</span>
+            </div>
+          )}
+
+          {isToday && hasSavedAttendance && (
+            <div className={`${styles.noticeAlertBanner} ${styles.noticeAlertSuccess}`}>
+              <Lock size={18} />
+              <span>
+                Bugungi davomat allaqachon muvaffaqiyatli saqlangan va qulflangan! Darsga kechikib kelgan o'quvchini pastdagi "Kechikdi" tugmasi orqali o'zgartirishingiz mumkin.
+              </span>
+            </div>
+          )}
+
+          {/* Bottom Section: Yo'qlama va mavzu kiritish */}
           <div className={styles.davomatBottomCard}>
             <div>
               <h3 className={styles.cardTitle}>Yo'qlama va mavzu kiritish</h3>
               <p className={styles.heroSubtitle}>
-                Dars mavzusini yozing va davomatni to'ldiring
+                Dars mavzusini tanlang va davomatni to'ldiring (oxirgi kiritilgan mavzu birinchilikda)
               </p>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Mavzu</label>
-              <input
-                type="text"
-                className={styles.textInput}
-                placeholder="Dars mavzusini yozing"
-                value={attendanceTopic}
-                onChange={(e) => setAttendanceTopic(e.target.value)}
-              />
+            {/* Mavzu kiritish va oxirgi mavzular tanlovi */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className={styles.inputGroup}>
+                <label className={styles.fieldLabel}>Mavzuni tanlash (Oxirgilari birinchilikda)</label>
+                <select
+                  className={styles.selectInput}
+                  value={attendanceTopic}
+                  onChange={(e) => setAttendanceTopic(e.target.value)}
+                  disabled={hasSavedAttendance}
+                >
+                  <option value="">-- Kiritilgan mavzulardan tanlang --</option>
+                  {lessonsList.map((l) => (
+                    <option key={l.id} value={l.title}>
+                      {l.title} ({l.createdAt})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.fieldLabel}>Mavzu nomi</label>
+                <input
+                  type="text"
+                  className={styles.textInput}
+                  placeholder="Dars mavzusini yozing yoki tanlang"
+                  value={attendanceTopic}
+                  onChange={(e) => setAttendanceTopic(e.target.value)}
+                  disabled={hasSavedAttendance}
+                />
+              </div>
             </div>
 
             {enrolledStudents.length === 0 ? (
@@ -667,7 +815,11 @@ export const TeacherGroupDetail: React.FC = () => {
                   </thead>
                   <tbody>
                     {enrolledStudents.map((st: any, idx: number) => {
-                      const cur = attendanceRecords[st.id] || 'KELDI';
+                      const cur = attendanceRecords[st.id] || 'KELGAN';
+                      const isAbsent = cur === 'KELMAGAN';
+                      const isLate = cur === 'KECHIKKAN';
+                      const isPresent = cur === 'KELGAN';
+
                       return (
                         <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '12px 16px', fontSize: '13px', color: '#64748b' }}>
@@ -677,46 +829,73 @@ export const TeacherGroupDetail: React.FC = () => {
                             {st.firstName} {st.lastName}
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '6px' }}>
-                              {(['KELDI', 'SABABLI', 'SABABSIZ'] as AttendanceStatus[]).map((stStatus) => {
-                                const isSelected = cur === stStatus;
-                                const colorMap = {
-                                  KELDI: { bg: '#d1fae5', text: '#059669', activeBg: '#059669' },
-                                  SABABLI: { bg: '#fef3c7', text: '#d97706', activeBg: '#d97706' },
-                                  SABABSIZ: { bg: '#fee2e2', text: '#dc2626', activeBg: '#dc2626' },
-                                };
-                                const conf = colorMap[stStatus];
-                                return (
+                            {/* If attendance is ALREADY SAVED */}
+                            {hasSavedAttendance ? (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                <span
+                                  style={{
+                                    padding: '5px 14px',
+                                    borderRadius: '9999px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    background: isPresent ? '#d1fae5' : isLate ? '#fef3c7' : '#fee2e2',
+                                    color: isPresent ? '#059669' : isLate ? '#d97706' : '#dc2626',
+                                  }}
+                                >
+                                  {isPresent ? 'Keldi' : isLate ? 'Kechikkan' : 'Kelmagan'}
+                                </span>
+
+                                {/* Kelmagan deb belgilangan o'quvchilar kechikib kirib kelsa kechikkan deb belgilab o'zgartirsa bo'ladi */}
+                                {isAbsent && isToday && (
                                   <button
-                                    key={stStatus}
                                     type="button"
-                                    onClick={() =>
-                                      setAttendanceRecords((prev) => ({
-                                        ...prev,
-                                        [st.id]: stStatus,
-                                      }))
-                                    }
-                                    style={{
-                                      padding: '6px 14px',
-                                      borderRadius: '9999px',
-                                      border: 'none',
-                                      fontSize: '12px',
-                                      fontWeight: 700,
-                                      cursor: 'pointer',
-                                      background: isSelected ? conf.activeBg : '#f1f5f9',
-                                      color: isSelected ? '#ffffff' : '#64748b',
-                                      transition: 'all 0.15s ease',
-                                    }}
+                                    className={styles.lateActionBtn}
+                                    onClick={() => setLateModalStudent({ id: st.id, name: `${st.firstName} ${st.lastName}` })}
+                                    title="Kechikkan deb o'zgartirish"
                                   >
-                                    {stStatus === 'KELDI'
-                                      ? 'Keldi'
-                                      : stStatus === 'SABABLI'
-                                      ? 'Sababli'
-                                      : 'Sababsiz'}
+                                    <Clock3 size={13} /> Kechikdi deb belgilash
                                   </button>
-                                );
-                              })}
-                            </div>
+                                )}
+                              </div>
+                            ) : (
+                              /* INITIAL TAKING BUTTONS */
+                              <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                {[
+                                  { key: 'KELGAN', label: 'Keldi', bg: '#059669', light: '#d1fae5' },
+                                  { key: 'KECHIKKAN', label: 'Sababli', bg: '#d97706', light: '#fef3c7' },
+                                  { key: 'KELMAGAN', label: 'Sababsiz', bg: '#dc2626', light: '#fee2e2' },
+                                ].map((item) => {
+                                  const isSelected = cur === item.key;
+                                  return (
+                                    <button
+                                      key={item.key}
+                                      type="button"
+                                      disabled={!canTakeInitialAttendance}
+                                      onClick={() =>
+                                        setAttendanceRecords((prev) => ({
+                                          ...prev,
+                                          [st.id]: item.key as AttendanceStatus,
+                                        }))
+                                      }
+                                      style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '9999px',
+                                        border: 'none',
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        cursor: canTakeInitialAttendance ? 'pointer' : 'not-allowed',
+                                        background: isSelected ? item.bg : '#f1f5f9',
+                                        color: isSelected ? '#ffffff' : '#64748b',
+                                        transition: 'all 0.15s ease',
+                                        opacity: canTakeInitialAttendance ? 1 : 0.7,
+                                      }}
+                                    >
+                                      {item.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -742,19 +921,87 @@ export const TeacherGroupDetail: React.FC = () => {
                   </div>
                 )}
 
-                <button
-                  className={styles.submitBtn}
-                  disabled={!attendanceTopic.trim() || isSavingAttendance}
-                  onClick={handleSaveAttendance}
-                  style={{
-                    opacity: !attendanceTopic.trim() || isSavingAttendance ? 0.6 : 1,
-                    cursor: !attendanceTopic.trim() || isSavingAttendance ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {isSavingAttendance ? 'Saqlanmoqda...' : 'Saqlash'}
-                </button>
+                {/* Submit button: Only visible and active when taking initial attendance today */}
+                {!hasSavedAttendance && (
+                  <button
+                    className={styles.submitBtn}
+                    disabled={!canTakeInitialAttendance || !attendanceTopic.trim() || isSavingAttendance}
+                    onClick={handleSaveInitialAttendance}
+                    style={{
+                      opacity: !canTakeInitialAttendance || !attendanceTopic.trim() || isSavingAttendance ? 0.6 : 1,
+                      cursor: !canTakeInitialAttendance || !attendanceTopic.trim() || isSavingAttendance ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isSavingAttendance ? 'Saqlanmoqda...' : 'Saqlash'}
+                  </button>
+                )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Kechikkan o'quvchi modali (KELMAGAN -> KECHIKKAN) */}
+      {lateModalStudent && (
+        <div className={styles.modalBackdrop} onClick={() => setLateModalStudent(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 className={styles.cardTitle}>O'quvchini kechikkan deb belgilash</h3>
+              <button
+                onClick={() => setLateModalStudent(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div>
+              <p style={{ fontSize: '14px', color: '#334155', margin: '0 0 12px 0' }}>
+                <strong>{lateModalStudent.name}</strong> darsga kechikib keldi deb qayd etilsinmi?
+              </p>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '8px' }}>
+                Kechikish sababi
+              </label>
+              <input
+                type="text"
+                className={styles.textInput}
+                value={lateReason}
+                onChange={(e) => setLateReason(e.target.value)}
+                placeholder="Masalan: Transport kechikdi"
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button
+                onClick={() => setLateModalStudent(null)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                Bekor qilish
+              </button>
+              <button
+                disabled={isSavingLate}
+                onClick={handleConfirmLate}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: '#d97706',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {isSavingLate ? 'Saqlanmoqda...' : 'Kechikkan deb saqlash'}
+              </button>
+            </div>
           </div>
         </div>
       )}
