@@ -51,6 +51,7 @@ import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 
 const MONTH_NAMES = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -72,6 +73,7 @@ export const GroupDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'payments'>('attendanceTake');
   const [selectedDate, setSelectedDate] = useState<string>(getTashkentDateString());
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
+  const [attendanceTopic, setAttendanceTopic] = useState<string>('');
 
   // Attendance state for each student: { [studentId]: { status: 'KELGAN' | 'KELMAGAN' | 'KECHIKKAN', note: '' } }
   const [attendanceState, setAttendanceState] = useState<{
@@ -556,7 +558,7 @@ export const GroupDetail: React.FC = () => {
     const records = Object.entries(attendanceState).map(([studentId, data]) => ({
       studentId,
       status: data.status,
-      note: data.note || undefined,
+      note: data.note || attendanceTopic.trim() || undefined,
     }));
 
     saveAttendanceMutation.mutate({
@@ -1300,6 +1302,17 @@ export const GroupDetail: React.FC = () => {
                 </div>
               </div>
             ) : null}
+
+            {/* Lesson Topic Select (Ustiga bossa mavzular chiqadi) */}
+            <div style={{ marginBottom: '16px', maxWidth: '640px' }}>
+              <LessonTopicSelect
+                groupId={id}
+                value={attendanceTopic}
+                onChange={setAttendanceTopic}
+                disabled={hasAnySavedAttendance}
+                label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+              />
+            </div>
 
             {/* Students Attendance List */}
             {totalStudents === 0 ? (

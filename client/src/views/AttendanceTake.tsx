@@ -30,6 +30,7 @@ import {
   getTashkentDateString,
   checkAttendanceTimeEligibility,
 } from '../utils/attendanceTime';
+import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 
 export const AttendanceTake: React.FC = () => {
   const router = useRouter();
@@ -39,6 +40,7 @@ export const AttendanceTake: React.FC = () => {
   const todayStr = useMemo(() => getTashkentDateString(), []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
+  const [attendanceTopic, setAttendanceTopic] = useState<string>('');
 
   // Student attendance statuses state map: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -192,6 +194,7 @@ export const AttendanceTake: React.FC = () => {
     const records = students.map((sg: any) => ({
       studentId: sg.student.id,
       status: studentStatuses[sg.student.id] || 'KELGAN',
+      note: attendanceTopic.trim(),
     }));
 
     bulkMutation.mutate(
@@ -328,6 +331,17 @@ export const AttendanceTake: React.FC = () => {
             value={attendanceDate}
             onChange={(e) => setAttendanceDate(e.target.value)}
           />
+          {selectedGroupId && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <LessonTopicSelect
+                groupId={selectedGroupId}
+                value={attendanceTopic}
+                onChange={setAttendanceTopic}
+                disabled={hasAnySavedAttendance}
+                label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+              />
+            </div>
+          )}
         </div>
       </Card>
 

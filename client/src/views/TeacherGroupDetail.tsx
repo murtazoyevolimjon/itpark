@@ -37,6 +37,7 @@ import {
   checkAttendanceTimeEligibility,
   extractGroupStartTime,
 } from '../utils/attendanceTime';
+import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 import styles from './TeacherGroupDetail.module.css';
 
 const DAY_TRANSLATIONS: Record<string, string> = {
@@ -767,36 +768,15 @@ export const TeacherGroupDetail: React.FC = () => {
               </p>
             </div>
 
-            {/* Mavzu kiritish va oxirgi mavzular tanlovi */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <div className={styles.inputGroup}>
-                <label className={styles.fieldLabel}>Mavzuni tanlash (Oxirgilari birinchilikda)</label>
-                <select
-                  className={styles.selectInput}
-                  value={attendanceTopic}
-                  onChange={(e) => setAttendanceTopic(e.target.value)}
-                  disabled={hasSavedAttendance}
-                >
-                  <option value="">-- Kiritilgan mavzulardan tanlang --</option>
-                  {lessonsList.map((l) => (
-                    <option key={l.id} value={l.title}>
-                      {l.title} ({l.createdAt})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.fieldLabel}>Mavzu nomi</label>
-                <input
-                  type="text"
-                  className={styles.textInput}
-                  placeholder="Dars mavzusini yozing yoki tanlang"
-                  value={attendanceTopic}
-                  onChange={(e) => setAttendanceTopic(e.target.value)}
-                  disabled={hasSavedAttendance}
-                />
-              </div>
+            {/* Mavzu kiritish (Ustiga bossa mavzular kelib chiqadi) */}
+            <div style={{ maxWidth: '640px', width: '100%' }}>
+              <LessonTopicSelect
+                groupId={groupId}
+                value={attendanceTopic}
+                onChange={setAttendanceTopic}
+                disabled={hasSavedAttendance}
+                label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+              />
             </div>
 
             {enrolledStudents.length === 0 ? (

@@ -38,6 +38,7 @@ import {
   getTashkentDateString,
   checkAttendanceTimeEligibility,
 } from '../utils/attendanceTime';
+import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 
 const checkIsClassDay = (group: any, dateStr: string): boolean => {
   if (!dateStr) return false;
@@ -72,6 +73,7 @@ export const TeacherAttendance: React.FC = () => {
   const todayStr = useMemo(() => getTashkentDateString(), []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(queryGroupId);
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
+  const [attendanceTopic, setAttendanceTopic] = useState<string>('');
 
   // Form statuses state: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -239,6 +241,7 @@ export const TeacherAttendance: React.FC = () => {
     const records = students.map((sg: any) => ({
       studentId: sg.student.id,
       status: studentStatuses[sg.student.id] || 'KELGAN',
+      note: attendanceTopic.trim(),
     }));
 
     saveMutation.mutate(
@@ -619,6 +622,19 @@ export const TeacherAttendance: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Lesson Topic Select (Ustiga bossa mavzular chiqadi) */}
+        {selectedGroupId && (
+          <div style={{ marginBottom: '18px', maxWidth: '600px' }}>
+            <LessonTopicSelect
+              groupId={selectedGroupId}
+              value={attendanceTopic}
+              onChange={setAttendanceTopic}
+              disabled={hasAnySavedAttendance}
+              label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+            />
+          </div>
+        )}
 
         {/* Loading state */}
         {isGroupLoading || isAttendanceLoading ? (
