@@ -32,8 +32,6 @@ export const TeacherProfile: React.FC = () => {
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(profile?.phone || '');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   React.useEffect(() => {
@@ -64,7 +62,6 @@ export const TeacherProfile: React.FC = () => {
       name: fullName,
       email,
       phone,
-      ...(password ? { password } : {}),
     });
   };
 
@@ -217,39 +214,15 @@ export const TeacherProfile: React.FC = () => {
           </div>
 
           <div className={styles.glassCard}>
-            <h3 className={styles.cardTitle}>
-              {dict.teacher?.securityTitle || "Xavfsizlik (Parol o'zgartirish)"}
-            </h3>
-            <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>
-                {dict.teacher?.newPassword || "Yangi parol"}
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className={styles.textInput}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={dict.teacher?.newPasswordPlaceholder || "Yangi parol kiriting"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#64748b',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <Lock size={18} color="#0284c7" />
+              <h3 className={styles.cardTitle} style={{ margin: 0 }}>
+                {dict.teacher?.securityTitle || "Xavfsizlik va kirish"}
+              </h3>
             </div>
+            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
+              Xavfsizlik qoidalariga ko'ra o'qituvchi paroli faqat markaz administratori tomonidan boshqariladi. Parolni yangilash yoki tiklash zarur bo'lsa, o'quv markazi ma'muriyatiga murojaat qiling.
+            </p>
           </div>
         </div>
       </div>
