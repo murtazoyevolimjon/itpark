@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../hooks/useLanguage';
 import { groupsApi } from '../api/groups.api';
 import { Group } from '../types';
+import { saveVideoBlob, getVideoBlob, deleteVideoBlob } from '../utils/videoStorage';
 import {
   Video,
   Play,
@@ -15,6 +16,11 @@ import {
   AlertCircle,
   CheckCircle,
   Film,
+  UploadCloud,
+  FileVideo,
+  X,
+  Download,
+  Link as LinkIcon,
 } from 'lucide-react';
 import styles from './TeacherVideos.module.css';
 
@@ -24,19 +30,29 @@ interface VideoLessonItem {
   groupName: string;
   courseName?: string;
   title: string;
-  videoUrl: string;
+  videoType: 'file' | 'link';
+  videoUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  blobUrl?: string;
   desc?: string;
   createdAt: string;
 }
 
 export const TeacherVideos: React.FC = () => {
   const { dict } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
+  const [videoMode, setVideoMode] = useState<'file' | 'link'>('file'); // Default to 'file' upload!
   const [videoTitle, setVideoTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoDesc, setVideoDesc] = useState('');
   const [targetGroupId, setTargetGroupId] = useState<string>('');
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   const [videoList, setVideoList] = useState<VideoLessonItem[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -55,40 +71,66 @@ export const TeacherVideos: React.FC = () => {
     }
   }, [allGroups, targetGroupId]);
 
-  // Load saved videos from localStorage
+  // Load saved videos from localStorage and restore blobs from IndexedDB
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('all_teacher_videos');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setVideoList(parsed);
-          return;
+    const loadVideos = async () => {
+      try {
+        const saved = localStorage.getItem('all_teacher_videos');
+        if (saved) {
+          const parsed: VideoLessonItem[] = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            // Restore blob URLs for local files
+            const restored = await Promise.all(
+              parsed.map(async (v) => {
+                if (v.videoType === 'file') {
+                  const blob = await getVideoBlob(v.id);
+                  if (blob) {
+                    return { ...v, blobUrl: URL.createObjectURL(blob) };
+                  }
+                }
+                return v;
+              })
+            );
+            setVideoList(restored);
+            return;
+          }
         }
-      }
 
-      // Default sample video lesson
-      const samples: VideoLessonItem[] = [
-        {
-          id: 'v-sample-1',
-          groupId: allGroups[0]?.id || 'g1',
-          groupName: allGroups[0]?.name || 'Dush-Chor-Juma 16:00 FRONTEND',
-          courseName: 'Frontend',
-          title: '1-Dars: HTML5 Semantik teglari va Zamonaviy CSS arxitekturasi',
-          videoUrl: 'https://www.youtube.com/watch?v=UB1O30fR-EE',
-          desc: "Kursga kirish darsi. Ushbu darsda HTML5 ning asosiy teglari va zamonaviy CSS Flexbox texnologiyalari ko'rib chiqilgan.",
-          createdAt: '08.10.2026',
-        },
-      ];
-      setVideoList(samples);
-      localStorage.setItem('all_teacher_videos', JSON.stringify(samples));
-    } catch {
-      // ignore
-    }
+        // Default sample if empty
+        const samples: VideoLessonItem[] = [
+          {
+            id: 'v-sample-1',
+            groupId: allGroups[0]?.id || 'g1',
+            groupName: allGroups[0]?.name || 'Dush-Chor-Juma 16:00 FRONTEND',
+            courseName: 'Frontend',
+            title: '1-Dars: HTML5 Semantik teglari va Zamonaviy CSS arxitekturasi',
+            videoType: 'link',
+            videoUrl: 'https://www.youtube.com/watch?v=UB1O30fR-EE',
+            desc: "Kursga kirish darsi. Ushbu darsda HTML5 ning asosiy teglari va zamonaviy CSS Flexbox texnologiyalari ko'rib chiqilgan.",
+            createdAt: '08.10.2026',
+          },
+        ];
+        setVideoList(samples);
+        localStorage.setItem('all_teacher_videos', JSON.stringify(samples));
+      } catch {
+        // ignore
+      }
+    };
+
+    loadVideos();
   }, [allGroups]);
 
+  // Format file size
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return '';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
   // YouTube embed helper
-  const getEmbedUrl = (url: string): string | null => {
+  const getEmbedUrl = (url?: string): string | null => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
@@ -97,53 +139,102 @@ export const TeacherVideos: React.FC = () => {
       : null;
   };
 
-  const handleSaveVideo = () => {
+  // Handle video file selection
+  const handleSelectVideoFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('video/') && !['mp4', 'mov', 'webm', 'mkv', 'avi'].some((ext) => file.name.toLowerCase().endsWith(ext))) {
+      setErrorMessage("Faqat video formatidagi fayllarni yuklang (MP4, MOV, WebM, MKV)!");
+      return;
+    }
+    setErrorMessage('');
+    setSelectedVideoFile(file);
+    const objUrl = URL.createObjectURL(file);
+    setPreviewVideoUrl(objUrl);
+  };
+
+  const handleClearSelectedFile = () => {
+    setSelectedVideoFile(null);
+    if (previewVideoUrl) {
+      URL.revokeObjectURL(previewVideoUrl);
+      setPreviewVideoUrl(null);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Save Video
+  const handleSaveVideo = async () => {
     if (!videoTitle.trim()) {
       setErrorMessage(dict.teacher?.videoTitlePlaceholder || 'Video dars mavzusini kiriting');
       return;
     }
-    if (!videoUrl.trim()) {
+
+    if (videoMode === 'file' && !selectedVideoFile) {
+      setErrorMessage("Iltimos, kompyuteringizdan video faylni tanlang!");
+      return;
+    }
+
+    if (videoMode === 'link' && !videoUrl.trim()) {
       setErrorMessage(dict.teacher?.videoUrlPlaceholder || 'Video havolasini kiriting');
       return;
     }
 
     const targetGroup = allGroups.find((g) => g.id === targetGroupId) || allGroups[0];
+    const newId = 'v-' + Date.now();
+
+    let newBlobUrl: string | undefined = undefined;
+
+    if (videoMode === 'file' && selectedVideoFile) {
+      await saveVideoBlob(newId, selectedVideoFile);
+      newBlobUrl = URL.createObjectURL(selectedVideoFile);
+    }
 
     const newVideo: VideoLessonItem = {
-      id: 'v-' + Date.now(),
+      id: newId,
       groupId: targetGroup?.id || 'g-custom',
       groupName: targetGroup?.name || 'Guruh',
       courseName: targetGroup?.course?.name,
       title: videoTitle.trim(),
-      videoUrl: videoUrl.trim(),
+      videoType: videoMode,
+      videoUrl: videoMode === 'link' ? videoUrl.trim() : undefined,
+      fileName: selectedVideoFile?.name,
+      fileSize: selectedVideoFile?.size,
+      blobUrl: newBlobUrl,
       desc: videoDesc.trim(),
       createdAt: new Date().toLocaleDateString('uz-UZ'),
     };
 
     const updated = [newVideo, ...videoList];
     setVideoList(updated);
+
+    // Save metadata without blobUrl
+    const metadataOnly = updated.map(({ blobUrl, ...rest }) => rest);
     try {
-      localStorage.setItem('all_teacher_videos', JSON.stringify(updated));
+      localStorage.setItem('all_teacher_videos', JSON.stringify(metadataOnly));
       if (newVideo.groupId) {
-        localStorage.setItem(`group_videos_${newVideo.groupId}`, JSON.stringify(updated));
+        localStorage.setItem(`group_videos_${newVideo.groupId}`, JSON.stringify(metadataOnly));
       }
     } catch {
       // ignore
     }
 
+    // Reset form
     setVideoTitle('');
     setVideoUrl('');
     setVideoDesc('');
+    handleClearSelectedFile();
     setErrorMessage('');
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    setTimeout(() => setSaveSuccess(false), 3500);
   };
 
-  const handleDeleteVideo = (id: string) => {
+  const handleDeleteVideo = async (id: string) => {
+    await deleteVideoBlob(id);
     const updated = videoList.filter((v) => v.id !== id);
     setVideoList(updated);
+
+    const metadataOnly = updated.map(({ blobUrl, ...rest }) => rest);
     try {
-      localStorage.setItem('all_teacher_videos', JSON.stringify(updated));
+      localStorage.setItem('all_teacher_videos', JSON.stringify(metadataOnly));
     } catch {
       // ignore
     }
@@ -163,7 +254,7 @@ export const TeacherVideos: React.FC = () => {
             {dict.teacher?.videos || 'Videolar'}
           </h2>
           <p className={styles.pageSubtitle}>
-            O'quvchilar uchun video darslar va yozib olingan amaliy mashg'ulotlar
+            Kompyuteringizdan video yuklash yoki havolalar orqali darslarni joylashtirish
           </p>
         </div>
 
@@ -211,9 +302,35 @@ export const TeacherVideos: React.FC = () => {
           {saveSuccess && (
             <div className={styles.successAlert}>
               <CheckCircle size={16} />
-              <span>Video dars muvaffaqiyatli saqlandi!</span>
+              <span>Video dars muvaffaqiyatli saqlandi va o'quvchilarga ko'rinadi!</span>
             </div>
           )}
+
+          {/* Mode Switcher Tabs */}
+          <div className={styles.modeTabsRow}>
+            <button
+              type="button"
+              className={`${styles.modeTabBtn} ${videoMode === 'file' ? styles.modeTabBtnActive : ''}`}
+              onClick={() => {
+                setVideoMode('file');
+                setErrorMessage('');
+              }}
+            >
+              <UploadCloud size={16} />
+              <span>Video fayl yuklash</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.modeTabBtn} ${videoMode === 'link' ? styles.modeTabBtnActive : ''}`}
+              onClick={() => {
+                setVideoMode('link');
+                setErrorMessage('');
+              }}
+            >
+              <LinkIcon size={15} />
+              <span>Havola orqali</span>
+            </button>
+          </div>
 
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>
@@ -245,18 +362,106 @@ export const TeacherVideos: React.FC = () => {
             />
           </div>
 
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>
-              {dict.teacher?.videoUrl || 'Video havolasi (YouTube, Vimeo, Drive)'}
-            </label>
-            <input
-              type="url"
-              className={styles.inputField}
-              placeholder={dict.teacher?.videoUrlPlaceholder || 'https://www.youtube.com/watch?v=...'}
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-            />
-          </div>
+          {/* Mode 1: Direct Video File Upload */}
+          {videoMode === 'file' ? (
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>
+                Kompyuterdan video fayl tanlang
+              </label>
+
+              {!selectedVideoFile ? (
+                <div
+                  className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleSelectVideoFile(file);
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="video/*,.mp4,.mov,.webm,.mkv,.avi"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleSelectVideoFile(file);
+                    }}
+                  />
+                  <div className={styles.dropZoneIcon}>
+                    <FileVideo size={28} />
+                  </div>
+                  <div className={styles.dropZoneText}>
+                    <span className={styles.dropZoneTitle}>
+                      Video faylni bu yerga tashlang yoki bosing
+                    </span>
+                    <span className={styles.dropZoneSub}>
+                      MP4, MOV, WebM, MKV (cheklanmagan hajm)
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.selectedFileWrapper}>
+                  {previewVideoUrl && (
+                    <div className={styles.previewContainer}>
+                      <video
+                        src={previewVideoUrl}
+                        controls
+                        className={styles.previewVideo}
+                      />
+                    </div>
+                  )}
+
+                  <div className={styles.selectedFileCard}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <FileVideo size={24} color="#0284c7" />
+                      <div style={{ minWidth: 0 }}>
+                        <div className={styles.selectedFileName} title={selectedVideoFile.name}>
+                          {selectedVideoFile.name}
+                        </div>
+                        <div className={styles.selectedFileSize}>
+                          {formatFileSize(selectedVideoFile.size)} • <CheckCircle size={11} color="#16a34a" /> Tanlandi
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={styles.removeBtn}
+                      onClick={handleClearSelectedFile}
+                      title="Boshqa fayl tanlash"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Mode 2: Link Input */
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>
+                {dict.teacher?.videoUrl || 'Video havolasi (YouTube, Vimeo, Drive)'}
+              </label>
+              <input
+                type="url"
+                className={styles.inputField}
+                placeholder={dict.teacher?.videoUrlPlaceholder || 'https://www.youtube.com/watch?v=...'}
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>
@@ -301,10 +506,23 @@ export const TeacherVideos: React.FC = () => {
           ) : (
             <div className={styles.videoGrid}>
               {filteredVideos.map((video) => {
-                const embedUrl = getEmbedUrl(video.videoUrl);
+                const isFile = video.videoType === 'file';
+                const embedUrl = !isFile ? getEmbedUrl(video.videoUrl) : null;
+
                 return (
                   <div key={video.id} className={styles.videoItem}>
-                    {embedUrl ? (
+                    {/* Video Player */}
+                    {isFile && video.blobUrl ? (
+                      <div className={styles.nativePlayerWrapper}>
+                        <video
+                          src={video.blobUrl}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className={styles.nativeVideo}
+                        />
+                      </div>
+                    ) : embedUrl ? (
                       <div className={styles.videoPlayerWrapper}>
                         <iframe
                           src={embedUrl}
@@ -333,21 +551,38 @@ export const TeacherVideos: React.FC = () => {
                         <span className={styles.dateBadge}>
                           <Calendar size={12} /> {video.createdAt}
                         </span>
+                        {isFile && video.fileSize && (
+                          <span className={styles.sizeBadge}>
+                            {formatFileSize(video.fileSize)}
+                          </span>
+                        )}
                       </div>
 
                       <h4 className={styles.itemTitle}>{video.title}</h4>
                       {video.desc && <p className={styles.itemDesc}>{video.desc}</p>}
 
                       <div className={styles.videoActionsRow}>
-                        <a
-                          href={video.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.watchLink}
-                        >
-                          <ExternalLink size={14} />
-                          <span>{dict.teacher?.watchVideo || "Videoni ko'rish"}</span>
-                        </a>
+                        {isFile && video.blobUrl ? (
+                          <a
+                            href={video.blobUrl}
+                            download={video.fileName || `${video.title}.mp4`}
+                            className={styles.downloadVideoBtn}
+                            title="Videoni kompyuterga yuklab olish"
+                          >
+                            <Download size={14} />
+                            <span>Yuklab olish</span>
+                          </a>
+                        ) : video.videoUrl ? (
+                          <a
+                            href={video.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.watchLink}
+                          >
+                            <ExternalLink size={14} />
+                            <span>{dict.teacher?.watchVideo || "Videoni ko'rish"}</span>
+                          </a>
+                        ) : null}
 
                         <button
                           type="button"

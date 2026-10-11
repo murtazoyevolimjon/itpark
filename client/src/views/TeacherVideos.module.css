@@ -57,7 +57,7 @@
 
 .contentGrid {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: 440px 1fr;
   gap: 20px;
   align-items: start;
 }
@@ -116,6 +116,44 @@
   letter-spacing: -0.3px;
 }
 
+/* Mode Switcher Tabs */
+.modeTabsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.modeTabBtn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modeTabBtn:hover {
+  color: #0f172a;
+}
+
+.modeTabBtnActive {
+  background: #ffffff;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
 .fieldGroup {
   display: flex;
   flex-direction: column;
@@ -165,6 +203,135 @@
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 
+/* Video Drag & Drop Zone */
+.dropZone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 24px 16px;
+  background: rgba(248, 250, 252, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.dropZone:hover {
+  border-color: #0284c7;
+  background: rgba(240, 249, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.dropZoneActive {
+  border-color: #0284c7;
+  background: #e0f2fe;
+}
+
+.dropZoneIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(2, 132, 199, 0.15));
+  color: #0284c7;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+
+.dropZone:hover .dropZoneIcon {
+  transform: scale(1.08);
+}
+
+.dropZoneText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dropZoneTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dropZoneSub {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* Selected File Preview Area */
+.selectedFileWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.previewContainer {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.previewVideo {
+  width: 100%;
+  max-height: 200px;
+  display: block;
+  outline: none;
+}
+
+.selectedFileCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.selectedFileName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.selectedFileSize {
+  font-size: 11.5px;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.removeBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeBtn:hover {
+  background: #fee2e2;
+  transform: scale(1.08);
+}
+
+/* Save Video Button */
 .saveVideoBtn {
   margin-top: 6px;
   width: 100%;
@@ -214,7 +381,7 @@
 /* Video Grid */
 .videoGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: 16px;
 }
 
@@ -233,6 +400,19 @@
   border-color: #cbd5e1;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
   transform: translateY(-2px);
+}
+
+/* Native HTML5 Video Player Container */
+.nativePlayerWrapper {
+  width: 100%;
+  background: #000000;
+}
+
+.nativeVideo {
+  width: 100%;
+  max-height: 220px;
+  display: block;
+  outline: none;
 }
 
 .videoPlayerWrapper {
@@ -313,6 +493,17 @@
   font-weight: 500;
 }
 
+.sizeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #059669;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
 .itemTitle {
   font-size: 15px;
   font-weight: 700;
@@ -339,6 +530,26 @@
   justify-content: space-between;
   gap: 10px;
   padding-top: 6px;
+}
+
+.downloadVideoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.downloadVideoBtn:hover {
+  background: #dcfce7;
+  transform: translateY(-1px);
 }
 
 .watchLink {
@@ -431,6 +642,20 @@
   color: #f8fafc;
 }
 
+:global([data-theme="dark"]) .modeTabsRow {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .modeTabBtn {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .modeTabBtnActive {
+  background: #1e293b;
+  color: #38bdf8 !important;
+}
+
 :global([data-theme="dark"]) .fieldLabel {
   color: #94a3b8;
 }
@@ -446,6 +671,37 @@
 :global([data-theme="dark"]) .textAreaField:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+:global([data-theme="dark"]) .dropZone {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(30, 41, 59, 0.4);
+}
+
+:global([data-theme="dark"]) .dropZone:hover {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+:global([data-theme="dark"]) .dropZoneTitle {
+  color: #f1f5f9;
+}
+
+:global([data-theme="dark"]) .dropZoneSub {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .selectedFileCard {
+  background: rgba(6, 78, 59, 0.35);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+:global([data-theme="dark"]) .selectedFileName {
+  color: #6ee7b7;
+}
+
+:global([data-theme="dark"]) .selectedFileSize {
+  color: #a7f3d0;
 }
 
 :global([data-theme="dark"]) .videoItem {
@@ -467,6 +723,12 @@
 
 :global([data-theme="dark"]) .watchLink {
   color: #38bdf8;
+}
+
+:global([data-theme="dark"]) .downloadVideoBtn {
+  background: rgba(6, 78, 59, 0.35);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #6ee7b7;
 }
 
 :global([data-theme="dark"]) .deleteVideoBtn {
