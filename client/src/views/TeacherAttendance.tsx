@@ -15,7 +15,11 @@ import {
   AlertCircle,
   AlertTriangle,
   Info,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
 } from 'lucide-react';
+import { formatDate } from '../utils/formatDate';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Input } from '../components/ui/Input/Input';
@@ -145,6 +149,26 @@ export const TeacherAttendance: React.FC = () => {
   }, [existingAttendance, attendanceDate]);
 
   const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Extract all recorded attendance dates for this group
+  const availableHistoryDates = useMemo(() => {
+    if (!groupDetail?.attendances || !Array.isArray(groupDetail.attendances)) return [];
+    const set = new Set<string>();
+    groupDetail.attendances.forEach((a: any) => {
+      if (a.date) {
+        const d = a.date.split('T')[0];
+        if (d) set.add(d);
+      }
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [groupDetail?.attendances]);
+
+  // Saved lesson topic if available
+  const savedTopicNote = useMemo(() => {
+    if (!hasAnySavedAttendance) return '';
+    const firstWithNote = Object.values(savedAttendancesMap).find((s) => s.note && !s.note.toLowerCase().includes('sabab:'));
+    return firstWithNote?.note || '';
+  }, [hasAnySavedAttendance, savedAttendancesMap]);
 
   // Time eligibility check for taking initial attendance on this group & date
   const timeEligibility = useMemo(() => {
@@ -373,12 +397,63 @@ export const TeacherAttendance: React.FC = () => {
             placeholder="Guruhni tanlang"
             searchPlaceholder="Guruh, fan yoki dars vaqti bo'yicha qidirish..."
           />
-          <Input
-            label="Dars sanasi"
-            type="date"
-            value={attendanceDate}
-            onChange={(e) => setAttendanceDate(e.target.value)}
-          />
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '6px',
+                flexWrap: 'wrap',
+                gap: '6px',
+              }}
+            >
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>
+                Dars sanasi (Yil, oy, kun):
+              </label>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  title="Oldingi kun"
+                  style={{ padding: '3px 8px', height: '28px', fontSize: '12px' }}
+                  onClick={() => {
+                    const d = new Date(attendanceDate);
+                    d.setDate(d.getDate() - 1);
+                    setAttendanceDate(d.toISOString().split('T')[0]);
+                  }}
+                >
+                  <ChevronLeft size={13} /> Oldingi kun
+                </Button>
+                <Button
+                  size="sm"
+                  variant={attendanceDate === todayStr ? 'primary' : 'outline'}
+                  style={{ padding: '3px 8px', height: '28px', fontSize: '12px' }}
+                  onClick={() => setAttendanceDate(todayStr)}
+                >
+                  Bugun
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  title="Keyingi kun"
+                  style={{ padding: '3px 8px', height: '28px', fontSize: '12px' }}
+                  onClick={() => {
+                    const d = new Date(attendanceDate);
+                    d.setDate(d.getDate() + 1);
+                    setAttendanceDate(d.toISOString().split('T')[0]);
+                  }}
+                >
+                  Keyingi kun <ChevronRight size={13} />
+                </Button>
+              </div>
+            </div>
+            <Input
+              type="date"
+              value={attendanceDate}
+              onChange={(e) => setAttendanceDate(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Quick select chips for teacher's groups */}
@@ -472,6 +547,58 @@ export const TeacherAttendance: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* Available History Dates Chips */}
+        {availableHistoryDates.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginTop: '14px',
+              flexWrap: 'wrap',
+              paddingTop: '12px',
+              borderTop: '1px solid var(--border)',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+              }}
+            >
+              Mavjud davomat sanalari ({availableHistoryDates.length} ta dars):
+            </span>
+            {availableHistoryDates.map((dateStr) => {
+              const isSelected = attendanceDate === dateStr;
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => setAttendanceDate(dateStr)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: isSelected ? 'var(--primary)' : 'var(--card-subtle)',
+                    color: isSelected ? '#ffffff' : 'var(--text)',
+                  }}
+                >
+                  <CalendarCheck size={12} />
+                  <span>{formatDate(dateStr)}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Status Banner */}
@@ -492,10 +619,19 @@ export const TeacherAttendance: React.FC = () => {
             <Lock size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
               <strong style={{ color: '#d97706', display: 'block', fontSize: '14px', marginBottom: '2px' }}>
-                Davomat saqlangan! (Qulflangan)
+                {attendanceDate !== todayStr ? `${formatDate(attendanceDate)} dars davomati tarixi (Saqlangan)` : 'Davomat saqlangan! (Qulflangan)'}
               </strong>
-              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchi yoki admin saqlangan davomatni qayta o'zgartira olmaydi.{' '}
-              <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
+              {savedTopicNote && (
+                <div style={{ margin: '4px 0 6px 0', color: 'var(--primary)', fontWeight: 600 }}>
+                  📚 O'tilgan mavzu: {savedTopicNote}
+                </div>
+              )}
+              Ushbu sana uchun kunlik davomat allaqachon olingan va tizimda saqlangan.{' '}
+              {attendanceDate === todayStr && (
+                <>
+                  <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
+                </>
+              )}
             </div>
           </div>
         ) : !timeEligibility.canTakeAttendance ? (
@@ -588,7 +724,11 @@ export const TeacherAttendance: React.FC = () => {
         >
           <div>
             <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {groupDetail ? `${groupDetail.name} — O'quvchilar ro'yxati (${studentsList.length} nafar)` : "O'quvchilar ro'yxati"}
+              {groupDetail
+                ? hasAnySavedAttendance
+                  ? `${groupDetail.name} — ${formatDate(attendanceDate)} davomati (${summaryCounts.kelgan} kelgan, ${summaryCounts.kelmagan} kelmagan, ${summaryCounts.kechikkan} kechikkan)`
+                  : `${groupDetail.name} — O'quvchilar ro'yxati (${studentsList.length} nafar)`
+                : "O'quvchilar ro'yxati"}
             </h3>
             {groupDetail && (
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
@@ -652,6 +792,21 @@ export const TeacherAttendance: React.FC = () => {
         ) : studentsList.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
             Ushbu guruhga hali o'quvchilar biriktirilmagan.
+          </div>
+        ) : !hasAnySavedAttendance && timeEligibility.status === 'PAST_DATE' ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+            <AlertCircle size={38} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.6 }} />
+            <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
+              {formatDate(attendanceDate)} sanasi uchun davomat topilmadi
+            </h4>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px 0', maxWidth: '440px', marginInline: 'auto' }}>
+              Ushbu o'tgan sanada dars mashg'uloti bo'lmagan yoki davomat saqlanmagan.
+            </p>
+            {availableHistoryDates.length > 0 && (
+              <Button size="sm" variant="outline" onClick={() => setAttendanceDate(availableHistoryDates[0])}>
+                Eng so'nggi davomatni ko'rish ({formatDate(availableHistoryDates[0])})
+              </Button>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

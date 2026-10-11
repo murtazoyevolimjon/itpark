@@ -29,7 +29,15 @@ import {
   ArrowRightLeft,
   Lock,
   AlertCircle,
+  BookOpen,
+  Video,
+  Download,
+  ExternalLink,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { getVideoBlob } from '../utils/videoStorage';
 import { getTashkentDateString, checkAttendanceTimeEligibility } from '../utils/attendanceTime';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -70,8 +78,12 @@ export const GroupDetail: React.FC = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'payments'>('attendanceTake');
+  const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'homework' | 'videos' | 'payments'>('attendanceTake');
   const [selectedDate, setSelectedDate] = useState<string>(getTashkentDateString());
+  const [historyDate, setHistoryDate] = useState<string>(getTashkentDateString());
+  const [groupHomeworks, setGroupHomeworks] = useState<any[]>([]);
+  const [groupVideos, setGroupVideos] = useState<any[]>([]);
+  const [groupLessons, setGroupLessons] = useState<any[]>([]);
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
 
@@ -189,6 +201,126 @@ export const GroupDetail: React.FC = () => {
     });
     return Array.from(map.values());
   }, [groupPaymentsData, group?.payments]);
+
+  // Query attendance specifically for historyDate when on attendanceHistory tab
+  const { data: historyAttendanceData } = useQuery({
+    queryKey: ['groupAttendanceHistory', id, historyDate],
+    queryFn: () => attendanceApi.getByGroup(id, historyDate),
+    enabled: !!id && !!historyDate && activeTab === 'attendanceHistory',
+  });
+
+  // Available recorded attendance dates for this group (extracted from group.attendances)
+  const availableHistoryDates = useMemo(() => {
+    if (!group?.attendances || !Array.isArray(group.attendances)) return [];
+    const dates = new Set<string>();
+    group.attendances.forEach((a: any) => {
+      if (a.date) {
+        const d = a.date.split('T')[0];
+        if (d) dates.add(d);
+      }
+    });
+    return Array.from(dates).sort((a, b) => b.localeCompare(a));
+  }, [group?.attendances]);
+
+  // Attendances for the selected historyDate
+  const dayHistoryAttendances = useMemo(() => {
+    if (Array.isArray(historyAttendanceData) && historyAttendanceData.length > 0) {
+      return historyAttendanceData;
+    }
+    if (!group?.attendances || !Array.isArray(group.attendances)) return [];
+    const clean = historyDate.split('T')[0];
+    return group.attendances.filter((a: any) => {
+      const aDate = a.date ? a.date.split('T')[0] : '';
+      return aDate === clean;
+    });
+  }, [historyAttendanceData, group?.attendances, historyDate]);
+
+  // Stats for the historyDate
+  const historyDayStats = useMemo(() => {
+    let kelgan = 0;
+    let kelmagan = 0;
+    let kechikkan = 0;
+
+    dayHistoryAttendances.forEach((a: any) => {
+      if (a.status === 'KELGAN') kelgan++;
+      else if (a.status === 'KELMAGAN') kelmagan++;
+      else if (a.status === 'KECHIKKAN') kechikkan++;
+    });
+
+    const total = dayHistoryAttendances.length;
+    const rate = total > 0 ? Math.round(((kelgan + kechikkan) / total) * 100) : 0;
+    return { kelgan, kelmagan, kechikkan, total, rate };
+  }, [dayHistoryAttendances]);
+
+  // Lesson topic for historyDate
+  const historyDayTopic = useMemo(() => {
+    const withNote = dayHistoryAttendances.find((a: any) => a.note && !a.note.toLowerCase().includes('sabab:'));
+    if (withNote?.note) return withNote.note;
+    const clean = historyDate.split('T')[0];
+    const lessonMatch = groupLessons.find((l: any) => l.date === clean || l.date?.startsWith(clean));
+    if (lessonMatch) return lessonMatch.title;
+    return null;
+  }, [dayHistoryAttendances, groupLessons, historyDate]);
+
+  // Load teacher homeworks, videos, and lessons for this group
+  useEffect(() => {
+    if (!id) return;
+
+    // Load homeworks
+    try {
+      const savedHw = localStorage.getItem('all_teacher_homeworks');
+      if (savedHw) {
+        const parsed = JSON.parse(savedHw);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(
+            (hw: any) => hw.groupId === id || (group?.name && hw.groupName === group.name)
+          );
+          setGroupHomeworks(filtered);
+        }
+      }
+    } catch (_) {}
+
+    // Load videos
+    const loadVideos = async () => {
+      try {
+        const savedVideos = localStorage.getItem('all_teacher_videos');
+        if (savedVideos) {
+          const parsed = JSON.parse(savedVideos);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter(
+              (v: any) => v.groupId === id || (group?.name && v.groupName === group.name)
+            );
+            const resolved = await Promise.all(
+              filtered.map(async (v: any) => {
+                if (v.videoType === 'file') {
+                  try {
+                    const blob = await getVideoBlob(v.id);
+                    if (blob) {
+                      return { ...v, blobUrl: URL.createObjectURL(blob) };
+                    }
+                  } catch (_) {}
+                }
+                return v;
+              })
+            );
+            setGroupVideos(resolved);
+          }
+        }
+      } catch (_) {}
+    };
+    loadVideos();
+
+    // Load lessons
+    try {
+      const savedLessons = localStorage.getItem(`group_lessons_${id}`);
+      if (savedLessons) {
+        const parsed = JSON.parse(savedLessons);
+        if (Array.isArray(parsed)) {
+          setGroupLessons(parsed);
+        }
+      }
+    } catch (_) {}
+  }, [id, group?.name, activeTab]);
 
   // Compute student payment rows for the selected month
   const studentPaymentRows = useMemo(() => {
@@ -1152,6 +1284,47 @@ export const GroupDetail: React.FC = () => {
               ))}
             </div>
           </div>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ustoz faoliyati</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span
+                onClick={() => setActiveTab('homework')}
+                style={{
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  color: '#3b82f6',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Uyga vazifalarni ko'rish"
+              >
+                <BookOpen size={12} /> {groupHomeworks.length} ta vazifa
+              </span>
+              <span
+                onClick={() => setActiveTab('videos')}
+                style={{
+                  fontSize: '11.5px',
+                  fontWeight: 600,
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  color: '#10b981',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Video darslarni ko'rish"
+              >
+                <Video size={12} /> {groupVideos.length} ta video
+              </span>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -1175,7 +1348,19 @@ export const GroupDetail: React.FC = () => {
             variant={activeTab === 'attendanceHistory' ? 'primary' : 'outline'}
             onClick={() => setActiveTab('attendanceHistory')}
           >
-            <CalendarIcon size={16} /> Davomat Tarixi
+            <CalendarIcon size={16} /> Davomat Tarixi {availableHistoryDates.length > 0 ? `(${availableHistoryDates.length})` : ''}
+          </Button>
+          <Button
+            variant={activeTab === 'homework' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('homework')}
+          >
+            <BookOpen size={16} /> Uyga Vazifalar {groupHomeworks.length > 0 ? `(${groupHomeworks.length})` : ''}
+          </Button>
+          <Button
+            variant={activeTab === 'videos' ? 'primary' : 'outline'}
+            onClick={() => setActiveTab('videos')}
+          >
+            <Video size={16} /> Video Darslar {groupVideos.length > 0 ? `(${groupVideos.length})` : ''}
           </Button>
           <Button
             variant={activeTab === 'payments' ? 'primary' : 'outline'}
@@ -1558,14 +1743,735 @@ export const GroupDetail: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 3: DAVOMAT TARIXI (ATTENDANCE HISTORY) */}
+        {/* TAB 3: DAVOMAT TARIXI (ATTENDANCE HISTORY BY YEAR / MONTH / DAY) */}
         {activeTab === 'attendanceHistory' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <Table columns={historyColumns} data={group.attendances || []} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Filter & Date Selection Bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px',
+                padding: '16px',
+                borderRadius: '12px',
+                backgroundColor: 'var(--card-subtle)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CalendarIcon size={18} color="var(--primary)" />
+                  <span style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)' }}>
+                    Davomat sanasi (Yil, oy, kun):
+                  </span>
+                </div>
+
+                {/* Quick Day Switchers */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Oldingi kun"
+                    onClick={() => {
+                      const d = new Date(historyDate);
+                      d.setDate(d.getDate() - 1);
+                      setHistoryDate(d.toISOString().split('T')[0]);
+                    }}
+                  >
+                    <ChevronLeft size={15} /> Oldingi kun
+                  </Button>
+
+                  <input
+                    type="date"
+                    value={historyDate}
+                    onChange={(e) => setHistoryDate(e.target.value)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--primary)',
+                      backgroundColor: 'var(--card)',
+                      color: 'var(--text)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  />
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title="Keyingi kun"
+                    onClick={() => {
+                      const d = new Date(historyDate);
+                      d.setDate(d.getDate() + 1);
+                      setHistoryDate(d.toISOString().split('T')[0]);
+                    }}
+                  >
+                    Keyingi kun <ChevronRight size={15} />
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={historyDate === getTashkentDateString() ? 'primary' : 'outline'}
+                    onClick={() => setHistoryDate(getTashkentDateString())}
+                  >
+                    Bugun
+                  </Button>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Badge variant={dayHistoryAttendances.length > 0 ? 'success' : 'secondary'}>
+                  {dayHistoryAttendances.length > 0
+                    ? `${formatDate(historyDate)}: Davomat saqlangan (${dayHistoryAttendances.length} nafar)`
+                    : `${formatDate(historyDate)}: Davomat olinmagan`}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Recorded Dates Chips */}
+            {availableHistoryDates.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)' }}>
+                  Mavjud davomat sanalari ({availableHistoryDates.length} ta dars):
+                </span>
+                {availableHistoryDates.map((dateStr) => {
+                  const isSelected = historyDate === dateStr;
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      onClick={() => setHistoryDate(dateStr)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: isSelected ? 700 : 500,
+                        cursor: 'pointer',
+                        border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--primary)' : 'var(--card-subtle)',
+                        color: isSelected ? '#ffffff' : 'var(--text)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <CalendarCheck size={12} /> {formatDate(dateStr)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Day Attendance Content */}
+            {dayHistoryAttendances.length > 0 ? (
+              <>
+                {/* Daily Counters */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                      Jami qatnashganlar
+                    </div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)' }}>
+                      {historyDayStats.total} nafar
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, marginBottom: '4px' }}>
+                      ✓ Kelganlar
+                    </div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#10b981' }}>
+                      {historyDayStats.kelgan} nafar
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>
+                      ✕ Kelmaganlar
+                    </div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#ef4444' }}>
+                      {historyDayStats.kelmagan} nafar
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      background: 'rgba(245, 158, 11, 0.08)',
+                      border: '1px solid rgba(245, 158, 11, 0.25)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 600, marginBottom: '4px' }}>
+                      🕒 Kechikkanlar
+                    </div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#f59e0b' }}>
+                      {historyDayStats.kechikkan} nafar
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', color: '#3b82f6', fontWeight: 600, marginBottom: '4px' }}>
+                      Davomat ko'rsatkichi
+                    </div>
+                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#3b82f6' }}>
+                      {historyDayStats.rate}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Day Lesson Topic */}
+                {historyDayTopic && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      background: 'rgba(59, 130, 246, 0.08)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                    }}
+                  >
+                    <BookOpen size={18} color="#3b82f6" />
+                    <div style={{ fontSize: '13px', color: 'var(--text)' }}>
+                      <strong>O'tilgan dars mavzusi:</strong> {historyDayTopic}
+                    </div>
+                  </div>
+                )}
+
+                {/* Students Table for the Selected Date */}
+                <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: '10px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--card-subtle)', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '12px 14px', width: '40px' }}>#</th>
+                        <th style={{ padding: '12px 14px' }}>TALABA</th>
+                        <th style={{ padding: '12px 14px' }}>TELEFON</th>
+                        <th style={{ padding: '12px 14px' }}>HOLATI</th>
+                        <th style={{ padding: '12px 14px' }}>IZOH / SABAB</th>
+                        <th style={{ padding: '12px 14px' }}>QAYD ETILGAN VAQT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayHistoryAttendances.map((att: any, idx: number) => {
+                        const studentName = att.student
+                          ? `${att.student.firstName} ${att.student.lastName}`
+                          : group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student
+                          ? `${group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student.firstName} ${group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student.lastName}`
+                          : 'Noma\'lum talaba';
+
+                        const studentPhone = att.student?.phone ||
+                          group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student?.phone;
+
+                        return (
+                          <tr
+                            key={att.id || idx}
+                            style={{
+                              borderBottom: '1px solid var(--border)',
+                              backgroundColor: idx % 2 === 0 ? 'transparent' : 'var(--card-subtle)',
+                            }}
+                          >
+                            <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                              {idx + 1}
+                            </td>
+                            <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text)' }}>
+                              {studentName}
+                            </td>
+                            <td style={{ padding: '12px 14px', color: 'var(--text-muted)' }}>
+                              {formatPhone(studentPhone)}
+                            </td>
+                            <td style={{ padding: '12px 14px' }}>
+                              <Badge
+                                variant={
+                                  att.status === 'KELGAN'
+                                    ? 'success'
+                                    : att.status === 'KELMAGAN'
+                                    ? 'danger'
+                                    : 'warning'
+                                }
+                              >
+                                {att.status === 'KELGAN' ? '✓ Kelgan' : att.status === 'KELMAGAN' ? '✕ Kelmagan' : '🕒 Kechikkan'}
+                              </Badge>
+                            </td>
+                            <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontStyle: att.note ? 'normal' : 'italic' }}>
+                              {att.note || '-'}
+                            </td>
+                            <td style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: '12.5px' }}>
+                              {att.createdAt ? new Date(att.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <div
+                style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  borderRadius: '12px',
+                  background: 'var(--card-subtle)',
+                  border: '1px dashed var(--border)',
+                }}
+              >
+                <AlertCircle size={36} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.6 }} />
+                <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
+                  {formatDate(historyDate)} sanasi uchun davomat topilmadi
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px 0', maxWidth: '460px', marginInline: 'auto' }}>
+                  O'qituvchi ushbu sanada davomat olmagan yoki dars mashg'uloti bo'lmagan. Yuqoridagi dars kunlari tugmalarini bosib o'tgan darslar davomatini ko'rishingiz mumkin.
+                </p>
+                {availableHistoryDates.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setHistoryDate(availableHistoryDates[0])}
+                  >
+                    Eng so'nggi davomatni ko'rish ({formatDate(availableHistoryDates[0])})
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 4: GURUH TALABALARI TO'LOVLAR HOLATI (GROUP PAYMENTS & DEBT OVERVIEW) */}
+        {/* TAB 4: O'QITUVCHI UYGA VAZIFALARI (TEACHER HOMEWORKS MONITORING) */}
+        {activeTab === 'homework' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Header Info */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                padding: '16px',
+                borderRadius: '12px',
+                background: 'var(--card-subtle)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--primary)',
+                  }}
+                >
+                  <BookOpen size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
+                    O'qituvchi bergan uyga vazifalar ({groupHomeworks.length} ta)
+                  </h3>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    {group.teacher ? `Ustoz: ${group.teacher.firstName} ${group.teacher.lastName}` : "O'qituvchi"} tomonidan ushbu guruh o'quvchilariga yuklangan topshiriqlar va fayllar
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Homework items list */}
+            {groupHomeworks.length === 0 ? (
+              <div
+                style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  borderRadius: '12px',
+                  background: 'var(--card-subtle)',
+                  border: '1px dashed var(--border)',
+                }}
+              >
+                <BookOpen size={36} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.6 }} />
+                <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
+                  Hali uyga vazifa berilmagan
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                  O'qituvchi bu guruh uchun hali yangi uyga vazifa biriktirmagan.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+                {groupHomeworks.map((hw: any, idx: number) => (
+                  <div
+                    key={hw.id || idx}
+                    style={{
+                      padding: '18px',
+                      borderRadius: '12px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '14px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: 'rgba(59, 130, 246, 0.1)',
+                            color: '#3b82f6',
+                          }}
+                        >
+                          Topshiriq #{idx + 1}
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                          {hw.createdAt || '-'}
+                        </span>
+                      </div>
+
+                      <h4 style={{ fontSize: '15.5px', fontWeight: 700, color: 'var(--text)', margin: '0 0 8px 0', lineHeight: 1.4 }}>
+                        {hw.title}
+                      </h4>
+
+                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 12px 0', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                        {hw.desc}
+                      </p>
+
+                      {hw.deadline && (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: 'rgba(239, 68, 68, 0.08)',
+                            color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                          }}
+                        >
+                          <Clock size={13} /> Muddati: {hw.deadline}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Attached file if any */}
+                    {hw.file && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: 'var(--card-subtle)',
+                          border: '1px solid var(--border)',
+                          gap: '10px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                          <FileText size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+                          <div style={{ overflow: 'hidden' }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                              {hw.file.name}
+                            </div>
+                            {hw.file.size && (
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                {(hw.file.size / 1024).toFixed(1)} KB
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {hw.file.dataUrl && (
+                          <a
+                            href={hw.file.dataUrl}
+                            download={hw.file.name}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              background: 'var(--primary)',
+                              color: '#ffffff',
+                              textDecoration: 'none',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Download size={13} /> Yuklab olish
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: O'QITUVCHI VIDEO DARSLARI (TEACHER VIDEOS MONITORING) */}
+        {activeTab === 'videos' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Header Info */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                padding: '16px',
+                borderRadius: '12px',
+                background: 'var(--card-subtle)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#10b981',
+                  }}
+                >
+                  <Video size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
+                    O'qituvchi yuklagan video darslar ({groupVideos.length} ta)
+                  </h3>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    {group.teacher ? `Ustoz: ${group.teacher.firstName} ${group.teacher.lastName}` : "O'qituvchi"} tomonidan ushbu guruh uchun joylangan video darslar va yozuvlar
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Videos list */}
+            {groupVideos.length === 0 ? (
+              <div
+                style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  borderRadius: '12px',
+                  background: 'var(--card-subtle)',
+                  border: '1px dashed var(--border)',
+                }}
+              >
+                <Video size={36} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.6 }} />
+                <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
+                  Hali video dars yuklanmagan
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                  O'qituvchi bu guruh uchun hali video darslik yoki havola joylamagan.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '18px' }}>
+                {groupVideos.map((v: any, idx: number) => (
+                  <div
+                    key={v.id || idx}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    {/* Video Player or Link Preview */}
+                    {v.videoType === 'file' && v.blobUrl ? (
+                      <video
+                        controls
+                        src={v.blobUrl}
+                        style={{
+                          width: '100%',
+                          borderRadius: '8px',
+                          maxHeight: '220px',
+                          backgroundColor: '#000000',
+                        }}
+                      />
+                    ) : v.videoUrl ? (
+                      <div
+                        style={{
+                          position: 'relative',
+                          paddingTop: '56.25%',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          background: '#090d16',
+                        }}
+                      >
+                        {v.videoUrl.includes('youtube.com') || v.videoUrl.includes('youtu.be') ? (
+                          <iframe
+                            src={
+                              v.videoUrl.includes('watch?v=')
+                                ? v.videoUrl.replace('watch?v=', 'embed/')
+                                : v.videoUrl.replace('youtu.be/', 'youtube.com/embed/')
+                            }
+                            title={v.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              border: 'none',
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <Video size={36} color="var(--primary)" />
+                            <a
+                              href={v.videoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 14px',
+                                borderRadius: '6px',
+                                background: 'var(--primary)',
+                                color: '#ffffff',
+                                fontSize: '12.5px',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <ExternalLink size={14} /> Videoni ko'rish
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            background: v.videoType === 'file' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                            color: v.videoType === 'file' ? '#10b981' : '#3b82f6',
+                          }}
+                        >
+                          {v.videoType === 'file' ? 'Fayl yuklangan' : 'Havola'}
+                        </span>
+                        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                          {v.createdAt || '-'}
+                        </span>
+                      </div>
+
+                      <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', margin: '0 0 6px 0', lineHeight: 1.4 }}>
+                        {v.title}
+                      </h4>
+
+                      {v.desc && (
+                        <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                          {v.desc}
+                        </p>
+                      )}
+
+                      {v.fileName && (
+                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                          Fayl: {v.fileName} {v.fileSize ? `(${(v.fileSize / (1024 * 1024)).toFixed(1)} MB)` : ''}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: GURUH TALABALARI TO'LOVLAR HOLATI (GROUP PAYMENTS & DEBT OVERVIEW) */}
         {activeTab === 'payments' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Top Controls & Month Filter */}
