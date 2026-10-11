@@ -710,4 +710,24 @@
   border-color: rgba(52, 211, 153, 0.3);
 }
 
+.profileUserName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.profileUserRole {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+:global([data-theme="dark"]) .profileUserName {
+  color: #f8fafc !important;
+}
+
+:global([data-theme="dark"]) .profileUserRole {
+  color: #94a3b8 !important;
+}
+
 

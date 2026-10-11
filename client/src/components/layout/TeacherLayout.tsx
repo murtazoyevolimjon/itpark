@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { useLanguage, Language } from '../../hooks/useLanguage';
+import { UzFlag, GbFlag, RuFlag } from '../ui/Flags/Flags';
 import {
   LayoutGrid,
   GraduationCap,
@@ -39,6 +40,22 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const { lang, setLang, dict } = useLanguage();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const langMenuRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setShowLangMenu(false);
+      }
+    };
+    if (showLangMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLangMenu]);
 
   const centerName = user?.centerName || 'Toyloq IT Park';
   const firstName = user?.fullName
@@ -103,10 +120,10 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
     },
   ];
 
-  const langOptions: { id: Language; label: string; short: string; flag: string }[] = [
-    { id: 'uz', label: "O'zbekcha", short: 'Uz', flag: '🇺🇿' },
-    { id: 'en', label: 'English', short: 'Eng', flag: '🇬🇧' },
-    { id: 'ru', label: 'Русский', short: 'Rus', flag: '🇷🇺' },
+  const langOptions: { id: Language; label: string; short: string; Flag: React.FC<{ size?: number }> }[] = [
+    { id: 'uz', label: "O'zbekcha", short: 'UZ', Flag: UzFlag },
+    { id: 'en', label: 'English', short: 'EN', Flag: GbFlag },
+    { id: 'ru', label: 'Русский', short: 'RU', Flag: RuFlag },
   ];
 
   const currentOption = langOptions.find((o) => o.id === lang) || langOptions[0];
@@ -200,33 +217,58 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
               </button>
 
               {/* Language Selector (Uz / Eng / Rus) */}
-              <div style={{ position: 'relative' }}>
+              <div className={styles.langWrapper} ref={langMenuRef}>
                 <button
+                  type="button"
                   className={styles.langBtn}
                   onClick={() => setShowLangMenu(!showLangMenu)}
+                  aria-expanded={showLangMenu}
+                  aria-haspopup="true"
                   aria-label="Tilni almashtirish"
                 >
-                  <span className={styles.langFlag}>{currentOption.flag}</span>
+                  <span className={styles.langFlagBadge}>
+                    <currentOption.Flag size={18} />
+                  </span>
                   <span className={styles.langShort}>{currentOption.short}</span>
-                  <ChevronDown size={14} />
+                  <ChevronDown
+                    size={14}
+                    className={`${styles.langChevron} ${showLangMenu ? styles.langChevronOpen : ''}`}
+                  />
                 </button>
                 {showLangMenu && (
-                  <div className={styles.langDropdown}>
-                    {langOptions.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => {
-                          setLang(opt.id);
-                          setShowLangMenu(false);
-                        }}
-                        className={`${styles.langDropdownItem} ${lang === opt.id ? styles.langDropdownItemActive : ''}`}
-                      >
-                        <span className={styles.langItemFlag}>{opt.flag}</span>
-                        <span className={styles.langItemShort}>{opt.short}</span>
-                        <span className={styles.langItemFull}>{opt.label}</span>
-                        {lang === opt.id && <Check size={14} className={styles.langItemCheck} />}
-                      </button>
-                    ))}
+                  <div className={styles.langDropdown} role="menu">
+                    <div className={styles.langDropdownHeader}>
+                      {dict.teacher?.selectLanguage || 'Tilni tanlang'}
+                    </div>
+                    {langOptions.map((opt) => {
+                      const isActive = lang === opt.id;
+                      const IconComponent = opt.Flag;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setLang(opt.id);
+                            setShowLangMenu(false);
+                          }}
+                          className={`${styles.langDropdownItem} ${isActive ? styles.langDropdownItemActive : ''}`}
+                        >
+                          <div className={styles.langItemFlagWrapper}>
+                            <IconComponent size={20} />
+                          </div>
+                          <div className={styles.langItemContent}>
+                            <span className={styles.langItemTitle}>{opt.label}</span>
+                            <span className={styles.langItemSub}>{opt.short}</span>
+                          </div>
+                          {isActive && (
+                            <div className={styles.langItemCheckBadge}>
+                              <Check size={12} strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -89,7 +89,9 @@ export const TeacherProfile: React.FC = () => {
       <div className={styles.infoGrid}>
         {/* Shaxsiy ma'lumotlar */}
         <div className={styles.glassCard}>
-          <h3 className={styles.cardTitle}>Shaxsiy ma'lumotlar</h3>
+          <h3 className={styles.cardTitle}>
+            {dict.teacher?.personalInfo || "Shaxsiy ma'lumotlar"}
+          </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
             <div
@@ -106,43 +108,49 @@ export const TeacherProfile: React.FC = () => {
                 fontWeight: 700,
               }}
             >
-              {fullName ? fullName.charAt(0).toUpperCase() : 'A'}
+              {fullName ? fullName.charAt(0).toUpperCase() : 'O'}
             </div>
             <div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                {fullName || user?.fullName || 'Ahmad Qodirov'}
+              <div className={styles.profileUserName}>
+                {fullName || user?.fullName || 'Olimjon Murtazoyev'}
               </div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>
-                {centerName} • O'qituvchi
+              <div className={styles.profileUserRole}>
+                {centerName} • {dict.teacher?.teacherRole || "O'qituvchi / Mentor"}
               </div>
             </div>
           </div>
 
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>To'liq ism</label>
+              <label className={styles.fieldLabel}>
+                {dict.teacher?.fullName || "To'liq ism"}
+              </label>
               <input
                 type="text"
                 className={styles.textInput}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Ismingizni kiriting"
+                placeholder={dict.teacher?.namePlaceholder || "Ismingizni kiriting"}
               />
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Email / Login</label>
+              <label className={styles.fieldLabel}>
+                {dict.teacher?.email || "Email / Login"}
+              </label>
               <input
                 type="email"
                 className={styles.textInput}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email manzili"
+                placeholder={dict.teacher?.emailPlaceholder || "Email manzili"}
               />
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Telefon raqam</label>
+              <label className={styles.fieldLabel}>
+                {dict.teacher?.phone || "Telefon raqam"}
+              </label>
               <input
                 type="text"
                 className={styles.textInput}
@@ -171,7 +179,7 @@ export const TeacherProfile: React.FC = () => {
             )}
 
             <button type="submit" className={styles.submitBtn} style={{ marginTop: '8px' }}>
-              Saqlash
+              {dict.teacher?.saveBtn || dict.teacher?.saveChanges || "Saqlash"}
             </button>
           </form>
         </div>
@@ -179,34 +187,50 @@ export const TeacherProfile: React.FC = () => {
         {/* Markaz va xavfsizlik */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className={styles.glassCard}>
-            <h3 className={styles.cardTitle}>O'quv Markazi ma'lumotlari</h3>
+            <h3 className={styles.cardTitle}>
+              {dict.teacher?.centerInfo || "O'quv Markazi ma'lumotlari"}
+            </h3>
             <div className={styles.infoRowsList}>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Markaz nomi</span>
+                <span className={styles.infoLabel}>
+                  {dict.teacher?.centerNameLabel || "Markaz nomi"}
+                </span>
                 <span className={styles.infoValue}>{centerName}</span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Lavozim</span>
-                <span className={styles.infoValue}>O'qituvchi / Mentor</span>
+                <span className={styles.infoLabel}>
+                  {dict.position || "Lavozim"}
+                </span>
+                <span className={styles.infoValue}>
+                  {dict.teacher?.teacherRole || "O'qituvchi / Mentor"}
+                </span>
               </div>
               <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Tizimdagi holat</span>
-                <span className={styles.infoValue} style={{ color: '#059669' }}>Faol</span>
+                <span className={styles.infoLabel}>
+                  {dict.teacher?.systemStatus || "Tizimdagi holat"}
+                </span>
+                <span className={styles.infoValue} style={{ color: '#059669' }}>
+                  {dict.active || "Faol"}
+                </span>
               </div>
             </div>
           </div>
 
           <div className={styles.glassCard}>
-            <h3 className={styles.cardTitle}>Xavfsizlik (Parol o'zgartirish)</h3>
+            <h3 className={styles.cardTitle}>
+              {dict.teacher?.securityTitle || "Xavfsizlik (Parol o'zgartirish)"}
+            </h3>
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Yangi parol</label>
+              <label className={styles.fieldLabel}>
+                {dict.teacher?.newPassword || "Yangi parol"}
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className={styles.textInput}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Yangi parol kiriting"
+                  placeholder={dict.teacher?.newPasswordPlaceholder || "Yangi parol kiriting"}
                 />
                 <button
                   type="button"
