@@ -223,7 +223,7 @@
 .langBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 8px 16px;
   border-radius: 14px;
   background: linear-gradient(105deg, #0f766e 0%, #0284c7 100%);
@@ -237,8 +237,91 @@
 }
 
 .langBtn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
   transform: translateY(-1px);
+}
+
+.langFlag {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.langShort {
+  letter-spacing: 0.3px;
+}
+
+/* Language Dropdown Menu */
+.langDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 6px;
+  z-index: 60;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  animation: fadeInDrop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.langDropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #1e293b;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.langDropdownItem:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.langDropdownItemActive {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+
+.langItemFlag {
+  font-size: 14px;
+}
+
+.langItemShort {
+  font-weight: 700;
+}
+
+.langItemFull {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.langItemCheck {
+  color: #0284c7;
 }
 
 .userChip {
@@ -343,4 +426,138 @@
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* ========================================================
+   DARK THEME SYSTEM (TUN REJIMI)
+   ======================================================== */
+[data-theme="dark"] .container,
+:global([data-theme="dark"]) .container {
+  background: radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.08), transparent 36%),
+              radial-gradient(circle at 88% 14%, rgba(16, 185, 129, 0.07), transparent 32%),
+              #080c14 !important;
+  color: #f1f5f9 !important;
+}
+
+:global([data-theme="dark"]) .orbLeft {
+  background: rgba(20, 184, 166, 0.12);
+}
+
+:global([data-theme="dark"]) .orbRight {
+  background: rgba(14, 165, 233, 0.12);
+}
+
+:global([data-theme="dark"]) .sidebar {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(17, 24, 39, 0.94) 100%);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55);
+}
+
+:global([data-theme="dark"]) .panelBadge {
+  background: rgba(6, 78, 59, 0.5);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .centerBrandTitle {
+  background: linear-gradient(110deg, #2dd4bf, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:global([data-theme="dark"]) .navItem {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .navItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .navItemActive {
+  background: linear-gradient(105deg, #0d9488 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(2, 132, 199, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .navItemNumber {
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .planCard {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="dark"]) .header {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme="dark"]) .greetingText {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .iconBtn {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+:global([data-theme="dark"]) .iconBtn:hover {
+  background: rgba(51, 65, 85, 0.95);
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .userChip {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .logoutBtn {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+:global([data-theme="dark"]) .logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+:global([data-theme="dark"]) .langDropdown {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+}
+
+:global([data-theme="dark"]) .langDropdownItem {
+  color: #e2e8f0;
+}
+
+:global([data-theme="dark"]) .langDropdownItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .langDropdownItemActive {
+  background: rgba(14, 165, 233, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+:global([data-theme="dark"]) .langItemFull {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .mobileMenuBtn {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }

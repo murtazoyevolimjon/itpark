@@ -4,9 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
+import { useLanguage, Language } from '../../hooks/useLanguage';
 import {
   LayoutGrid,
   GraduationCap,
+  CalendarCheck,
+  BookOpen,
+  Video,
   Bell,
   Moon,
   Sun,
@@ -14,7 +19,8 @@ import {
   User as UserIcon,
   LogOut,
   Menu,
-  X
+  X,
+  Check,
 } from 'lucide-react';
 import styles from './TeacherLayout.module.css';
 
@@ -27,21 +33,28 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const pathname = usePathname() || '/teacher';
   const router = useRouter();
 
+  const { theme, toggleTheme } = useTheme();
+  const isDarkMode = theme === 'dark';
+
+  const { lang, setLang, dict } = useLanguage();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [currentLang, setCurrentLang] = useState<string>("O'zbekcha");
   const [showLangMenu, setShowLangMenu] = useState(false);
 
-  const centerName = user?.centerName || "Najot Ta'lim";
+  const centerName = user?.centerName || 'Toyloq IT Park';
   const firstName = user?.fullName
-    ? user.fullName.split(' ')[0].toLowerCase()
-    : 'ahmad';
+    ? user.fullName.split(' ')[0]
+    : 'Olimjon';
 
   const isProfileActive = pathname.startsWith('/teacher/profile');
+  const isAttendanceActive = pathname.startsWith('/teacher/attendance');
+  const isHomeworkActive = pathname.startsWith('/teacher/homework');
+  const isVideosActive = pathname.startsWith('/teacher/videos');
   const isGroupsActive =
-    pathname.startsWith('/teacher/groups') ||
-    pathname === '/teacher' ||
-    (!isProfileActive && pathname.startsWith('/teacher'));
+    (pathname.startsWith('/teacher/groups') || pathname === '/teacher') &&
+    !isAttendanceActive &&
+    !isHomeworkActive &&
+    !isVideosActive &&
+    !isProfileActive;
 
   const handleLogout = async () => {
     try {
@@ -54,23 +67,52 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
   const navItems = [
     {
-      label: 'Profil',
+      label: dict.teacher?.profile || 'Profil',
       href: '/teacher/profile',
       icon: LayoutGrid,
       number: '01',
       isActive: isProfileActive,
     },
     {
-      label: 'Guruhlar',
+      label: dict.teacher?.groups || 'Guruhlar',
       href: '/teacher/groups',
       icon: GraduationCap,
       number: '02',
       isActive: isGroupsActive,
     },
+    {
+      label: dict.teacher?.attendance || 'Akademik davomat',
+      href: '/teacher/attendance',
+      icon: CalendarCheck,
+      number: '03',
+      isActive: isAttendanceActive,
+    },
+    {
+      label: dict.teacher?.homework || 'Uyga vazifa',
+      href: '/teacher/homework',
+      icon: BookOpen,
+      number: '04',
+      isActive: isHomeworkActive,
+    },
+    {
+      label: dict.teacher?.videos || 'Videolar',
+      href: '/teacher/videos',
+      icon: Video,
+      number: '05',
+      isActive: isVideosActive,
+    },
   ];
 
+  const langOptions: { id: Language; label: string; short: string; flag: string }[] = [
+    { id: 'uz', label: "O'zbekcha", short: 'Uz', flag: '🇺🇿' },
+    { id: 'en', label: 'English', short: 'Eng', flag: '🇬🇧' },
+    { id: 'ru', label: 'Русский', short: 'Rus', flag: '🇷🇺' },
+  ];
+
+  const currentOption = langOptions.find((o) => o.id === lang) || langOptions[0];
+
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-theme={theme}>
       {/* Ambient Glow Orbs */}
       <div className={styles.orbLeft} />
       <div className={styles.orbRight} />
@@ -87,7 +129,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           <div>
             <div className={styles.sidebarHeader}>
               <div className={styles.panelBadge}>
-                Teacher panel
+                {dict.teacher?.panelBadge || 'Teacher panel'}
               </div>
               <h1 className={styles.centerBrandTitle}>
                 {centerName}
@@ -117,7 +159,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
           <div className={styles.sidebarFooter}>
             <div className={styles.planCard}>
-              Bugungi reja: dars mavzularini yakunlab chiqing.
+              {dict.teacher?.todayPlan || 'Bugungi reja: dars mavzularini yakunlab chiqing.'}
             </div>
           </div>
         </aside>
@@ -135,67 +177,54 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                 {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
               <h2 className={styles.greetingText}>
-                Salom, {firstName}!
+                {dict.teacher?.greeting || 'Salom'}, {firstName}!
               </h2>
             </div>
 
             <div className={styles.headerActions}>
-              <button className={styles.iconBtn} title="Bildirishnomalar">
+              <button
+                className={styles.iconBtn}
+                title={dict.teacher?.notifications || 'Bildirishnomalar'}
+                aria-label="Bildirishnomalar"
+              >
                 <Bell size={18} />
               </button>
 
               <button
                 className={styles.iconBtn}
-                title="Mavzu"
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                title={dict.teacher?.theme || 'Mavzu (Tun / Kun)'}
+                onClick={toggleTheme}
+                aria-label="Toggle dark/light mode"
               >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
+              {/* Language Selector (Uz / Eng / Rus) */}
               <div style={{ position: 'relative' }}>
                 <button
                   className={styles.langBtn}
                   onClick={() => setShowLangMenu(!showLangMenu)}
+                  aria-label="Tilni almashtirish"
                 >
-                  <span>{currentLang}</span>
-                  <ChevronDown size={15} />
+                  <span className={styles.langFlag}>{currentOption.flag}</span>
+                  <span className={styles.langShort}>{currentOption.short}</span>
+                  <ChevronDown size={14} />
                 </button>
                 {showLangMenu && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 6px)',
-                      right: 0,
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      border: '1px solid #e2e8f0',
-                      padding: '6px',
-                      zIndex: 50,
-                      minWidth: '130px',
-                    }}
-                  >
-                    {["O'zbekcha", 'Русский', 'English'].map((l) => (
+                  <div className={styles.langDropdown}>
+                    {langOptions.map((opt) => (
                       <button
-                        key={l}
+                        key={opt.id}
                         onClick={() => {
-                          setCurrentLang(l);
+                          setLang(opt.id);
                           setShowLangMenu(false);
                         }}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '8px 12px',
-                          border: 'none',
-                          background: currentLang === l ? '#f1f5f9' : 'transparent',
-                          color: '#0f172a',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          fontWeight: 500,
-                        }}
+                        className={`${styles.langDropdownItem} ${lang === opt.id ? styles.langDropdownItemActive : ''}`}
                       >
-                        {l}
+                        <span className={styles.langItemFlag}>{opt.flag}</span>
+                        <span className={styles.langItemShort}>{opt.short}</span>
+                        <span className={styles.langItemFull}>{opt.label}</span>
+                        {lang === opt.id && <Check size={14} className={styles.langItemCheck} />}
                       </button>
                     ))}
                   </div>
@@ -209,8 +238,9 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
               <button
                 className={styles.logoutBtn}
-                title="Chiqish"
+                title={dict.teacher?.logout || 'Chiqish'}
                 onClick={handleLogout}
+                aria-label="Chiqish"
               >
                 <LogOut size={18} />
               </button>

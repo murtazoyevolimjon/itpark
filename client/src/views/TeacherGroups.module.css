@@ -253,3 +253,93 @@
     width: 100%;
   }
 }
+
+/* ========================================================
+   DARK THEME SYSTEM (TUN REJIMI)
+   ======================================================== */
+:global([data-theme="dark"]) .pageTitle {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .pageSubtitle {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .searchInput {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .searchInput:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+:global([data-theme="dark"]) .statCard {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme="dark"]) .statLabel {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .statValue {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .tabPillContainer {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .tabPill {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .tabPill:hover {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .tabPillActive {
+  background: #1e293b;
+  color: #38bdf8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="dark"]) .tableCard {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme="dark"]) .table th {
+  color: #94a3b8;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+:global([data-theme="dark"]) .table td {
+  color: #cbd5e1;
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+:global([data-theme="dark"]) .table tbody tr:hover td {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+:global([data-theme="dark"]) .groupNameText {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .statusBadgeActive {
+  background: rgba(6, 78, 59, 0.45);
+  color: #34d399;
+}
+
+:global([data-theme="dark"]) .statusBadgeArchived {
+  background: rgba(30, 41, 59, 0.6);
+  color: #94a3b8;
+}
+

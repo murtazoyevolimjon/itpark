@@ -24,7 +24,11 @@ import {
   GraduationCap,
   Lock,
   Clock3,
+  UploadCloud,
+  Download,
+  FileText,
 } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 import { groupsApi } from '../api/groups.api';
 import { attendanceApi } from '../api/attendance.api';
 import { studentsApi } from '../api/students.api';
@@ -55,6 +59,7 @@ export const TeacherGroupDetail: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { dict } = useLanguage();
   const groupId = (params?.id as string) || '';
 
   const [mainTab, setMainTab] = useState<'info' | 'materials' | 'attendance'>('info');
@@ -71,7 +76,11 @@ export const TeacherGroupDetail: React.FC = () => {
   // Material state
   const [lessonTopic, setLessonTopic] = useState('');
   const [lessonDesc, setLessonDesc] = useState('');
-  const [lessonsList, setLessonsList] = useState<{ id: string; title: string; desc?: string; type: string; createdAt: string }[]>([]);
+  const [hwDeadline, setHwDeadline] = useState('');
+  const [hwFile, setHwFile] = useState<{ name: string; size: number; dataUrl: string } | null>(null);
+  const [isDraggingHw, setIsDraggingHw] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [lessonsList, setLessonsList] = useState<{ id: string; title: string; desc?: string; type: string; createdAt: string; file?: any; deadline?: string }[]>([]);
 
   // Attendance date & state (Default to today in Tashkent timezone)
   const todayTashkent = useMemo(() => getTashkentDateString(), []);
@@ -144,22 +153,44 @@ export const TeacherGroupDetail: React.FC = () => {
   // When a new lesson is added, it is placed at the VERY TOP (index 0)
   const handleAddLesson = () => {
     if (!lessonTopic.trim()) return;
-    const newLesson = {
+    const newLesson: any = {
       id: Date.now().toString(),
       title: lessonTopic.trim(),
       desc: lessonDesc.trim(),
       type: materialSubtab,
       createdAt: new Date().toLocaleDateString('uz-UZ'),
+      file: materialSubtab === 'uyga' ? hwFile : undefined,
+      deadline: materialSubtab === 'uyga' ? hwDeadline : undefined,
     };
     // Latest topic is first
     const updated = [newLesson, ...lessonsList];
     setLessonsList(updated);
     setLessonTopic('');
     setLessonDesc('');
+    setHwFile(null);
+    setHwDeadline('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
     // Automatically set attendance topic to the latest added lesson
     setAttendanceTopic(newLesson.title);
     try {
       localStorage.setItem(`group_lessons_${groupId}`, JSON.stringify(updated));
+      if (materialSubtab === 'uyga') {
+        const existingHw = localStorage.getItem('all_teacher_homeworks');
+        const parsedHw = existingHw ? JSON.parse(existingHw) : [];
+        const hwItem = {
+          id: newLesson.id,
+          groupId: groupId,
+          groupName: group?.name || 'Guruh',
+          courseName: group?.course?.name,
+          title: newLesson.title,
+          desc: newLesson.desc,
+          deadline: newLesson.deadline || 'Muddati belgilanmagan',
+          file: newLesson.file,
+          createdAt: newLesson.createdAt,
+        };
+        localStorage.setItem('all_teacher_homeworks', JSON.stringify([hwItem, ...parsedHw]));
+      }
     } catch {
       // ignore
     }
@@ -571,14 +602,28 @@ export const TeacherGroupDetail: React.FC = () => {
           {/* New Lesson Form */}
           <div className={styles.createLessonCard}>
             <h3 className={styles.cardTitle}>
-              Yangi {materialSubtab === 'uyga' ? 'vazifa' : materialSubtab === 'videolar' ? 'video' : materialSubtab === 'imtihonlar' ? 'imtihon' : 'dars'} yaratish
+              {materialSubtab === 'uyga'
+                ? (dict.teacher?.createHomework || 'Yangi uyga vazifa berish')
+                : materialSubtab === 'videolar'
+                ? (dict.teacher?.createVideo || 'Yangi video dars qo\'shish')
+                : (dict.teacher?.createLesson || 'Yangi dars yaratish')}
             </h3>
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Mavzu</label>
+              <label className={styles.fieldLabel}>
+                {materialSubtab === 'uyga'
+                  ? (dict.teacher?.homeworkTitle || 'Vazifa mavzusi')
+                  : materialSubtab === 'videolar'
+                  ? (dict.teacher?.videoTitle || 'Video dars mavzusi')
+                  : (dict.teacher?.lessonTopic || 'Mavzu')}
+              </label>
               <input
                 type="text"
                 className={styles.textInput}
-                placeholder="Mavzuni kiriting"
+                placeholder={
+                  materialSubtab === 'uyga'
+                    ? (dict.teacher?.homeworkTitlePlaceholder || 'Masalan: 5-mavzu bo\'yicha amaliy topshiriq')
+                    : (dict.teacher?.lessonTopicPlaceholder || 'Mavzuni kiriting')
+                }
                 value={lessonTopic}
                 onChange={(e) => setLessonTopic(e.target.value)}
                 onKeyDown={(e) => {
@@ -586,35 +631,150 @@ export const TeacherGroupDetail: React.FC = () => {
                 }}
               />
             </div>
+
+            {/* If Uyga vazifa: show deadline */}
+            {materialSubtab === 'uyga' && (
+              <div className={styles.inputGroup}>
+                <label className={styles.fieldLabel}>
+                  {dict.teacher?.homeworkDeadline || 'Topshirish muddati (Deadline)'}
+                </label>
+                <input
+                  type="datetime-local"
+                  className={styles.textInput}
+                  value={hwDeadline}
+                  onChange={(e) => setHwDeadline(e.target.value)}
+                />
+              </div>
+            )}
+
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>Tavsif yoki havola (ixtiyoriy)</label>
+              <label className={styles.fieldLabel}>
+                {materialSubtab === 'uyga'
+                  ? (dict.teacher?.homeworkDesc || 'Vazifa talablari va tavsifi')
+                  : materialSubtab === 'videolar'
+                  ? (dict.teacher?.videoUrl || 'Video havolasi (YouTube, Vimeo)')
+                  : (dict.teacher?.lessonDesc || 'Tavsif yoki havola (ixtiyoriy)')}
+              </label>
               <input
                 type="text"
                 className={styles.textInput}
-                placeholder="Qo'shimcha izoh yoki material havolasi..."
+                placeholder={
+                  materialSubtab === 'uyga'
+                    ? (dict.teacher?.homeworkDescPlaceholder || 'Topshiriq shartlari, talablar va yo\'riqnoma...')
+                    : materialSubtab === 'videolar'
+                    ? (dict.teacher?.videoUrlPlaceholder || 'https://www.youtube.com/watch?v=...')
+                    : (dict.teacher?.lessonDescPlaceholder || 'Qo\'shimcha izoh yoki material havolasi...')
+                }
                 value={lessonDesc}
                 onChange={(e) => setLessonDesc(e.target.value)}
               />
             </div>
+
+            {/* If Uyga vazifa: File Upload Area (Req 1.2) */}
+            {materialSubtab === 'uyga' && (
+              <div className={styles.inputGroup}>
+                <label className={styles.fieldLabel}>
+                  {dict.teacher?.fileUploadTitle || 'Fayl biriktirish'}
+                </label>
+                {!hwFile ? (
+                  <div
+                    className={`${styles.dropZoneSmall} ${isDraggingHw ? styles.dropZoneActive : ''}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingHw(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDraggingHw(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingHw(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setHwFile({ name: file.name, size: file.size, dataUrl: reader.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            setHwFile({ name: file.name, size: file.size, dataUrl: reader.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <UploadCloud size={22} color="#0284c7" />
+                    <span style={{ fontSize: '13px', color: '#334155', fontWeight: 600 }}>
+                      {dict.teacher?.fileUploadDesc || 'Faylni tanlang yoki shu yerga tashlang'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      {dict.teacher?.fileUploadHint || 'PDF, DOCX, ZIP, XLSX, JPG, PNG (maksimal 50MB)'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className={styles.attachedCardSmall}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      <FileText size={20} color="#16a34a" />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#166534', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px' }}>
+                        {hwFile.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHwFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                      title="O'chirish"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <button className={styles.submitBtn} onClick={handleAddLesson}>
-              Saqlash
+              {dict.teacher?.saveLesson || 'Saqlash'}
             </button>
           </div>
 
           {/* Lessons list (oxirgi kiritilgan mavzu birinchilikda) */}
           <div className={styles.glassCard}>
             <h3 className={styles.cardTitle}>
-              {materialSubtab === 'uyga' ? 'Vazifalar ro\'yxati' : materialSubtab === 'videolar' ? 'Videolar ro\'yxati' : 'Kiritilgan darslar ro\'yxati'}
+              {materialSubtab === 'uyga'
+                ? (dict.teacher?.homeworkList || 'Vazifalar ro\'yxati')
+                : materialSubtab === 'videolar'
+                ? (dict.teacher?.videoList || 'Videolar ro\'yxati')
+                : (dict.teacher?.lessonList || 'Kiritilgan darslar ro\'yxati')}
             </h3>
             {filteredMaterials.length === 0 ? (
               <div style={{ color: '#94a3b8', fontSize: '14px', padding: '16px 0' }}>
-                Hozircha hech qanday material kiritilmagan.
+                {materialSubtab === 'uyga'
+                  ? (dict.teacher?.noHomeworkYet || 'Hozircha hech qanday vazifa kiritilmagan.')
+                  : materialSubtab === 'videolar'
+                  ? (dict.teacher?.noVideosYet || 'Hozircha hech qanday video dars kiritilmagan.')
+                  : (dict.teacher?.noLessonsYet || 'Hozircha hech qanday darslik kiritilmagan.')}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {filteredMaterials.map((lesson, idx) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {filteredMaterials.map((lesson: any, idx: number) => (
                   <div key={lesson.id} className={styles.lessonItem}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', minWidth: 0 }}>
                       <span
                         style={{
                           width: '28px',
@@ -627,22 +787,46 @@ export const TeacherGroupDetail: React.FC = () => {
                           justifyContent: 'center',
                           fontWeight: 700,
                           fontSize: '12px',
+                          flexShrink: 0,
+                          marginTop: '2px',
                         }}
                       >
                         {idx + 1}
                       </span>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>
                           {lesson.title}
                         </div>
                         {lesson.desc && (
-                          <div style={{ fontSize: '12.5px', color: '#475569', marginTop: '2px' }}>
+                          <div style={{ fontSize: '12.5px', color: '#475569', marginTop: '3px' }}>
                             {lesson.desc}
                           </div>
                         )}
-                        <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
-                          {lesson.createdAt}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+                            {lesson.createdAt}
+                          </span>
+                          {lesson.deadline && (
+                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px' }}>
+                              <Clock size={11} style={{ display: 'inline', marginRight: '3px' }} />
+                              {lesson.deadline}
+                            </span>
+                          )}
                         </div>
+
+                        {/* Download Attached File Button */}
+                        {lesson.file && (
+                          <div style={{ marginTop: '8px' }}>
+                            <a
+                              href={lesson.file.dataUrl}
+                              download={lesson.file.name}
+                              className={styles.fileDownloadPill}
+                            >
+                              <Download size={13} />
+                              <span title={lesson.file.name}>{lesson.file.name}</span>
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <button

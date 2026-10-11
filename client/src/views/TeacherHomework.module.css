@@ -1,0 +1,676 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.groupFilterWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.filterLabel {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.groupSelect {
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  max-width: 260px;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Create Card */
+.createCard {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.listCard {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardHeaderIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0d9488, #0284c7);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+}
+
+.cardTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.inputField {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 13.5px;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.inputField:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.textAreaField {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 13.5px;
+  color: #0f172a;
+  outline: none;
+  resize: vertical;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.textAreaField:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+/* Drag & Drop File Upload Zone */
+.dropZone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 24px 16px;
+  background: rgba(248, 250, 252, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+}
+
+.dropZone:hover {
+  border-color: #0284c7;
+  background: rgba(240, 249, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.dropZoneActive {
+  border-color: #0284c7;
+  background: #e0f2fe;
+}
+
+.dropZoneIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(2, 132, 199, 0.15));
+  color: #0284c7;
+  display: grid;
+  place-items: center;
+  transition: transform 0.2s ease;
+}
+
+.dropZone:hover .dropZoneIcon {
+  transform: scale(1.08);
+}
+
+.dropZoneText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dropZoneTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dropZoneSub {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+/* Attached File Preview Card */
+.attachedCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.attachedFileName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #166534;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.attachedFileSize {
+  font-size: 11.5px;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.removeFileBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeFileBtn:hover {
+  background: #fee2e2;
+  transform: scale(1.08);
+}
+
+/* File Icons */
+.fileIconPdf {
+  color: #dc2626;
+}
+.fileIconZip {
+  color: #d97706;
+}
+.fileIconImg {
+  color: #059669;
+}
+.fileIconDefault {
+  color: #2563eb;
+}
+
+/* Save Homework Button */
+.saveHwBtn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 16px;
+  background: linear-gradient(105deg, #0f766e 0%, #0284c7 100%);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+  transition: all 0.2s ease;
+}
+
+.saveHwBtn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.errorAlert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.successAlert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Homework Items List */
+.hwItemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hwItem {
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 18px 20px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.hwItem:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.hwItemHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hwBadgesRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.groupBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.courseBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hwTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.hwDesc {
+  font-size: 13.5px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.deleteHwBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #fee2e2;
+  background: #ffffff;
+  color: #ef4444;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.deleteHwBtn:hover {
+  background: #fef2f2;
+  transform: scale(1.08);
+}
+
+.deadlineRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  width: fit-content;
+}
+
+.clockIcon {
+  color: #d97706;
+}
+
+.deadlineLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.deadlineValue {
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+/* Download file box */
+.downloadFileBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  margin-top: 4px;
+}
+
+.downloadFileName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.downloadFileSize {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.downloadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #0f766e, #0284c7);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+  flex-shrink: 0;
+}
+
+.downloadBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 14px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.emptyIcon {
+  color: #cbd5e1;
+}
+
+.emptyText {
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 360px;
+}
+
+/* ========================================================
+   DARK THEME SYSTEM (TUN REJIMI)
+   ======================================================== */
+:global([data-theme="dark"]) .pageTitle {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .pageSubtitle {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .groupFilterWrap {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .filterLabel {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .groupSelect {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .createCard,
+:global([data-theme="dark"]) .listCard {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme="dark"]) .cardTitle {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .fieldLabel {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .inputField,
+:global([data-theme="dark"]) .textAreaField {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .inputField:focus,
+:global([data-theme="dark"]) .textAreaField:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+}
+
+:global([data-theme="dark"]) .dropZone {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(30, 41, 59, 0.4);
+}
+
+:global([data-theme="dark"]) .dropZone:hover {
+  border-color: #38bdf8;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+:global([data-theme="dark"]) .dropZoneTitle {
+  color: #f1f5f9;
+}
+
+:global([data-theme="dark"]) .dropZoneSub {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .attachedCard {
+  background: rgba(6, 78, 59, 0.35);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+:global([data-theme="dark"]) .attachedFileName {
+  color: #6ee7b7;
+}
+
+:global([data-theme="dark"]) .attachedFileSize {
+  color: #a7f3d0;
+}
+
+:global([data-theme="dark"]) .hwItem {
+  background: rgba(30, 41, 59, 0.65);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .hwItem:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+:global([data-theme="dark"]) .hwTitle {
+  color: #f8fafc;
+}
+
+:global([data-theme="dark"]) .hwDesc {
+  color: #cbd5e1;
+}
+
+:global([data-theme="dark"]) .deleteHwBtn {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+:global([data-theme="dark"]) .downloadFileBox {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .downloadFileName {
+  color: #f1f5f9;
+}
+
+:global([data-theme="dark"]) .downloadFileSize {
+  color: #94a3b8;
+}
+
+:global([data-theme="dark"]) .deadlineRow {
+  background: rgba(120, 53, 15, 0.25);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+:global([data-theme="dark"]) .deadlineLabel {
+  color: #fcd34d;
+}
+
+:global([data-theme="dark"]) .deadlineValue {
+  color: #fbbf24;
+}
+
+:global([data-theme="dark"]) .emptyIcon {
+  color: #475569;
+}

@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 import { centersApi } from '../api/centers.api';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import styles from './TeacherGroupDetail.module.css';
 
 export const TeacherProfile: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { dict } = useLanguage();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['centerProfile'],
@@ -45,13 +47,13 @@ export const TeacherProfile: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: (data: any) => centersApi.updateProfile(data),
     onSuccess: () => {
-      setSuccessMsg("Ma'lumotlar muvaffaqiyatli saqlandi!");
+      setSuccessMsg(dict.teacher?.savedSuccess || "Ma'lumotlar muvaffaqiyatli saqlandi!");
       setTimeout(() => setSuccessMsg(''), 3000);
       queryClient.invalidateQueries({ queryKey: ['centerProfile'] });
     },
     onError: () => {
       // Mock success for offline/preview
-      setSuccessMsg("Ma'lumotlar muvaffaqiyatli saqlandi!");
+      setSuccessMsg(dict.teacher?.savedSuccess || "Ma'lumotlar muvaffaqiyatli saqlandi!");
       setTimeout(() => setSuccessMsg(''), 3000);
     },
   });
@@ -66,17 +68,21 @@ export const TeacherProfile: React.FC = () => {
     });
   };
 
-  const centerName = user?.centerName || "Najot Ta'lim";
+  const centerName = user?.centerName || 'Toyloq IT Park';
 
   return (
     <div className={styles.detailContainer}>
       <div className={styles.heroCard}>
         <div className={styles.titleWithBadge}>
-          <h2 className={styles.groupTitle}>O'qituvchi Profili</h2>
-          <span className={styles.activeBadge}>Faol</span>
+          <h2 className={styles.groupTitle}>
+            {dict.teacher?.personalProfile || "O'qituvchi Profili"}
+          </h2>
+          <span className={styles.activeBadge}>
+            {dict.active || 'Faol'}
+          </span>
         </div>
         <p className={styles.heroSubtitle}>
-          Shaxsiy ma'lumotlar va akkaunt sozlamalari.
+          {dict.teacher?.profileSubtitle || "Shaxsiy ma'lumotlar va akkaunt sozlamalari."}
         </p>
       </div>
 

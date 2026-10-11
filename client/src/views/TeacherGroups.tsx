@@ -4,12 +4,14 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { useLanguage } from '../hooks/useLanguage';
 import { groupsApi } from '../api/groups.api';
 import { Group } from '../types';
 import styles from './TeacherGroups.module.css';
 
 export const TeacherGroups: React.FC = () => {
   const router = useRouter();
+  const { dict } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'main' | 'archive'>('main');
 
@@ -60,9 +62,11 @@ export const TeacherGroups: React.FC = () => {
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div className={styles.titleArea}>
-          <h2 className={styles.pageTitle}>Guruhlar</h2>
+          <h2 className={styles.pageTitle}>
+            {dict.teacher?.groupsTitle || 'Guruhlar'}
+          </h2>
           <p className={styles.pageSubtitle}>
-            Sizga biriktirilgan guruhlar ro'yxati
+            {dict.teacher?.groupsSubtitle || "Sizga biriktirilgan guruhlar ro'yxati"}
           </p>
         </div>
 
@@ -71,7 +75,7 @@ export const TeacherGroups: React.FC = () => {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Qidirish..."
+            placeholder={dict.teacher?.searchPlaceholder || 'Qidirish...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -81,21 +85,27 @@ export const TeacherGroups: React.FC = () => {
       {/* Stats Cards */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>Jami guruhlar</span>
+          <span className={styles.statLabel}>
+            {dict.teacher?.totalGroups || 'Jami guruhlar'}
+          </span>
           <span className={styles.statValue}>
             {isLoading ? '-' : stats.totalGroups}
           </span>
         </div>
 
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>O'qituvchilar</span>
+          <span className={styles.statLabel}>
+            {dict.teacher?.teachersCount || "O'qituvchilar"}
+          </span>
           <span className={styles.statValue}>
             {isLoading ? '-' : stats.totalTeachers}
           </span>
         </div>
 
         <div className={styles.statCard}>
-          <span className={styles.statLabel}>Talabalar</span>
+          <span className={styles.statLabel}>
+            {dict.teacher?.studentsCount || 'Talabalar'}
+          </span>
           <span className={styles.statValue}>
             {isLoading ? '-' : stats.totalStudents}
           </span>
@@ -109,13 +119,13 @@ export const TeacherGroups: React.FC = () => {
             className={`${styles.tabPill} ${activeTab === 'main' ? styles.tabPillActive : ''}`}
             onClick={() => setActiveTab('main')}
           >
-            Asosiy
+            {dict.teacher?.activeGroups || 'Faol guruhlar'}
           </button>
           <button
             className={`${styles.tabPill} ${activeTab === 'archive' ? styles.tabPillActive : ''}`}
             onClick={() => setActiveTab('archive')}
           >
-            Arxivdagilar
+            {dict.teacher?.archiveGroups || 'Arxiv'}
           </button>
         </div>
       </div>
@@ -126,24 +136,24 @@ export const TeacherGroups: React.FC = () => {
           <thead>
             <tr>
               <th>Status</th>
-              <th>Guruh</th>
-              <th>Kurs</th>
-              <th>Dars vaqti</th>
-              <th>Xona</th>
-              <th>Talabalar</th>
+              <th>{dict.teacher?.groups || 'Guruh'}</th>
+              <th>{dict.teacher?.course || 'Kurs'}</th>
+              <th>{dict.teacher?.time || 'Dars vaqti'}</th>
+              <th>{dict.teacher?.room || 'Xona'}</th>
+              <th>{dict.teacher?.studentsCount || 'Talabalar'}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td colSpan={6} className={styles.emptyNotice}>
-                  Yuklanmoqda...
+                  {dict.loading || 'Yuklanmoqda...'}
                 </td>
               </tr>
             ) : filteredGroups.length === 0 ? (
               <tr>
                 <td colSpan={6} className={styles.emptyNotice}>
-                  Guruhlar topilmadi
+                  {dict.teacher?.noGroups || 'Guruhlar topilmadi'}
                 </td>
               </tr>
             ) : (
@@ -175,7 +185,7 @@ export const TeacherGroups: React.FC = () => {
                     </td>
                     <td>{group.course?.name || 'Backend'}</td>
                     <td>{group.startTime || '10:44'}</td>
-                    <td>{group.room?.name || 'Netflix'}</td>
+                    <td>{group.room?.name || 'Asosiy'}</td>
                     <td>{studentCount}</td>
                   </tr>
                 );

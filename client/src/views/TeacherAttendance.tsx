@@ -39,6 +39,7 @@ import {
   checkAttendanceTimeEligibility,
 } from '../utils/attendanceTime';
 import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
+import { useLanguage } from '../hooks/useLanguage';
 
 const checkIsClassDay = (group: any, dateStr: string): boolean => {
   if (!dateStr) return false;
@@ -67,6 +68,7 @@ export const TeacherAttendance: React.FC = () => {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { dict } = useLanguage();
 
   const queryGroupId = searchParams.get('groupId') || '';
 
@@ -325,14 +327,14 @@ export const TeacherAttendance: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Button variant="outline" size="sm" onClick={() => router.push('/teacher')}>
-            <ArrowLeft size={16} /> Guruhlarimga qaytish
+            <ArrowLeft size={16} /> {dict.teacher?.back || 'Orqaga'}
           </Button>
           <div>
             <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-              Davomat Olish
+              {dict.teacher?.attendance || 'Akademik davomat'}
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Dars mashg'ulotlari bo'yicha davomatni qayd etish
+              {dict.teacher?.groupInfoSubtitle || "Dars mashg'ulotlari bo'yicha davomatni qayd etish"}
             </p>
           </div>
         </div>
@@ -341,13 +343,13 @@ export const TeacherAttendance: React.FC = () => {
         {studentsList.length > 0 && (
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
-              ✓ Kelgan: {summaryCounts.kelgan}
+              ✓ {dict.teacher?.present || 'Kelgan'}: {summaryCounts.kelgan}
             </span>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
-              ✕ Kelmagan: {summaryCounts.kelmagan}
+              ✕ {dict.teacher?.absent || 'Kelmagan'}: {summaryCounts.kelmagan}
             </span>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
-              🕒 Kechikkan: {summaryCounts.kechikkan}
+              🕒 {dict.teacher?.late || 'Kechikkan'}: {summaryCounts.kechikkan}
             </span>
           </div>
         )}
