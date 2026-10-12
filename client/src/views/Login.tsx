@@ -70,6 +70,8 @@ export const Login: React.FC = () => {
       success(t('loginTitle') || 'Tizimga muvaffaqiyatli kirdingiz!');
       if (loggedUser?.role === 'TEACHER') {
         router.push('/teacher');
+      } else if (loggedUser?.role === 'STUDENT') {
+        router.push('/student');
       } else {
         router.push('/dashboard');
       }

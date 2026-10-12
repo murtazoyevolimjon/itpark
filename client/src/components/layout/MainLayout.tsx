@@ -9,6 +9,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 import { TeacherLayout } from './TeacherLayout';
+import { StudentLayout } from './StudentLayout';
 import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
@@ -26,6 +27,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Must NOT match '/teachers' (which is the admin page for managing teachers)!
   const isTeacherRoute = pathname === '/teacher' || pathname.startsWith('/teacher/');
 
+  // Specific check for student routes:
+  const isStudentRoute = pathname === '/student' || pathname.startsWith('/student/');
+
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
@@ -38,9 +42,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         if (!isTeacherRoute && pathname !== '/profile') {
           router.replace('/teacher');
         }
+      } else if (user.role === 'STUDENT') {
+        // Student is restricted to /student routes and /profile
+        if (!isStudentRoute && pathname !== '/profile') {
+          router.replace('/student');
+        }
       }
     }
-  }, [isLoading, isAuthenticated, user, pathname, router, isTeacherRoute]);
+  }, [isLoading, isAuthenticated, user, pathname, router, isTeacherRoute, isStudentRoute]);
 
   if (isLoading) {
     return (
@@ -56,6 +65,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   if (user?.role === 'TEACHER' || isTeacherRoute) {
     return <TeacherLayout>{children}</TeacherLayout>;
+  }
+
+  if (user?.role === 'STUDENT' || isStudentRoute) {
+    return <StudentLayout>{children}</StudentLayout>;
   }
 
   return (

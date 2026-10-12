@@ -14,6 +14,7 @@ export async function GET(
     }
 
     const supabase = createServerSupabaseClient();
+    const studentId = params.id === 'me' ? authUser.sub : params.id;
     const { data: student, error } = await supabase
       .from('students')
       .select(`
@@ -22,7 +23,7 @@ export async function GET(
         attendances:attendances(*),
         payments:payments(*)
       `)
-      .eq('id', params.id)
+      .eq('id', studentId)
       .eq('centerId', authUser.centerId)
       .maybeSingle();
 

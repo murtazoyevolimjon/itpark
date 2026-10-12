@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Check,
+  Compass,
 } from 'lucide-react';
 import styles from './TeacherLayout.module.css';
 
@@ -272,6 +273,16 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                   </div>
                 )}
               </div>
+
+              <Link
+                href="/student"
+                className={styles.userChip}
+                style={{ textDecoration: 'none', background: 'rgba(6, 182, 212, 0.12)', borderColor: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4' }}
+                title="O'quvchi portali"
+              >
+                <Compass size={15} strokeWidth={2.2} />
+                <span>O'quvchi portali</span>
+              </Link>
 
               <div className={styles.userChip}>
                 <UserIcon size={16} strokeWidth={2.2} />

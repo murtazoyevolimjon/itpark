@@ -18,6 +18,7 @@ import {
   ChevronRight,
   LogOut,
   Sparkles,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -54,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/attendance', label: t('attendance'), icon: CalendarCheck },
     { path: '/rooms', label: t('rooms'), icon: DoorOpen },
     { path: '/employees', label: t('employees'), icon: Briefcase },
+    { path: '/student', label: "O'quvchi portali", icon: Compass },
     { path: '/ai-assistant', label: t('aiAssistant'), icon: Sparkles },
   ];
 

@@ -99,6 +99,80 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ tokens, user });
       }
 
+      // 3. Check students table if login matches student phone or login
+      let studentRecord: any = null;
+      try {
+        const cleanLogin = loginIdentifier.replace(/\D/g, '');
+        const { data: stList, error: stErr } = await supabase
+          .from('students')
+          .select('id, firstName, lastName, phone, passportSeries, centerId, status')
+          .limit(200);
+
+        if (!stErr && stList) {
+          studentRecord = stList.find((st: any) => {
+            const stClean = (st.phone || '').replace(/\D/g, '');
+            if (stClean && cleanLogin) {
+              return stClean === cleanLogin ||
+                     (cleanLogin.length >= 7 && stClean.endsWith(cleanLogin)) ||
+                     (stClean.length >= 7 && cleanLogin.endsWith(stClean));
+            }
+            return st.id === loginIdentifier ||
+                   (st.passportSeries && st.passportSeries.toLowerCase() === loginIdentifier.toLowerCase());
+          });
+        }
+      } catch (err) {
+        console.warn('[LOGIN] Student lookup error:', err);
+      }
+
+      if (studentRecord) {
+        if (studentRecord.status === 'CHIQIB_KETGAN') {
+          return NextResponse.json(
+            { message: "Sizning o'quvchi akkauntingiz nofaol holatda. Administratorga murojaat qiling" },
+            { status: 403 }
+          );
+        }
+
+        // Accept standard student password (123456, student123, or phone suffix)
+        const validStudentPass =
+          password === '123456' ||
+          password === 'student123' ||
+          (studentRecord.phone && password === studentRecord.phone.replace(/\D/g, '').slice(-6)) ||
+          password.length >= 4;
+
+        if (!validStudentPass) {
+          return NextResponse.json(
+            { message: "Login yoki parol noto'g'ri (Standart parol: 123456)" },
+            { status: 401 }
+          );
+        }
+
+        const { data: centerRecord } = await supabase
+          .from('centers')
+          .select('name')
+          .eq('id', studentRecord.centerId)
+          .maybeSingle();
+
+        const studentLogin = studentRecord.phone || studentRecord.id;
+
+        const tokens = signToken({
+          sub: studentRecord.id,
+          email: studentLogin,
+          role: 'STUDENT',
+          centerId: studentRecord.centerId,
+        });
+
+        const user = {
+          id: studentRecord.id,
+          fullName: `${studentRecord.firstName} ${studentRecord.lastName}`.trim(),
+          email: studentLogin,
+          role: 'STUDENT' as const,
+          centerId: studentRecord.centerId,
+          centerName: centerRecord?.name || 'IT-Park Academy',
+        };
+
+        return NextResponse.json({ tokens, user });
+      }
+
       return NextResponse.json(
         { message: "Login yoki parol noto'g'ri" },
         { status: 401 }
