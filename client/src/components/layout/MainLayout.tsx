@@ -21,6 +21,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname() || '/';
 
+  // Specific check for teacher routes:
+  // Must be EXACTLY '/teacher' or start with '/teacher/' (e.g. /teacher/groups).
+  // Must NOT match '/teachers' (which is the admin page for managing teachers)!
+  const isTeacherRoute = pathname === '/teacher' || pathname.startsWith('/teacher/');
+
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
@@ -29,13 +34,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     if (!isLoading && isAuthenticated && user) {
       if (user.role === 'TEACHER') {
-        // Teacher is strictly restricted to /teacher and /profile
-        if (!pathname.startsWith('/teacher') && pathname !== '/profile') {
+        // Teacher is strictly restricted to /teacher routes and /profile
+        if (!isTeacherRoute && pathname !== '/profile') {
           router.replace('/teacher');
         }
       }
     }
-  }, [isLoading, isAuthenticated, user, pathname, router]);
+  }, [isLoading, isAuthenticated, user, pathname, router, isTeacherRoute]);
 
   if (isLoading) {
     return (
@@ -49,7 +54,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return null;
   }
 
-  if (user?.role === 'TEACHER' || pathname.startsWith('/teacher')) {
+  if (user?.role === 'TEACHER' || isTeacherRoute) {
     return <TeacherLayout>{children}</TeacherLayout>;
   }
 

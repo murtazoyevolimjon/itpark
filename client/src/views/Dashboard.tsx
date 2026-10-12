@@ -722,7 +722,12 @@ export const Dashboard: React.FC = () => {
         {statItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.key} className={styles.statCard}>
+            <Link
+              key={item.key}
+              href={`/${item.key}`}
+              className={styles.statCard}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
               <div className={styles.statHeader}>
                 <span className={styles.statLabel}>{item.label}</span>
                 <div className={styles.statIcon} style={{ backgroundColor: item.bg, color: item.color }}>
@@ -734,7 +739,7 @@ export const Dashboard: React.FC = () => {
               ) : (
                 <span className={styles.statValue}>{item.val}</span>
               )}
-            </div>
+            </Link>
           );
         })}
       </div>
