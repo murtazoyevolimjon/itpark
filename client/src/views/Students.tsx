@@ -721,8 +721,29 @@ export const Students: React.FC = () => {
                   type={showModalPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  rightElement={
+                    <button
+                      type="button"
+                      onClick={() => setShowModalPassword(!showModalPassword)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        transition: 'color 0.15s',
+                      }}
+                      title={showModalPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                    >
+                      {showModalPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                <div style={{ marginTop: '4px' }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -740,20 +761,6 @@ export const Students: React.FC = () => {
                     }}
                   >
                     🎲 6-raqamli parol
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowModalPassword(!showModalPassword)}
-                    style={{
-                      fontSize: '11px',
-                      color: 'var(--text-muted)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    {showModalPassword ? "Yashirish" : "Ko'rsatish"}
                   </button>
                 </div>
               </div>

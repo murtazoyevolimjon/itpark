@@ -21,6 +21,8 @@ import {
   HelpCircle,
   ArrowRight,
   Sliders,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -67,6 +69,7 @@ export const AIAssistant: React.FC = () => {
   // Settings: Gemini API Key in localStorage
   const [apiKey, setApiKey] = useState('');
   const [isKeySaved, setIsKeySaved] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -655,11 +658,32 @@ export const AIAssistant: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <Input
                 label="Google Gemini API Key (ixtiyoriy)"
-                type="password"
+                type={showApiKey ? 'text' : 'password'}
                 placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 helperText="Google AI Studio (aistudio.google.com) orqali olingan bepul API kalit. Kiritilmasa ham tizim ichki algoritmlar orqali tahlil qilaveradi."
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      transition: 'color 0.15s',
+                    }}
+                    title={showApiKey ? "Kalitni yashirish" : "Kalitni ko'rsatish"}
+                  >
+                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
               />
 
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
