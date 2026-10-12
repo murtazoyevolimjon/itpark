@@ -56,6 +56,8 @@ export const TeacherVideos: React.FC = () => {
   const [videoList, setVideoList] = useState<VideoLessonItem[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [topicError, setTopicError] = useState(false);
+  const [groupLessons, setGroupLessons] = useState<{ id: string; title: string }[]>([]);
 
   // Fetch groups
   const { data: groupsData } = useQuery({
@@ -70,6 +72,24 @@ export const TeacherVideos: React.FC = () => {
       setTargetGroupId(allGroups[0].id);
     }
   }, [allGroups, targetGroupId]);
+
+  // Load group lesson topics for suggestions
+  useEffect(() => {
+    if (!targetGroupId) return;
+    try {
+      const saved = localStorage.getItem(`group_lessons_${targetGroupId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setGroupLessons(parsed);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setGroupLessons([]);
+  }, [targetGroupId]);
 
   // Load saved videos from localStorage and restore blobs from IndexedDB
   useEffect(() => {
@@ -164,7 +184,8 @@ export const TeacherVideos: React.FC = () => {
   // Save Video
   const handleSaveVideo = async () => {
     if (!videoTitle.trim()) {
-      setErrorMessage(dict.teacher?.videoTitlePlaceholder || 'Video dars mavzusini kiriting');
+      setTopicError(true);
+      setErrorMessage("Video dars mavzusini kiritish majburiy! Mavzusiz video yuklab bo'lmaydi.");
       return;
     }
 
@@ -350,16 +371,57 @@ export const TeacherVideos: React.FC = () => {
           </div>
 
           <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>
-              {dict.teacher?.videoTitle || 'Video dars mavzusi'}
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+              <label className={styles.fieldLabel} style={{ marginBottom: 0 }}>
+                {dict.teacher?.videoTitle || 'Video dars mavzusi'}{' '}
+                <span style={{ color: '#ef4444', fontWeight: 800 }}>* (Majburiy)</span>
+              </label>
+              {groupLessons.length > 0 && (
+                <span style={{ fontSize: '11px', color: '#0d9488', fontWeight: 600 }}>
+                  Tayyor mavzular mavjud
+                </span>
+              )}
+            </div>
             <input
               type="text"
-              className={styles.inputField}
-              placeholder={dict.teacher?.videoTitlePlaceholder || "Masalan: React Hooks va Lifecycle 1-dars"}
+              className={`${styles.inputField} ${topicError ? styles.inputFieldError : ''}`}
+              placeholder={dict.teacher?.videoTitlePlaceholder || "Masalan: 1-Mavzu: React Hooks va Lifecycle"}
               value={videoTitle}
-              onChange={(e) => setVideoTitle(e.target.value)}
+              onChange={(e) => {
+                setVideoTitle(e.target.value);
+                if (topicError && e.target.value.trim()) setTopicError(false);
+              }}
             />
+
+            {topicError && (
+              <div className={styles.fieldErrorText}>
+                <AlertCircle size={13} />
+                <span>Video dars mavzusini kiritish majburiy!</span>
+              </div>
+            )}
+
+            {/* Quick topics suggestion pills */}
+            {groupLessons.length > 0 && (
+              <div className={styles.topicSuggestionWrap}>
+                <span className={styles.topicSuggestionTitle}>Guruh mavzularidan tezkor tanlash:</span>
+                <div className={styles.topicPillsList}>
+                  {groupLessons.map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      className={styles.topicPill}
+                      onClick={() => {
+                        setVideoTitle(l.title);
+                        setTopicError(false);
+                      }}
+                    >
+                      <Film size={12} />
+                      <span>{l.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mode 1: Direct Video File Upload */}

@@ -41,6 +41,7 @@ export const AttendanceTake: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
+  const [topicError, setTopicError] = useState<boolean>(false);
 
   // Student attendance statuses state map: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -105,6 +106,68 @@ export const AttendanceTake: React.FC = () => {
   }, [existingAttendance, attendanceDate]);
 
   const hasAnySavedAttendance = Object.keys(savedAttendancesMap).length > 0;
+
+  // Saved lesson topic if available
+  const savedTopicNote = useMemo(() => {
+    if (!hasAnySavedAttendance) return '';
+    const firstWithNote = Object.values(savedAttendancesMap).find((s) => s.note && !s.note.toLowerCase().includes('sabab:'));
+    return firstWithNote?.note || '';
+  }, [hasAnySavedAttendance, savedAttendancesMap]);
+
+  // Extract all distinct past lesson topics from all recorded attendances of this group
+  const pastAttendanceTopics = useMemo(() => {
+    if (!groupDetail?.attendances || !Array.isArray(groupDetail.attendances)) return [];
+    const seen = new Set<string>();
+    const list: { title: string; date?: string }[] = [];
+    const sorted = [...groupDetail.attendances].sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''));
+    sorted.forEach((a: any) => {
+      const note = a.note ? a.note.trim() : '';
+      if (note && !note.toLowerCase().includes('sabab:') && !seen.has(note)) {
+        seen.add(note);
+        list.push({ title: note, date: a.date ? a.date.split('T')[0] : '' });
+      }
+    });
+    return list;
+  }, [groupDetail?.attendances]);
+
+  // The latest (most recent) lesson topic of this group
+  const latestLessonTopic = useMemo(() => {
+    if (hasAnySavedAttendance && savedTopicNote) {
+      return savedTopicNote;
+    }
+    if (typeof window !== 'undefined' && selectedGroupId) {
+      const stored = localStorage.getItem(`group_last_topic_${selectedGroupId}`);
+      if (stored && stored.trim()) return stored.trim();
+    }
+    if (pastAttendanceTopics.length > 0) {
+      return pastAttendanceTopics[0].title;
+    }
+    if (typeof window !== 'undefined' && selectedGroupId) {
+      try {
+        const lessons = localStorage.getItem(`group_lessons_${selectedGroupId}`);
+        if (lessons) {
+          const parsed = JSON.parse(lessons);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.title) {
+            return parsed[0].title.trim();
+          }
+        }
+      } catch {}
+    }
+    return '';
+  }, [hasAnySavedAttendance, savedTopicNote, selectedGroupId, pastAttendanceTopics]);
+
+  // Sync attendanceTopic whenever group, date, or saved topic changes!
+  useEffect(() => {
+    if (hasAnySavedAttendance) {
+      setAttendanceTopic(savedTopicNote || '');
+    } else {
+      if (latestLessonTopic) {
+        setAttendanceTopic(latestLessonTopic);
+      } else {
+        setAttendanceTopic('');
+      }
+    }
+  }, [attendanceDate, selectedGroupId, hasAnySavedAttendance, savedTopicNote, latestLessonTopic]);
 
   // Time eligibility check for taking initial attendance on this group & date
   const timeEligibility = useMemo(() => {
@@ -191,6 +254,13 @@ export const AttendanceTake: React.FC = () => {
       return;
     }
 
+    // Dars mavzusi majburiy tekshiruvi
+    if (!attendanceTopic.trim()) {
+      setTopicError(true);
+      error("Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi.");
+      return;
+    }
+
     const records = students.map((sg: any) => ({
       studentId: sg.student.id,
       status: studentStatuses[sg.student.id] || 'KELGAN',
@@ -206,6 +276,9 @@ export const AttendanceTake: React.FC = () => {
       {
         onSuccess: () => {
           success("Davomat muvaffaqiyatli saqlandi! Endi u qulflangan.");
+          if (typeof window !== 'undefined' && selectedGroupId && attendanceTopic.trim()) {
+            localStorage.setItem(`group_last_topic_${selectedGroupId}`, attendanceTopic.trim());
+          }
         },
       }
     );
@@ -335,10 +408,18 @@ export const AttendanceTake: React.FC = () => {
             <div style={{ gridColumn: '1 / -1' }}>
               <LessonTopicSelect
                 groupId={selectedGroupId}
-                value={attendanceTopic}
-                onChange={setAttendanceTopic}
+                value={hasAnySavedAttendance ? (savedTopicNote || attendanceTopic) : attendanceTopic}
+                onChange={(val) => {
+                  setAttendanceTopic(val);
+                  if (topicError && val.trim()) setTopicError(false);
+                }}
                 disabled={hasAnySavedAttendance}
-                label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+                required={true}
+                hasError={topicError}
+                errorMessage={topicError ? "Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi." : undefined}
+                label={hasAnySavedAttendance ? "O'tilgan dars mavzusi (Saqlangan):" : "Dars mavzusi:"}
+                lastLessonTopic={latestLessonTopic}
+                pastTopics={pastAttendanceTopics}
               />
             </div>
           )}

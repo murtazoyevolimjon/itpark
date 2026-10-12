@@ -42,6 +42,7 @@ import {
   extractGroupStartTime,
 } from '../utils/attendanceTime';
 import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
+import { useToast } from '../components/ui/Toast/Toast';
 import styles from './TeacherGroupDetail.module.css';
 
 const DAY_TRANSLATIONS: Record<string, string> = {
@@ -60,6 +61,7 @@ export const TeacherGroupDetail: React.FC = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { dict } = useLanguage();
+  const { success, error } = useToast();
   const groupId = (params?.id as string) || '';
 
   const [mainTab, setMainTab] = useState<'info' | 'materials' | 'attendance'>('info');
@@ -152,7 +154,10 @@ export const TeacherGroupDetail: React.FC = () => {
 
   // When a new lesson is added, it is placed at the VERY TOP (index 0)
   const handleAddLesson = () => {
-    if (!lessonTopic.trim()) return;
+    if (!lessonTopic.trim()) {
+      error("Mavzuni kiritish majburiy!");
+      return;
+    }
     const newLesson: any = {
       id: Date.now().toString(),
       title: lessonTopic.trim(),
@@ -279,7 +284,10 @@ export const TeacherGroupDetail: React.FC = () => {
   // Initial Attendance Save (Faqat 1 marta olinadi)
   const handleSaveInitialAttendance = async () => {
     if (!canTakeInitialAttendance || !group) return;
-    if (!attendanceTopic.trim()) return;
+    if (!attendanceTopic.trim()) {
+      error("Dars mavzusini kiritish majburiy! Mavzusiz davomat olib bo'lmaydi.");
+      return;
+    }
 
     setIsSavingAttendance(true);
     try {

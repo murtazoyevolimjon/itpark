@@ -80,6 +80,7 @@ export const TeacherAttendance: React.FC = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string>(queryGroupId);
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
+  const [topicError, setTopicError] = useState<boolean>(false);
 
   // Form statuses state: studentId -> status (only used when taking initial attendance)
   const [studentStatuses, setStudentStatuses] = useState<Record<string, AttendanceStatus>>({});
@@ -169,6 +170,63 @@ export const TeacherAttendance: React.FC = () => {
     const firstWithNote = Object.values(savedAttendancesMap).find((s) => s.note && !s.note.toLowerCase().includes('sabab:'));
     return firstWithNote?.note || '';
   }, [hasAnySavedAttendance, savedAttendancesMap]);
+
+  // Extract all distinct past lesson topics from all recorded attendances of this group
+  const pastAttendanceTopics = useMemo(() => {
+    if (!groupDetail?.attendances || !Array.isArray(groupDetail.attendances)) return [];
+    const seen = new Set<string>();
+    const list: { title: string; date?: string }[] = [];
+    const sorted = [...groupDetail.attendances].sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''));
+    sorted.forEach((a: any) => {
+      const note = a.note ? a.note.trim() : '';
+      if (note && !note.toLowerCase().includes('sabab:') && !seen.has(note)) {
+        seen.add(note);
+        list.push({ title: note, date: a.date ? a.date.split('T')[0] : '' });
+      }
+    });
+    return list;
+  }, [groupDetail?.attendances]);
+
+  // The latest (most recent) lesson topic of this group
+  const latestLessonTopic = useMemo(() => {
+    if (hasAnySavedAttendance && savedTopicNote) {
+      return savedTopicNote;
+    }
+    if (typeof window !== 'undefined' && selectedGroupId) {
+      const stored = localStorage.getItem(`group_last_topic_${selectedGroupId}`);
+      if (stored && stored.trim()) return stored.trim();
+    }
+    if (pastAttendanceTopics.length > 0) {
+      return pastAttendanceTopics[0].title;
+    }
+    if (typeof window !== 'undefined' && selectedGroupId) {
+      try {
+        const lessons = localStorage.getItem(`group_lessons_${selectedGroupId}`);
+        if (lessons) {
+          const parsed = JSON.parse(lessons);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.title) {
+            return parsed[0].title.trim();
+          }
+        }
+      } catch {}
+    }
+    return '';
+  }, [hasAnySavedAttendance, savedTopicNote, selectedGroupId, pastAttendanceTopics]);
+
+  // Sync attendanceTopic whenever group, date, or saved topic changes!
+  useEffect(() => {
+    if (hasAnySavedAttendance) {
+      // Davomat olingan bo'lsa: aynan shu kunda saqlangan mavzu chiqib tursin!
+      setAttendanceTopic(savedTopicNote || '');
+    } else {
+      // Yangi davomat olinayotganda: oxirgi dars mavzusi avtomatik chiqib tursin!
+      if (latestLessonTopic) {
+        setAttendanceTopic(latestLessonTopic);
+      } else {
+        setAttendanceTopic('');
+      }
+    }
+  }, [attendanceDate, selectedGroupId, hasAnySavedAttendance, savedTopicNote, latestLessonTopic]);
 
   // Time eligibility check for taking initial attendance on this group & date
   const timeEligibility = useMemo(() => {
@@ -264,6 +322,13 @@ export const TeacherAttendance: React.FC = () => {
       return;
     }
 
+    // Dars mavzusi majburiy tekshiruvi
+    if (!attendanceTopic.trim()) {
+      setTopicError(true);
+      error("Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi.");
+      return;
+    }
+
     const records = students.map((sg: any) => ({
       studentId: sg.student.id,
       status: studentStatuses[sg.student.id] || 'KELGAN',
@@ -279,6 +344,22 @@ export const TeacherAttendance: React.FC = () => {
       {
         onSuccess: () => {
           success("Davomat muvaffaqiyatli saqlandi! Endi u qulflangan.");
+          // Persist this topic so it stays as the last lesson topic for this group
+          if (typeof window !== 'undefined' && selectedGroupId && attendanceTopic.trim()) {
+            localStorage.setItem(`group_last_topic_${selectedGroupId}`, attendanceTopic.trim());
+            try {
+              const prev = localStorage.getItem(`group_lessons_${selectedGroupId}`);
+              const parsed = prev ? JSON.parse(prev) : [];
+              const exists = parsed.some((p: any) => p.title?.trim() === attendanceTopic.trim());
+              if (!exists) {
+                const updated = [
+                  { id: Date.now().toString(), title: attendanceTopic.trim(), createdAt: new Date().toLocaleDateString('uz-UZ') },
+                  ...parsed,
+                ];
+                localStorage.setItem(`group_lessons_${selectedGroupId}`, JSON.stringify(updated));
+              }
+            } catch {}
+          }
         },
       }
     );
@@ -767,14 +848,28 @@ export const TeacherAttendance: React.FC = () => {
 
         {/* Lesson Topic Select (Ustiga bossa mavzular chiqadi) */}
         {selectedGroupId && (
-          <div style={{ marginBottom: '18px', maxWidth: '600px' }}>
+          <div style={{ marginBottom: '18px', maxWidth: '640px' }}>
             <LessonTopicSelect
               groupId={selectedGroupId}
-              value={attendanceTopic}
-              onChange={setAttendanceTopic}
+              value={hasAnySavedAttendance ? (savedTopicNote || attendanceTopic) : attendanceTopic}
+              onChange={(val) => {
+                setAttendanceTopic(val);
+                if (topicError && val.trim()) setTopicError(false);
+              }}
               disabled={hasAnySavedAttendance}
-              label="Dars mavzusi (Ustiga bossangiz kiritilgan mavzular kelib chiqadi):"
+              required={true}
+              hasError={topicError}
+              errorMessage={topicError ? "Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi." : undefined}
+              label={hasAnySavedAttendance ? "O'tilgan dars mavzusi:" : "Dars mavzusi:"}
+              lastLessonTopic={latestLessonTopic}
+              pastTopics={pastAttendanceTopics}
             />
+            {!hasAnySavedAttendance && timeEligibility.canTakeAttendance && !attendanceTopic.trim() && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', color: '#d97706', fontWeight: 600 }}>
+                <AlertTriangle size={13} />
+                <span>Davomatni saqlash uchun dars mavzusini tanlang yoki yozing.</span>
+              </div>
+            )}
           </div>
         )}
 

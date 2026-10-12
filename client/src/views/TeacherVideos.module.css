@@ -739,3 +739,81 @@
 :global([data-theme="dark"]) .emptyIcon {
   color: #475569;
 }
+
+.inputFieldError {
+  border-color: #ef4444 !important;
+  background: rgba(254, 242, 242, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.fieldErrorText {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.topicSuggestionWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.topicSuggestionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.topicPillsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 90px;
+  overflow-y: auto;
+}
+
+.topicPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(13, 148, 136, 0.1);
+  color: #0f766e;
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topicPill:hover {
+  background: #0d9488;
+  color: #ffffff;
+  border-color: #0d9488;
+  transform: translateY(-1px);
+}
+
+:global([data-theme="dark"]) .inputFieldError {
+  background: rgba(69, 10, 10, 0.4) !important;
+  border-color: #ef4444 !important;
+}
+
+:global([data-theme="dark"]) .topicPill {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+:global([data-theme="dark"]) .topicPill:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
