@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -35,11 +35,18 @@ export const Students: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
 
+  // Credentials visibility and copy states
+  const [showPassMap, setShowPassMap] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showModalPassword, setShowModalPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     birthDate: '2005-01-01',
     phone: '',
+    login: '',
+    password: '',
     fatherPhone: '',
     motherPhone: '',
     subject: '',
@@ -112,11 +119,14 @@ export const Students: React.FC = () => {
         (student as any)?.groupId ||
         '';
 
+      const cleanPhone = student.phone ? unmaskPhone(student.phone) : '';
       setFormData({
         firstName: student.firstName || '',
         lastName: student.lastName || '',
         birthDate: student.birthDate ? student.birthDate.split('T')[0] : '2005-01-01',
         phone: student.phone || '',
+        login: student.login || cleanPhone || '',
+        password: student.password || '123456',
         fatherPhone: student.fatherPhone || '',
         motherPhone: student.motherPhone || '',
         subject: (student as any).subject || student.passportSeries || '',
@@ -126,11 +136,14 @@ export const Students: React.FC = () => {
       });
     } else {
       setSelectedStudent(null);
+      const randPin = Math.floor(100000 + Math.random() * 900000).toString();
       setFormData({
         firstName: '',
         lastName: '',
         birthDate: '2005-01-01',
         phone: '',
+        login: '',
+        password: randPin,
         fatherPhone: '',
         motherPhone: '',
         subject: '',
@@ -139,12 +152,14 @@ export const Students: React.FC = () => {
         groupId: '',
       });
     }
+    setShowModalPassword(false);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedStudent(null);
+    setShowModalPassword(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -162,6 +177,8 @@ export const Students: React.FC = () => {
 
     saveMutation.mutate({
       ...formData,
+      login: formData.login ? formData.login.trim().toLowerCase() : undefined,
+      password: formData.password ? formData.password.trim() : undefined,
       subject: formData.subject.trim(),
       passportSeries: formData.subject.trim(),
       phone: unmaskPhone(formData.phone),
@@ -184,6 +201,97 @@ export const Students: React.FC = () => {
           {row.firstName} {row.lastName}
         </span>
       ),
+    },
+    {
+      key: 'credentials' as any,
+      header: 'KIRISH (LOGIN / PAROL)',
+      render: (row) => {
+        const isPassVisible = !!showPassMap[row.id];
+        const studentLogin = row.login || (row.phone ? unmaskPhone(row.phone) : 'talaba');
+        const studentPass = row.password || '123456';
+        const isCopied = copiedId === row.id;
+
+        return (
+          <div
+            style={{ display: 'inline-flex', flexDirection: 'column', gap: '4px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  color: '#60a5fa',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                }}
+              >
+                @{studentLogin}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(
+                    `👤 O'quvchi: ${row.firstName} ${row.lastName}\n🔑 Login: ${studentLogin}\n🔒 Parol: ${studentPass}\n🌐 Kirish: ${window.location.origin}/login`
+                  );
+                  setCopiedId(row.id);
+                  success("Login va parol nusxalandi!");
+                  setTimeout(() => setCopiedId(null), 2000);
+                }}
+                title="Login va parolni nusxalash"
+                style={{
+                  background: isCopied ? '#10b981' : 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '5px',
+                  padding: '2px 5px',
+                  cursor: 'pointer',
+                  color: isCopied ? '#ffffff' : 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isCopied ? <Check size={12} /> : <Copy size={12} />}
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  fontSize: '11.5px',
+                  color: isPassVisible ? '#fbbf24' : 'var(--text-muted)',
+                  fontWeight: isPassVisible ? 700 : 500,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {isPassVisible ? studentPass : '••••••'}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPassMap((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
+                }}
+                title={isPassVisible ? "Parolni yashirish" : "Parolni ko'rish"}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0,
+                }}
+              >
+                {isPassVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+              </button>
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'group',
@@ -518,8 +626,139 @@ export const Students: React.FC = () => {
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.phone)}
-            onChange={(e) => setFormData({ ...formData, phone: unmaskPhone(e.target.value) })}
+            onChange={(e) => {
+              const unmasked = unmaskPhone(e.target.value);
+              setFormData((prev) => ({
+                ...prev,
+                phone: unmasked,
+                // If login was empty or previously matched phone, keep in sync
+                login: !prev.login || prev.login === unmaskPhone(prev.phone) ? unmasked : prev.login,
+              }));
+            }}
           />
+
+          {/* Kirish ma'lumotlari (Login va Parol) */}
+          <div
+            style={{
+              background: 'rgba(59, 130, 246, 0.05)',
+              border: '1px solid rgba(59, 130, 246, 0.22)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Key size={15} color="#60a5fa" />
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                  Kirish Ma'lumotlari (Admin tomonidan belgilanadi)
+                </span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                O'quvchi o'zi o'zgartira olmaydi
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <Input
+                  label="Login (Yunik)"
+                  required
+                  placeholder="masalan: ali_1024 yoki 998901234567"
+                  value={formData.login}
+                  onChange={(e) => setFormData({ ...formData, login: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const base = (formData.firstName ? formData.firstName.toLowerCase().replace(/[^a-z0-9]/g, '') : '') || 'talaba';
+                      const randomCode = Math.floor(1000 + Math.random() * 9000);
+                      setFormData({ ...formData, login: `${base}_${randomCode}` });
+                    }}
+                    style={{
+                      fontSize: '11px',
+                      color: '#60a5fa',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    🎲 Tasodifiy login
+                  </button>
+                  {formData.phone && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const clean = unmaskPhone(formData.phone);
+                        if (clean) setFormData({ ...formData, login: clean });
+                      }}
+                      style={{
+                        fontSize: '11px',
+                        color: '#a78bfa',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      📱 Telefoni
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Input
+                  label="Parol"
+                  required
+                  placeholder="Parol kiriting"
+                  type={showModalPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randPass = Math.floor(100000 + Math.random() * 900000).toString();
+                      setFormData({ ...formData, password: randPass });
+                    }}
+                    style={{
+                      fontSize: '11px',
+                      color: '#60a5fa',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    🎲 6-raqamli parol
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPassword(!showModalPassword)}
+                    style={{
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    {showModalPassword ? "Yashirish" : "Ko'rsatish"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input

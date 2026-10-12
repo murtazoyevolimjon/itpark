@@ -132,15 +132,20 @@ export const TeacherProfile: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label className={styles.fieldLabel}>
-                {dict.teacher?.email || "Email / Login"}
+              <label className={styles.fieldLabel} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{dict.teacher?.email || "Login / Email"}</span>
+                <span style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Lock size={11} /> Admin tomonidan belgilanadi
+                </span>
               </label>
               <input
-                type="email"
+                type="text"
                 className={styles.textInput}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={dict.teacher?.emailPlaceholder || "Email manzili"}
+                readOnly
+                disabled
+                style={{ opacity: 0.75, cursor: 'not-allowed', background: 'rgba(255, 255, 255, 0.04)' }}
+                placeholder={dict.teacher?.emailPlaceholder || "Login"}
               />
             </div>
 
@@ -221,7 +226,7 @@ export const TeacherProfile: React.FC = () => {
               </h3>
             </div>
             <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-              Xavfsizlik qoidalariga ko'ra o'qituvchi paroli faqat markaz administratori tomonidan boshqariladi. Parolni yangilash yoki tiklash zarur bo'lsa, o'quv markazi ma'muriyatiga murojaat qiling.
+              Xavfsizlik qoidalariga ko'ra o'qituvchi logini va paroli faqat markaz administratori tomonidan boshqariladi va o'qituvchi tomonidan mustaqil o'zgartirilmaydi. Login yoki parolni yangilash zarur bo'lsa, o'quv markazi ma'muriyati (Admin)ga murojaat qiling.
             </p>
           </div>
         </div>

@@ -55,6 +55,7 @@ export interface Teacher {
   phone: string;
   passportSeries?: string;
   login?: string;
+  password?: string;
   salaryType: 'FIXED' | 'PERCENT';
   salaryValue: number;
   status: 'FAOL' | 'NOFAOL';
@@ -98,6 +99,8 @@ export interface Student {
   lastName: string;
   birthDate: string;
   phone: string;
+  login?: string;
+  password?: string;
   fatherPhone?: string;
   motherPhone?: string;
   passportSeries?: string;

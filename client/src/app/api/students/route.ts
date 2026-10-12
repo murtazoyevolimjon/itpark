@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import {
+  parseStudentCreds,
+  serializeStudentCreds,
+  checkLoginUniqueness,
+} from '@/lib/credentials';
 
 export async function GET(req: NextRequest) {
   try {
@@ -52,9 +57,13 @@ export async function GET(req: NextRequest) {
         return dateB - dateA;
       });
 
+      const creds = parseStudentCreds(student.passportSeries, student.phone);
+
       return {
         ...student,
-        subject: student.passportSeries || null,
+        login: creds.login,
+        password: creds.password,
+        subject: creds.subject || null,
         studentGroups: sgList,
         paymentStatus,
       };
@@ -88,6 +97,8 @@ export async function POST(req: NextRequest) {
       motherPhone,
       passportSeries,
       subject,
+      login,
+      password,
       gender,
       isSchoolStudent,
       groupId,
@@ -98,7 +109,24 @@ export async function POST(req: NextRequest) {
     const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
 
-    // Check duplicate student for the same subject
+    // Determine student login and password
+    let studentLogin = (login || '').trim().toLowerCase();
+    if (!studentLogin) {
+      studentLogin = cleanPhone || `talaba_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const studentPass = (password || '').trim() || (cleanPhone && cleanPhone.length >= 6 ? cleanPhone.slice(-6) : '123456');
+
+    // 1. Verify global login uniqueness
+    const uniquenessCheck = await checkLoginUniqueness(supabase, studentLogin);
+    if (!uniquenessCheck.available) {
+      return NextResponse.json(
+        { message: uniquenessCheck.conflictMessage || 'Bu login allaqachon band qilingan' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Check duplicate student for the same subject
     if (cleanPhone) {
       const { data: existingStudents } = await supabase
         .from('students')
@@ -113,14 +141,14 @@ export async function POST(req: NextRequest) {
 
         if (matched.length > 0 && subjectToSave) {
           const dup = matched.find((st: any) => {
-            const stSub = (st.passportSeries || '').trim().toLowerCase();
-            return stSub === subjectToSave.toLowerCase();
+            const parsed = parseStudentCreds(st.passportSeries, st.phone);
+            return parsed.subject.trim().toLowerCase() === subjectToSave.toLowerCase();
           });
 
           if (dup) {
             return NextResponse.json(
               {
-                message: `Ushbu talaba (${dup.firstName} ${dup.lastName}) allaqachon "${dup.passportSeries || subjectToSave}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`,
+                message: `Ushbu talaba (${dup.firstName} ${dup.lastName}) allaqachon "${subjectToSave}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`,
               },
               { status: 400 }
             );
@@ -129,6 +157,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const serializedCreds = serializeStudentCreds(studentLogin, studentPass, subjectToSave);
     const studentId = crypto.randomUUID();
 
     const { data: student, error } = await supabase
@@ -141,7 +170,7 @@ export async function POST(req: NextRequest) {
         phone,
         fatherPhone: fatherPhone || null,
         motherPhone: motherPhone || null,
-        passportSeries: subjectToSave || null,
+        passportSeries: serializedCreds,
         gender: gender || 'ERKAK',
         isSchoolStudent: !!isSchoolStudent,
         status: status || 'FAOL',
@@ -168,7 +197,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...student,
-      subject: student.passportSeries,
+      login: studentLogin,
+      password: studentPass,
+      subject: subjectToSave,
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import {
+  parseTeacherCreds,
+  serializeTeacherCreds,
+  checkLoginUniqueness,
+} from '@/lib/credentials';
 
 export async function GET(req: NextRequest) {
   try {
@@ -39,8 +44,11 @@ export async function GET(req: NextRequest) {
     }
 
     const formattedData = (data || []).map((item: any) => {
+      const { password: plainPassword, passportSeries: cleanPassport } = parseTeacherCreds(item.passportSeries);
       const sanitized = { ...item };
-      delete sanitized.password;
+      sanitized.password = plainPassword || (item.password ? '******' : '');
+      sanitized.passportSeries = cleanPassport || null;
+
       return {
         ...sanitized,
         _count: {
@@ -71,46 +79,29 @@ export async function POST(req: NextRequest) {
     const { firstName, lastName, phone, passportSeries, salaryType, salaryValue, status, login, password } = body;
 
     const supabase = createServerSupabaseClient();
+    const cleanPhone = (phone || '').replace(/\D/g, '');
 
     // Check login uniqueness if provided
-    let trimmedLogin = (login || '').trim();
+    let trimmedLogin = (login || '').trim().toLowerCase();
+    if (!trimmedLogin) {
+      trimmedLogin = cleanPhone || `ustoz_${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const uniquenessCheck = await checkLoginUniqueness(supabase, trimmedLogin, { type: 'teacher' });
+    if (!uniquenessCheck.available) {
+      return NextResponse.json(
+        { message: uniquenessCheck.conflictMessage || 'Bu login allaqachon band qilingan' },
+        { status: 400 }
+      );
+    }
+
     let hashedPassword: string | null = null;
+    const rawPassword = (password || '').trim() || (cleanPhone && cleanPhone.length >= 6 ? cleanPhone.slice(-6) : '123456');
 
-    if (trimmedLogin) {
-      // Check in teachers table
-      const { data: existingTeacher } = await supabase
-        .from('teachers')
-        .select('id')
-        .eq('login', trimmedLogin)
-        .maybeSingle();
+    const bcrypt = await import('bcryptjs');
+    hashedPassword = await bcrypt.default.hash(rawPassword, 10);
 
-      if (existingTeacher) {
-        return NextResponse.json(
-          { message: 'Bu login boshqa o\'qituvchi tomonidan band qilingan' },
-          { status: 400 }
-        );
-      }
-
-      // Check in users table
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', trimmedLogin)
-        .maybeSingle();
-
-      if (existingUser) {
-        return NextResponse.json(
-          { message: 'Bu login tizimda allaqachon mavjud' },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (password && password.trim()) {
-      const bcrypt = await import('bcryptjs');
-      hashedPassword = await bcrypt.default.hash(password.trim(), 10);
-    }
-
+    const serializedPassport = serializeTeacherCreds(rawPassword, passportSeries);
     const id = crypto.randomUUID();
 
     const insertPayload: any = {
@@ -118,20 +109,15 @@ export async function POST(req: NextRequest) {
       firstName,
       lastName,
       phone,
-      passportSeries: passportSeries || null,
+      passportSeries: serializedPassport,
       salaryType: salaryType || 'FIXED',
       salaryValue: Number(salaryValue) || 0,
       status: status || 'FAOL',
       centerId: authUser.centerId,
+      login: trimmedLogin,
+      password: hashedPassword,
       updatedAt: new Date().toISOString(),
     };
-
-    if (trimmedLogin) {
-      insertPayload.login = trimmedLogin;
-    }
-    if (hashedPassword) {
-      insertPayload.password = hashedPassword;
-    }
 
     const { data, error } = await supabase
       .from('teachers')
@@ -143,10 +129,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
-    const result = { ...data };
-    delete result.password;
-
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...data,
+      login: trimmedLogin,
+      password: rawPassword,
+      passportSeries: passportSeries || null,
+    });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }

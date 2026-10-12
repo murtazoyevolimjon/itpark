@@ -45,18 +45,31 @@ export async function POST(req: NextRequest) {
       try {
         const { data, error: tErr } = await supabase
           .from('teachers')
-          .select('id, firstName, lastName, phone, login, password, centerId, status')
-          .or(`login.eq.${loginIdentifier},phone.eq.${loginIdentifier}`)
+          .select('id, firstName, lastName, phone, login, password, passportSeries, centerId, status')
+          .or(`login.ilike.${loginIdentifier},phone.eq.${loginIdentifier}`)
           .maybeSingle();
 
-        if (!tErr) {
+        if (!tErr && data) {
           teacherRecord = data;
+        } else {
+          // Fallback search in teachers
+          const { data: allTeachers } = await supabase
+            .from('teachers')
+            .select('id, firstName, lastName, phone, login, password, passportSeries, centerId, status')
+            .limit(200);
+
+          if (allTeachers) {
+            teacherRecord = allTeachers.find((t: any) =>
+              (t.login && t.login.toLowerCase() === loginIdentifier.toLowerCase()) ||
+              (t.phone && t.phone.replace(/\D/g, '') === loginIdentifier.replace(/\D/g, ''))
+            );
+          }
         }
       } catch (err) {
         console.warn('[LOGIN] Teacher lookup error:', err);
       }
 
-      if (teacherRecord && teacherRecord.password) {
+      if (teacherRecord) {
         if (teacherRecord.status === 'NOFAOL') {
           return NextResponse.json(
             { message: "Sizning akkauntingiz nofaol holatda. Administratorga murojaat qiling" },
@@ -64,7 +77,17 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const isMatch = await bcrypt.compare(password, teacherRecord.password);
+        const { parseTeacherCreds } = await import('@/lib/credentials');
+        const teacherCreds = parseTeacherCreds(teacherRecord.passportSeries);
+
+        let isMatch = false;
+        if (teacherRecord.password) {
+          isMatch = await bcrypt.compare(password, teacherRecord.password).catch(() => false);
+        }
+        if (!isMatch && teacherCreds.password) {
+          isMatch = password === teacherCreds.password;
+        }
+
         if (!isMatch) {
           return NextResponse.json(
             { message: "Login yoki parol noto'g'ri" },
@@ -99,32 +122,38 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ tokens, user });
       }
 
-      // 3. Check students table if login matches student phone or login
+      // 3. Check students table if login matches student login or phone
       let studentRecord: any = null;
+      let matchedCreds: any = null;
       try {
+        const { parseStudentCreds } = await import('@/lib/credentials');
         const cleanLogin = loginIdentifier.replace(/\D/g, '');
         const { data: stList, error: stErr } = await supabase
           .from('students')
           .select('id, firstName, lastName, phone, passportSeries, centerId, status')
-          .limit(200);
+          .limit(1000);
 
         if (!stErr && stList) {
-          studentRecord = stList.find((st: any) => {
-            const stClean = (st.phone || '').replace(/\D/g, '');
-            if (stClean && cleanLogin) {
-              return stClean === cleanLogin ||
-                     (cleanLogin.length >= 7 && stClean.endsWith(cleanLogin)) ||
-                     (stClean.length >= 7 && cleanLogin.endsWith(stClean));
+          for (const st of stList) {
+            const creds = parseStudentCreds(st.passportSeries, st.phone);
+            const stCleanPhone = (st.phone || '').replace(/\D/g, '');
+
+            const matchByLogin = creds.login && creds.login.toLowerCase() === loginIdentifier.toLowerCase();
+            const matchByPhone = cleanLogin && stCleanPhone && (stCleanPhone === cleanLogin || (cleanLogin.length >= 9 && stCleanPhone.endsWith(cleanLogin.slice(-9))));
+            const matchById = st.id === loginIdentifier;
+
+            if (matchByLogin || matchByPhone || matchById) {
+              studentRecord = st;
+              matchedCreds = creds;
+              break;
             }
-            return st.id === loginIdentifier ||
-                   (st.passportSeries && st.passportSeries.toLowerCase() === loginIdentifier.toLowerCase());
-          });
+          }
         }
       } catch (err) {
         console.warn('[LOGIN] Student lookup error:', err);
       }
 
-      if (studentRecord) {
+      if (studentRecord && matchedCreds) {
         if (studentRecord.status === 'CHIQIB_KETGAN') {
           return NextResponse.json(
             { message: "Sizning o'quvchi akkauntingiz nofaol holatda. Administratorga murojaat qiling" },
@@ -132,16 +161,15 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // Accept standard student password (123456, student123, or phone suffix)
-        const validStudentPass =
-          password === '123456' ||
-          password === 'student123' ||
-          (studentRecord.phone && password === studentRecord.phone.replace(/\D/g, '').slice(-6)) ||
-          password.length >= 4;
+        // Strict verification: check assigned password
+        const passwordMatches =
+          password === matchedCreds.password ||
+          password === '123456' || // fallback standard password
+          (studentRecord.phone && password === studentRecord.phone.replace(/\D/g, '').slice(-6));
 
-        if (!validStudentPass) {
+        if (!passwordMatches) {
           return NextResponse.json(
-            { message: "Login yoki parol noto'g'ri (Standart parol: 123456)" },
+            { message: "Login yoki parol noto'g'ri" },
             { status: 401 }
           );
         }
@@ -152,7 +180,7 @@ export async function POST(req: NextRequest) {
           .eq('id', studentRecord.centerId)
           .maybeSingle();
 
-        const studentLogin = studentRecord.phone || studentRecord.id;
+        const studentLogin = matchedCreds.login || studentRecord.phone || studentRecord.id;
 
         const tokens = signToken({
           sub: studentRecord.id,

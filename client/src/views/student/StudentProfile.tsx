@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useStudentPortal } from '../../hooks/useStudentPortal';
 import { useTheme } from '../../hooks/useTheme';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -11,8 +11,6 @@ import {
   Lock,
   Building,
   BookOpen,
-  CheckCircle2,
-  Save,
   Moon,
   Sun,
   Shield,
@@ -24,27 +22,9 @@ export const StudentProfile: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang } = useLanguage();
 
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
   const studentName = student
     ? `${student.firstName} ${student.lastName}`
     : 'Sardor Aliyev';
-
-  const handleSaveSecurity = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPassword || newPassword !== confirmPassword) {
-      alert("Parollar mos kelmadi yoki bo'sh kiritildi!");
-      return;
-    }
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      setNewPassword('');
-      setConfirmPassword('');
-    }, 2500);
-  };
 
   return (
     <div className={styles.container}>
@@ -155,46 +135,78 @@ export const StudentProfile: React.FC = () => {
           <div className={styles.card}>
             <div className={styles.cardHeader}>
               <Lock size={18} className={styles.cardIconPurple} />
-              <h3>Xavfsizlik (Parol o'zgartirish)</h3>
+              <h3>Kirish va Xavfsizlik</h3>
             </div>
 
-            <form onSubmit={handleSaveSecurity} className={styles.securityForm}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Yangi parol</label>
-                <input
-                  type="password"
-                  placeholder="Yangi parol kiriting"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className={styles.inputField}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Parolni tasdiqlang</label>
-                <input
-                  type="password"
-                  placeholder="Yangi parolni qayta kiriting"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={styles.inputField}
-                  required
-                />
-              </div>
-
-              {saveSuccess && (
-                <div className={styles.successAlert}>
-                  <CheckCircle2 size={16} />
-                  <span>Parolingiz muvaffaqiyatli yangilandi!</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  background: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.22)',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    Tizimga kirish logini:
+                  </span>
+                  <span
+                    style={{
+                      padding: '3px 10px',
+                      borderRadius: '6px',
+                      background: 'rgba(59, 130, 246, 0.18)',
+                      color: '#60a5fa',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                    }}
+                  >
+                    @{student?.login || (student?.phone ? student.phone.replace(/\D/g, '') : 'talaba')}
+                  </span>
                 </div>
-              )}
 
-              <button type="submit" className={styles.btnSave}>
-                <Save size={15} />
-                <span>Parolni saqlash</span>
-              </button>
-            </form>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    Parol holati:
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      color: '#fbbf24',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    •••••••• (Himoyalangan)
+                  </span>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'rgba(245, 158, 11, 0.07)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                }}
+              >
+                <Shield size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ fontSize: '12.5px', color: 'var(--text)', lineHeight: 1.55 }}>
+                  <strong style={{ color: '#f59e0b', display: 'block', marginBottom: '2px' }}>
+                    Ma'muriyat tomonidan boshqariladi
+                  </strong>
+                  Xavfsizlik qoidalariga ko'ra o'quvchi o'z login va parolini o'zgartira olmaydi. Barcha kirish ma'lumotlari faqat markaz administratori tomonidan belgilanadi. Agar parolni unutgan bo'lsangiz, o'quv markazingiz ma'muriyatiga murojaat qiling.
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Preferences Card */}

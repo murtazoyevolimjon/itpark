@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import {
+  parseStudentCreds,
+  serializeStudentCreds,
+  checkLoginUniqueness,
+} from '@/lib/credentials';
 
 export async function GET(
   req: NextRequest,
@@ -42,9 +47,13 @@ export async function GET(
     const presentCount = attendances.filter((a: any) => a.status === 'KELGAN').length;
     const attendancePercentage = totalAttendances > 0 ? Math.round((presentCount / totalAttendances) * 100) : 100;
 
+    const creds = parseStudentCreds(student.passportSeries, student.phone);
+
     return NextResponse.json({
       ...student,
-      subject: student.passportSeries || null,
+      login: creds.login,
+      password: creds.password,
+      subject: creds.subject || null,
       studentGroups: sgList,
       totalAttendances,
       presentCount,
@@ -68,15 +77,53 @@ export async function PATCH(
     const body = await req.json();
     const supabase = createServerSupabaseClient();
 
-    const updatePayload: any = { updatedAt: new Date().toISOString() };
+    // Fetch existing student to get current credentials & phone
+    const { data: currentStudent, error: fetchErr } = await supabase
+      .from('students')
+      .select('*')
+      .eq('id', params.id)
+      .eq('centerId', authUser.centerId)
+      .maybeSingle();
+
+    if (fetchErr || !currentStudent) {
+      return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
+    }
+
+    const existingCreds = parseStudentCreds(currentStudent.passportSeries, currentStudent.phone);
+
+    const targetLogin = body.login !== undefined ? (body.login || '').trim().toLowerCase() : existingCreds.login;
+    const targetPass = body.password !== undefined ? (body.password || '').trim() : existingCreds.password;
+    const targetSubject = body.subject !== undefined
+      ? (body.subject || '').trim()
+      : (body.passportSeries !== undefined ? (body.passportSeries || '').trim() : existingCreds.subject);
+
+    // If login is changed, check uniqueness
+    if (body.login !== undefined && targetLogin !== existingCreds.login) {
+      const uniquenessCheck = await checkLoginUniqueness(supabase, targetLogin, {
+        type: 'student',
+        id: params.id,
+      });
+      if (!uniquenessCheck.available) {
+        return NextResponse.json(
+          { message: uniquenessCheck.conflictMessage || 'Bu login band qilingan' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const serializedCreds = serializeStudentCreds(targetLogin, targetPass, targetSubject);
+
+    const updatePayload: any = {
+      passportSeries: serializedCreds,
+      updatedAt: new Date().toISOString(),
+    };
+
     if (body.firstName !== undefined) updatePayload.firstName = body.firstName;
     if (body.lastName !== undefined) updatePayload.lastName = body.lastName;
     if (body.birthDate !== undefined) updatePayload.birthDate = new Date(body.birthDate).toISOString();
     if (body.phone !== undefined) updatePayload.phone = body.phone;
     if (body.fatherPhone !== undefined) updatePayload.fatherPhone = body.fatherPhone || null;
     if (body.motherPhone !== undefined) updatePayload.motherPhone = body.motherPhone || null;
-    if (body.subject !== undefined) updatePayload.passportSeries = body.subject || null;
-    else if (body.passportSeries !== undefined) updatePayload.passportSeries = body.passportSeries || null;
     if (body.gender !== undefined) updatePayload.gender = body.gender;
     if (body.isSchoolStudent !== undefined) updatePayload.isSchoolStudent = body.isSchoolStudent;
     if (body.status !== undefined) updatePayload.status = body.status;
@@ -128,9 +175,13 @@ export async function PATCH(
       }
     }
 
+    const creds = parseStudentCreds(data.passportSeries, data.phone);
+
     return NextResponse.json({
       ...data,
-      subject: data.passportSeries || null,
+      login: creds.login,
+      password: creds.password,
+      subject: creds.subject || null,
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users, Copy, Check } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -32,6 +32,10 @@ export const Teachers: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [deleteTeacherId, setDeleteTeacherId] = useState<string | null>(null);
+
+  // Credentials visibility and copy states
+  const [showTeacherPassMap, setShowTeacherPassMap] = useState<Record<string, boolean>>({});
+  const [copiedTeacherId, setCopiedTeacherId] = useState<string | null>(null);
 
   // Password reset modal state
   const [passwordModalTeacher, setPasswordModalTeacher] = useState<Teacher | null>(null);
@@ -125,20 +129,21 @@ export const Teachers: React.FC = () => {
         phone: teacher.phone,
         passportSeries: teacher.passportSeries || '',
         login: teacher.login || '',
-        password: '',
+        password: teacher.password || '',
         salaryType: teacher.salaryType,
         salaryValue: teacher.salaryValue.toString(),
         status: teacher.status,
       });
     } else {
       setSelectedTeacher(null);
+      const randPin = Math.floor(100000 + Math.random() * 900000).toString();
       setFormData({
         firstName: '',
         lastName: '',
         phone: '',
         passportSeries: '',
         login: '',
-        password: '',
+        password: randPin,
         salaryType: 'FIXED',
         salaryValue: '',
         status: 'FAOL',
@@ -165,7 +170,7 @@ export const Teachers: React.FC = () => {
       salaryValue: Number(formData.salaryValue),
     };
     if (formData.login) {
-      payload.login = formData.login.trim();
+      payload.login = formData.login.trim().toLowerCase();
     }
     if (formData.password) {
       payload.password = formData.password.trim();
@@ -201,13 +206,94 @@ export const Teachers: React.FC = () => {
     },
     {
       key: 'login',
-      header: 'LOGIN',
-      render: (row) =>
-        row.login ? (
-          <Badge variant="primary">@{row.login}</Badge>
-        ) : (
-          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>-</span>
-        ),
+      header: 'KIRISH (LOGIN / PAROL)',
+      render: (row) => {
+        const isPassVisible = !!showTeacherPassMap[row.id];
+        const teacherLogin = row.login || unmaskPhone(row.phone);
+        const teacherPass = row.password || 'teacher123';
+        const isCopied = copiedTeacherId === row.id;
+
+        return (
+          <div
+            style={{ display: 'inline-flex', flexDirection: 'column', gap: '4px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  color: '#60a5fa',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                }}
+              >
+                @{teacherLogin}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(
+                    `👤 O'qituvchi: ${row.firstName} ${row.lastName}\n🔑 Login: ${teacherLogin}\n🔒 Parol: ${teacherPass}\n🌐 Kirish: ${window.location.origin}/login`
+                  );
+                  setCopiedTeacherId(row.id);
+                  success("Ustoz login va paroli nusxalandi!");
+                  setTimeout(() => setCopiedTeacherId(null), 2000);
+                }}
+                title="Login va parolni nusxalash"
+                style={{
+                  background: isCopied ? '#10b981' : 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '5px',
+                  padding: '2px 5px',
+                  cursor: 'pointer',
+                  color: isCopied ? '#ffffff' : 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isCopied ? <Check size={12} /> : <Copy size={12} />}
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  fontSize: '11.5px',
+                  color: isPassVisible ? '#fbbf24' : 'var(--text-muted)',
+                  fontWeight: isPassVisible ? 700 : 500,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {isPassVisible ? teacherPass : '••••••'}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTeacherPassMap((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
+                }}
+                title={isPassVisible ? "Parolni yashirish" : "Parolni ko'rish"}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: 0,
+                }}
+              >
+                {isPassVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+              </button>
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'phone',
@@ -480,21 +566,64 @@ export const Teachers: React.FC = () => {
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <Input
-              label="Login (tizimga kirish uchun)"
-              placeholder="anvar_rustamov"
-              value={formData.login}
-              onChange={(e) => setFormData({ ...formData, login: e.target.value })}
-            />
+            <div>
+              <Input
+                label="Login (tizimga kirish uchun - yunik)"
+                placeholder="anvar_rustamov"
+                value={formData.login}
+                onChange={(e) => setFormData({ ...formData, login: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+              />
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const base = (formData.firstName ? formData.firstName.toLowerCase().replace(/[^a-z0-9]/g, '') : '') || 'ustoz';
+                    const randomCode = Math.floor(1000 + Math.random() * 9000);
+                    setFormData({ ...formData, login: `${base}_${randomCode}` });
+                  }}
+                  style={{
+                    fontSize: '11px',
+                    color: '#60a5fa',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  🎲 Tasodifiy login
+                </button>
+                {formData.phone && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const clean = unmaskPhone(formData.phone);
+                      if (clean) setFormData({ ...formData, login: clean });
+                    }}
+                    style={{
+                      fontSize: '11px',
+                      color: '#a78bfa',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    📱 Telefoni
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-                {selectedTeacher ? "Yangi parol (agar o'zgartirilsa)" : "Boshlang'ich parol"}
+                {selectedTeacher ? "Parol (ko'rish yoki yangilash)" : "Boshlang'ich parol"}
               </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showFormPassword ? 'text' : 'password'}
-                  placeholder={selectedTeacher ? "O'zgartirish shart emas" : "Parolni kiriting"}
+                  placeholder="Parolni kiriting"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   style={{
@@ -534,6 +663,26 @@ export const Teachers: React.FC = () => {
                   {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const randPass = Math.floor(100000 + Math.random() * 900000).toString();
+                  setFormData({ ...formData, password: randPass });
+                }}
+                style={{
+                  alignSelf: 'flex-start',
+                  fontSize: '11px',
+                  color: '#60a5fa',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  marginTop: '2px',
+                }}
+              >
+                🎲 6-raqamli tasodifiy parol
+              </button>
             </div>
           </div>
 
