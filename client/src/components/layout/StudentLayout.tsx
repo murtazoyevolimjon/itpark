@@ -16,7 +16,6 @@ import {
   CreditCard,
   Trophy,
   Sparkles,
-  Award,
   User as UserIcon,
   LogOut,
   Moon,
@@ -136,13 +135,6 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
       icon: Sparkles,
       number: '07',
       isActive: pathname.startsWith('/student/ai'),
-    },
-    {
-      label: dict.student?.certificate || 'Sertifikatlar',
-      href: '/student/certificate',
-      icon: Award,
-      number: '08',
-      isActive: pathname.startsWith('/student/certificate'),
     },
   ];
 
@@ -474,14 +466,6 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
                   >
                     <Trophy size={24} className={styles.moreIconGold} />
                     <span>Guruh reytingi</span>
-                  </Link>
-                  <Link
-                    href="/student/certificate"
-                    onClick={() => setShowMoreMenu(false)}
-                    className={styles.moreCard}
-                  >
-                    <Award size={24} className={styles.moreIconPurple} />
-                    <span>Sertifikat</span>
                   </Link>
                   <Link
                     href="/student/profile"

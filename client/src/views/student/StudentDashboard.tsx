@@ -11,7 +11,6 @@ import {
   CreditCard,
   Trophy,
   Sparkles,
-  Award,
   Clock,
   MapPin,
   User,

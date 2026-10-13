@@ -1,5 +1,5 @@
-import { StudentCertificate } from '@/views/student/StudentCertificate';
+import { redirect } from 'next/navigation';
 
 export default function StudentCertificatePage() {
-  return <StudentCertificate />;
+  redirect('/student');
 }
