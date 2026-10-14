@@ -176,9 +176,39 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           </div>
 
           <div className={styles.sidebarFooter}>
+            {/* User Profile Card in Sidebar */}
+            <div className={styles.sidebarUserCard}>
+              <div className={styles.sidebarAvatar}>
+                <UserIcon size={18} />
+              </div>
+              <div className={styles.sidebarUserInfo}>
+                <span className={styles.sidebarUserName}>{user?.fullName || firstName}</span>
+                <span className={styles.sidebarUserRole}>{centerName}</span>
+              </div>
+            </div>
+
+            {/* Quick Switch to Student Portal */}
+            <Link
+              href="/student"
+              onClick={() => setIsMobileOpen(false)}
+              className={styles.sidebarStudentLink}
+            >
+              <Compass size={16} />
+              <span>O'quvchi portali</span>
+            </Link>
+
             <div className={styles.planCard}>
               {dict.teacher?.todayPlan || 'Bugungi reja: dars mavzularini yakunlab chiqing.'}
             </div>
+
+            {/* Logout button in sidebar for mobile */}
+            <button
+              onClick={handleLogout}
+              className={styles.sidebarLogoutBtn}
+            >
+              <LogOut size={16} />
+              <span>{dict.teacher?.logout || 'Tizimdan chiqish'}</span>
+            </button>
           </div>
         </aside>
 
@@ -186,7 +216,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
         <div className={styles.mainCol}>
           {/* Header */}
           <header className={styles.header}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               <button
                 className={styles.mobileMenuBtn}
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -201,7 +231,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
             <div className={styles.headerActions}>
               <button
-                className={styles.iconBtn}
+                className={`${styles.iconBtn} ${styles.iconBtnNotification}`}
                 title={dict.teacher?.notifications || 'Bildirishnomalar'}
                 aria-label="Bildirishnomalar"
               >
@@ -276,7 +306,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
               <Link
                 href="/student"
-                className={styles.userChip}
+                className={`${styles.userChip} ${styles.desktopOnlyChip}`}
                 style={{ textDecoration: 'none', background: 'rgba(6, 182, 212, 0.12)', borderColor: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4' }}
                 title="O'quvchi portali"
               >
@@ -284,7 +314,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                 <span>O'quvchi portali</span>
               </Link>
 
-              <div className={styles.userChip}>
+              <div className={`${styles.userChip} ${styles.desktopOnlyChip}`}>
                 <UserIcon size={16} strokeWidth={2.2} />
                 <span>{firstName}</span>
               </div>

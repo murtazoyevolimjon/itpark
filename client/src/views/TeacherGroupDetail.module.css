@@ -585,6 +585,44 @@
   transform: translateY(-1px);
 }
 
+@media (max-width: 900px) {
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .detailContainer {
+    gap: 14px;
+  }
+
+  .heroCard,
+  .glassCard,
+  .createLessonCard {
+    padding: 16px 18px;
+    border-radius: 18px;
+  }
+
+  .groupTitle {
+    font-size: 20px;
+  }
+
+  .mainTabsRow {
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabBtn {
+    padding: 8px 16px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
 /* ========================================================
    DARK THEME SYSTEM (TUN REJIMI) FOR TEACHER GROUP DETAIL
    ======================================================== */

@@ -40,6 +40,13 @@ export const TeacherGroups: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'main' | 'archive'>('main');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
+  // Auto-select clean card view on mobile screens
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      setViewMode('grid');
+    }
+  }, []);
+
   const { data: groupsData, isLoading } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
@@ -254,6 +261,9 @@ export const TeacherGroups: React.FC = () => {
       {/* Main Content: Table or Cards Grid */}
       {viewMode === 'table' ? (
         <div className={styles.tableCard}>
+          <div className={styles.mobileScrollHint}>
+            <span>↔ Jadvalni chapga-o'ngga surishingiz mumkin</span>
+          </div>
           <table className={styles.table}>
             <thead>
               <tr>
