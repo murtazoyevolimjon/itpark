@@ -63,6 +63,9 @@ export const TeacherVideos: React.FC = () => {
   const { data: groupsData } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const allGroups: Group[] = groupsData?.data || [];
@@ -121,8 +124,8 @@ export const TeacherVideos: React.FC = () => {
           {
             id: 'v-sample-1',
             groupId: allGroups[0]?.id || 'g1',
-            groupName: allGroups[0]?.name || 'Dush-Chor-Juma 16:00 FRONTEND',
-            courseName: 'Frontend',
+            groupName: allGroups[0]?.name || 'Guruh',
+            courseName: allGroups[0]?.course?.name || 'Frontend',
             title: '1-Dars: HTML5 Semantik teglari va Zamonaviy CSS arxitekturasi',
             videoType: 'link',
             videoUrl: 'https://www.youtube.com/watch?v=UB1O30fR-EE',

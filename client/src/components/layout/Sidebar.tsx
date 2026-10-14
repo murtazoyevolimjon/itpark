@@ -19,6 +19,7 @@ import {
   LogOut,
   Sparkles,
   Compass,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
@@ -33,6 +34,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const pathname = usePathname() || '/';
+
+  // Body scroll lock on mobile when sidebar is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('scroll-locked');
+    } else {
+      document.body.classList.remove('scroll-locked');
+    }
+    return () => {
+      document.body.classList.remove('scroll-locked');
+    };
+  }, [isOpen]);
+
+  // Auto-close on route change
+  React.useEffect(() => {
+    onClose();
+  }, [pathname]);
 
   const [isFinanceOpen, setIsFinanceOpen] = useState(
     pathname.startsWith('/finance'),
@@ -104,11 +122,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <GraduationCap size={22} />
             </div>
           )}
-          <div style={{ overflow: 'hidden' }}>
+          <div style={{ overflow: 'hidden', flex: 1 }}>
             <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
               {user?.centerName || 'IT PARK'}
             </div>
           </div>
+          <button
+            type="button"
+            className={styles.sidebarCloseBtn}
+            onClick={onClose}
+            aria-label="Menyuni yopish"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <div className={styles.navContainer}>

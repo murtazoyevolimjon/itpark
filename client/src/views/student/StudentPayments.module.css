@@ -204,10 +204,12 @@
 
 .tableWrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
   width: 100%;
+  min-width: 580px;
   border-collapse: collapse;
   font-size: 13px;
   text-align: left;
@@ -559,6 +561,55 @@
 /* Responsive */
 @media (max-width: 992px) {
   .overviewGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .overviewGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .balanceCard {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .modalBackdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .receiptModal {
+    border-radius: 20px 20px 0 0;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 20px 16px calc(20px + var(--sab));
+  }
+  .receiptPaper {
+    padding: 16px;
+  }
+  .paperBrandHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .receiptIdBox {
+    align-items: flex-start;
+  }
+  .paperStampFooter {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .receiptActionsRow {
+    flex-direction: column-reverse;
+  }
+  .btnPrint, .btnCloseReceipt {
+    width: 100%;
+    min-height: 44px;
   }
 }

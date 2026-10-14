@@ -40,10 +40,29 @@ export const TeacherGroups: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'main' | 'archive'>('main');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
-  const { data: groupsData, isLoading } = useQuery({
+  const { data: groupsData, isLoading, refetch } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
+
+  React.useEffect(() => {
+    const handleGroupsUpdate = () => {
+      refetch();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('groups_updated', handleGroupsUpdate);
+      window.addEventListener('focus', handleGroupsUpdate);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('groups_updated', handleGroupsUpdate);
+        window.removeEventListener('focus', handleGroupsUpdate);
+      }
+    };
+  }, [refetch]);
 
   const allGroups: Group[] = Array.isArray(groupsData)
     ? groupsData

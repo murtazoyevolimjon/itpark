@@ -1,6 +1,6 @@
 .layout {
   display: flex;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg);
 }
 
@@ -32,6 +32,6 @@
 
 @media (max-width: 639px) {
   .content {
-    padding: 12px;
+    padding: 12px 10px calc(16px + var(--sab));
   }
 }

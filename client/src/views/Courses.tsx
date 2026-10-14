@@ -158,8 +158,8 @@ export const Courses: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{t('courses')}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>{t('courses')}</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
           {t('newCourse')}
         </Button>

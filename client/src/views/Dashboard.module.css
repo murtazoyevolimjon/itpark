@@ -574,9 +574,21 @@
     gap: 16px;
   }
 
+  .tabHeaders {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+
   .tabBtn {
-    padding: 6px 12px;
-    font-size: 12px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    min-height: 38px;
   }
 }
 
@@ -591,7 +603,7 @@
   }
 
   .statValue {
-    font-size: 17px;
+    font-size: 16.5px;
   }
 
   .statLabel {

@@ -30,6 +30,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import styles from './StudentLayout.module.css';
+import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -58,6 +59,24 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Body scroll lock on mobile when drawer or more-modal is open
+  useEffect(() => {
+    if (isMobileOpen || showMoreMenu) {
+      document.body.classList.add('scroll-locked');
+    } else {
+      document.body.classList.remove('scroll-locked');
+    }
+    return () => {
+      document.body.classList.remove('scroll-locked');
+    };
+  }, [isMobileOpen, showMoreMenu]);
+
+  // Auto-close drawer on route change
+  useEffect(() => {
+    setIsMobileOpen(false);
+    setShowMoreMenu(false);
+  }, [pathname]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -166,9 +185,19 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
         <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ''}`}>
           <div className={styles.sidebarInner}>
             <div className={styles.sidebarHeader}>
-              <div className={styles.panelBadge}>
-                <span className={styles.pulseDot} />
-                {dict.student?.portalBadge || "O'quvchi portali"}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div className={styles.panelBadge}>
+                  <span className={styles.pulseDot} />
+                  {dict.student?.portalBadge || "O'quvchi portali"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.sidebarCloseBtn}
+                  onClick={() => setIsMobileOpen(false)}
+                  aria-label="Yopish"
+                >
+                  <X size={18} />
+                </button>
               </div>
               <h1 className={styles.centerBrandTitle}>{centerName}</h1>
 
@@ -481,6 +510,7 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
           )}
         </div>
       </div>
+      <FloatingAIWidget />
     </div>
   );
 };

@@ -229,7 +229,9 @@
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  min-width: 320px;
+  flex: 1;
+  min-width: 240px;
+  max-width: 480px;
 }
 
 [data-theme='light'] .searchBox {
@@ -239,6 +241,7 @@
 
 .searchIcon {
   color: #64748b;
+  flex-shrink: 0;
 }
 
 .searchInput {
@@ -306,6 +309,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 [data-theme='light'] .tableCardHeader {
@@ -322,6 +327,7 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary, #f8fafc);
+  margin: 0;
 }
 
 [data-theme='light'] .tableTitleWrap h2 {
@@ -330,6 +336,7 @@
 
 .bookIcon {
   color: #06b6d4;
+  flex-shrink: 0;
 }
 
 .totalBadge {
@@ -340,6 +347,8 @@
 
 .tableWrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .table {
@@ -347,6 +356,7 @@
   border-collapse: collapse;
   font-size: 13px;
   text-align: left;
+  min-width: 580px;
 }
 
 .table th {

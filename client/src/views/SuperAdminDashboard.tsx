@@ -39,6 +39,7 @@ import { useToast } from '../components/ui/Toast/Toast';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
 import styles from './SuperAdminDashboard.module.css';
+import { FloatingAIWidget } from '../components/ai/FloatingAIWidget';
 
 export const SuperAdminDashboard: React.FC = () => {
   const router = useRouter();
@@ -1039,6 +1040,7 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+      <FloatingAIWidget />
     </div>
   );
 };

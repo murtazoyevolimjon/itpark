@@ -68,6 +68,25 @@
   }
 }
 
+@media (max-width: 640px) {
+  .createCard,
+  .listCard {
+    padding: 16px 14px;
+    border-radius: 18px;
+  }
+  .pageTitle {
+    font-size: 20px;
+  }
+  .groupFilterWrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .groupSelect {
+    max-width: 100%;
+    flex: 1;
+  }
+}
+
 /* Create Card */
 .createCard {
   background: rgba(255, 255, 255, 0.9);

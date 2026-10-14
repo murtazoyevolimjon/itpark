@@ -918,12 +918,56 @@
 
 @media (max-width: 640px) {
   .statsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
   .heroLeft {
-    padding: 20px;
+    padding: 20px 16px;
   }
   .topicHighlightCard {
-    padding: 18px;
+    padding: 18px 16px;
+  }
+  .heroTitle {
+    font-size: clamp(20px, 5.5vw, 26px);
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  .quickActionRow {
+    flex-direction: column;
+    width: 100%;
+  }
+  .actionBtnPrimary, .actionBtnSecondary, .actionBtnAi {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .topicBody {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .topicFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .topicLinks {
+    width: 100%;
+  }
+  .topicVideoLink, .topicHwLink {
+    flex: 1;
+    justify-content: center;
+    min-height: 42px;
+  }
+  .hwActionRow {
+    flex-direction: column;
+  }
+  .hwBtnSubmit, .hwBtnDone, .hwBtnAi {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
   }
 }

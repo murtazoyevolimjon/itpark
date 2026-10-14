@@ -850,10 +850,43 @@
 .moreIconPurple { color: #a855f7; }
 .moreIconBlue { color: #3b82f6; }
 
+.sidebarCloseBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+}
+
+[data-theme='light'] .sidebarCloseBtn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
 /* Responsive Media Queries */
 @media (max-width: 992px) {
+  .container {
+    min-height: 100dvh;
+  }
+
   .sidebar {
+    width: min(300px, 86vw);
+    height: 100dvh;
+    max-height: 100dvh;
     transform: translateX(-100%);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+    padding-top: var(--sat);
+    padding-bottom: var(--sab);
+  }
+
+  .sidebarCloseBtn {
+    display: flex;
   }
 
   .sidebarOpen {
@@ -864,8 +897,9 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 49;
     opacity: 0;
     pointer-events: none;
@@ -879,10 +913,20 @@
 
   .mainWrapper {
     margin-left: 0;
+    min-height: 100dvh;
+  }
+
+  .header {
+    height: 60px;
+    padding: 0 14px;
   }
 
   .hamburgerBtn {
     display: flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
   }
 
   .headerBadges {
@@ -891,9 +935,30 @@
 
   .mobileBottomNav {
     display: flex;
+    height: calc(60px + var(--sab));
+    padding-bottom: var(--sab);
   }
 
   .contentArea {
-    padding: 18px 16px 80px;
+    padding: 16px 14px calc(76px + var(--sab));
+  }
+}
+
+@media (max-width: 480px) {
+  .headerGreeting {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+  .headerGroupName {
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .contentArea {
+    padding: 12px 10px calc(74px + var(--sab));
   }
 }

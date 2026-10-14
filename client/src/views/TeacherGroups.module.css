@@ -993,3 +993,57 @@
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
 }
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .headerActions {
+    width: 100%;
+  }
+  .searchWrapper {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .statCard {
+    padding: 16px 20px;
+  }
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .groupCard {
+    padding: 18px;
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .tabPillContainer {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+  }
+  .tabPill {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}

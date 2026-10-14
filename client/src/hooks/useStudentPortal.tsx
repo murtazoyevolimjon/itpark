@@ -125,13 +125,19 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       let resolvedStudent: Student | null = null;
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
       // 1. If logged in as student, try /api/students/me
       if (user?.role === 'STUDENT' || user?.id) {
         try {
-          const res = await fetch(`/api/students/${user.role === 'STUDENT' ? 'me' : user.id}`, { headers });
+          const res = await fetch(`/api/students/${user.role === 'STUDENT' ? 'me' : user.id}`, {
+            headers,
+            cache: 'no-store',
+          });
           if (res.ok) {
             resolvedStudent = await res.json();
           }
@@ -447,9 +453,22 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch {}
   };
 
-  // Initial load
+  // Initial load and live sync on focus or update
   useEffect(() => {
     loadStudentInfo();
+    const handleSync = () => {
+      loadStudentInfo();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('groups_updated', handleSync);
+      window.addEventListener('focus', handleSync);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('groups_updated', handleSync);
+        window.removeEventListener('focus', handleSync);
+      }
+    };
   }, [loadStudentInfo]);
 
   // Update dependencies when group changes

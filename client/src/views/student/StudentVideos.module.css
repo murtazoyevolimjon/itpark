@@ -98,7 +98,9 @@
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  min-width: 320px;
+  width: 100%;
+  max-width: 380px;
+  min-width: 0;
 }
 
 [data-theme='light'] .searchBox {
@@ -348,7 +350,7 @@
 }
 
 .emptyCard {
-  grid-column: span 3;
+  grid-column: 1 / -1;
   padding: 48px;
   border-radius: 18px;
   background: rgba(15, 23, 42, 0.4);
@@ -578,13 +580,43 @@
 }
 
 @media (max-width: 640px) {
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchBox {
+    max-width: 100%;
+  }
   .videosGrid {
     grid-template-columns: 1fr;
   }
+  .modalBackdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .cinemaModal {
+    border-radius: 20px 20px 0 0;
+    max-height: 94dvh;
+    overflow-y: auto;
+  }
   .playerScreen {
-    height: 250px;
+    height: 220px;
   }
   .modalDetails {
     flex-direction: column;
+    padding: 16px 16px calc(20px + var(--sab));
+  }
+  .modalActionsRight {
+    flex-direction: column;
+    width: 100%;
+  }
+  .downloadBtn, .goToHwBtn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
   }
 }

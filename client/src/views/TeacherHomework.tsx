@@ -61,6 +61,9 @@ export const TeacherHomework: React.FC = () => {
   const { data: groupsData, isLoading: isGroupsLoading } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const allGroups: Group[] = groupsData?.data || [];
@@ -89,8 +92,8 @@ export const TeacherHomework: React.FC = () => {
         {
           id: 'hw-sample-1',
           groupId: allGroups[0]?.id || 'g1',
-          groupName: allGroups[0]?.name || 'Dush-Chor-Juma 16:00 FRONTEND',
-          courseName: 'Frontend',
+          groupName: allGroups[0]?.name || 'Guruh',
+          courseName: allGroups[0]?.course?.name || 'Frontend',
           title: "React Components & Props amaliy mashg'ulot",
           desc: "Figma dizayni bo'yicha Header va Sidebar komponentlarini yarating, prop turlarini tekshiring va responsivlikni ta'minlang.",
           deadline: '2026-10-15 20:00',

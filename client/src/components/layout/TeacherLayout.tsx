@@ -25,6 +25,7 @@ import {
   Compass,
 } from 'lucide-react';
 import styles from './TeacherLayout.module.css';
+import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 
 interface TeacherLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,23 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const langMenuRef = React.useRef<HTMLDivElement>(null);
+
+  // Body scroll lock on mobile when drawer is open
+  React.useEffect(() => {
+    if (isMobileOpen) {
+      document.body.classList.add('scroll-locked');
+    } else {
+      document.body.classList.remove('scroll-locked');
+    }
+    return () => {
+      document.body.classList.remove('scroll-locked');
+    };
+  }, [isMobileOpen]);
+
+  // Auto-close drawer on route change
+  React.useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -146,8 +164,18 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
         <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ''}`}>
           <div>
             <div className={styles.sidebarHeader}>
-              <div className={styles.panelBadge}>
-                {dict.teacher?.panelBadge || 'Teacher panel'}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div className={styles.panelBadge}>
+                  {dict.teacher?.panelBadge || 'Teacher panel'}
+                </div>
+                <button
+                  type="button"
+                  className={styles.sidebarCloseBtn}
+                  onClick={() => setIsMobileOpen(false)}
+                  aria-label="Yopish"
+                >
+                  <X size={18} />
+                </button>
               </div>
               <h1 className={styles.centerBrandTitle}>
                 {centerName}
@@ -176,6 +204,14 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           </div>
 
           <div className={styles.sidebarFooter}>
+            <Link
+              href="/student"
+              onClick={() => setIsMobileOpen(false)}
+              className={styles.drawerStudentLink}
+            >
+              <Compass size={17} strokeWidth={2.2} />
+              <span>O'quvchi portali</span>
+            </Link>
             <div className={styles.planCard}>
               {dict.teacher?.todayPlan || 'Bugungi reja: dars mavzularini yakunlab chiqing.'}
             </div>
@@ -276,7 +312,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
 
               <Link
                 href="/student"
-                className={styles.userChip}
+                className={`${styles.userChip} ${styles.desktopOnlyChip}`}
                 style={{ textDecoration: 'none', background: 'rgba(6, 182, 212, 0.12)', borderColor: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4' }}
                 title="O'quvchi portali"
               >
@@ -284,7 +320,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                 <span>O'quvchi portali</span>
               </Link>
 
-              <div className={styles.userChip}>
+              <div className={`${styles.userChip} ${styles.userChipName}`}>
                 <UserIcon size={16} strokeWidth={2.2} />
                 <span>{firstName}</span>
               </div>
@@ -304,6 +340,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           <main className={styles.pageBody}>{children}</main>
         </div>
       </div>
+      <FloatingAIWidget />
     </div>
   );
 };

@@ -163,7 +163,7 @@ export const Rooms: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Xonalar</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
           YANGI XONA
@@ -201,7 +201,7 @@ export const Rooms: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div className="responsive-form-grid">
             <Input
               label="Qavat"
               type="number"
