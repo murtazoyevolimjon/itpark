@@ -65,7 +65,34 @@
 }
 
 .sidebarHeader {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+}
+
+.sidebarHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sidebarCloseBtn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.95);
+  color: #475569;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebarCloseBtn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
 .panelBadge {
@@ -587,6 +614,10 @@
     left: 16px;
   }
 
+  .sidebarCloseBtn {
+    display: flex;
+  }
+
   .desktopOnlyChip {
     display: none !important;
   }
@@ -599,12 +630,13 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(4px);
-    z-index: 999;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 990; /* Must be lower than sidebar (1000) */
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s ease;
   }
 
   .mobileOverlayOpen {
@@ -667,14 +699,19 @@
   }
 
   .sidebar {
-    top: 10px;
-    bottom: 10px;
-    width: 290px;
-    border-radius: 22px;
+    top: 0;
+    bottom: 0;
+    left: -340px;
+    width: min(300px, 86vw);
+    border-radius: 0 24px 24px 0;
+    padding: 22px 18px;
+    z-index: 1000;
+    background: #ffffff;
+    box-shadow: 10px 0 45px rgba(0, 0, 0, 0.4);
   }
 
   .sidebarOpen {
-    left: 10px;
+    left: 0;
   }
 }
 
@@ -875,4 +912,19 @@
   background: rgba(239, 68, 68, 0.22);
   border-color: rgba(239, 68, 68, 0.5);
 }
+
+:global([data-theme="dark"]) .sidebarCloseBtn {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+@media (max-width: 1024px) {
+  :global([data-theme="dark"]) .sidebar {
+    background: #0d1527 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 10px 0 50px rgba(0, 0, 0, 0.7) !important;
+  }
+}
+
 

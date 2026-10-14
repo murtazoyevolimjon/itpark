@@ -135,19 +135,29 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
       <div className={styles.orbLeft} />
       <div className={styles.orbRight} />
 
-      {/* Mobile Overlay */}
-      <div
-        className={`${styles.mobileOverlay} ${isMobileOpen ? styles.mobileOverlayOpen : ''}`}
-        onClick={() => setIsMobileOpen(false)}
-      />
-
       <div className={styles.shell}>
+        {/* Mobile Overlay - inside shell so it shares stacking context with sidebar */}
+        <div
+          className={`${styles.mobileOverlay} ${isMobileOpen ? styles.mobileOverlayOpen : ''}`}
+          onClick={() => setIsMobileOpen(false)}
+        />
+
         {/* Sidebar */}
         <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ''}`}>
           <div>
             <div className={styles.sidebarHeader}>
-              <div className={styles.panelBadge}>
-                {dict.teacher?.panelBadge || 'Teacher panel'}
+              <div className={styles.sidebarHeaderTop}>
+                <div className={styles.panelBadge}>
+                  {dict.teacher?.panelBadge || 'Teacher panel'}
+                </div>
+                <button
+                  type="button"
+                  className={styles.sidebarCloseBtn}
+                  onClick={() => setIsMobileOpen(false)}
+                  aria-label="Menyuni yopish"
+                >
+                  <X size={18} />
+                </button>
               </div>
               <h1 className={styles.centerBrandTitle}>
                 {centerName}
