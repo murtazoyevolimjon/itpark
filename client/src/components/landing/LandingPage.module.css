@@ -3,6 +3,8 @@
 .container {
   min-height: 100vh;
   width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
   background-color: #070d19;
   color: #f1f5f9;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -20,6 +22,8 @@
   top: 0;
   left: 0;
   width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
   height: 72px;
   background: rgba(7, 13, 25, 0.85);
   backdrop-filter: blur(16px);
@@ -1835,76 +1839,481 @@
 
 @media (max-width: 768px) {
   .navbar {
-    padding: 0 20px;
-    height: 64px;
+    padding: 0 16px;
+    height: 62px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  .navBrand {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brandLogo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brandTitle {
+    font-size: 16px;
+    letter-spacing: -0.2px;
+  }
+
+  .brandSubtitle {
+    font-size: 9px;
+  }
+
+  .resetBtn {
+    display: none !important;
+  }
+
+  .loginCtaBtn {
+    padding: 8px 14px;
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .heroSection {
-    padding: 32px 20px 48px 20px;
+    padding: 28px 16px 40px 16px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
   }
 
-  .sectionWrapper {
-    padding: 40px 20px;
+  .heroGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    width: 100%;
+  }
+
+  .heroLeft {
+    width: 100%;
+    gap: 18px;
+  }
+
+  .heroBadge {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    border-radius: 14px;
+    padding: 6px 10px;
+    gap: 6px;
+    box-sizing: border-box;
+  }
+
+  .badgeDivider {
+    display: none;
+  }
+
+  .badgeText {
+    font-size: 12px;
+  }
+
+  .badgeTelegram {
+    font-size: 11px;
+    padding: 3px 8px;
   }
 
   .heroTitle {
-    font-size: 28px;
+    font-size: 26px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .heroDesc {
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .heroBtnGroup {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .primaryHeroBtn {
+    width: 100%;
+    justify-content: center;
+    padding: 13px 20px;
+    font-size: 14.5px;
+    box-sizing: border-box;
+  }
+
+  .secondaryHeroBtn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 13.5px;
+    box-sizing: border-box;
+  }
+
+  .forgotHeroBtn {
+    text-align: center;
+    width: 100%;
+    padding: 6px 0;
+    font-size: 13px;
   }
 
   .heroStatsRow {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  .statCard {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .statValue {
+    font-size: 15.5px;
+  }
+
+  .statLabel {
+    font-size: 11px;
+  }
+
+  .heroRight {
+    width: 100%;
+  }
+
+  .guideNavigatorCard {
+    padding: 18px 16px;
+    border-radius: 18px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cardHeading {
+    font-size: 16px;
+  }
+
+  .cardSubtitle {
+    font-size: 12px;
+  }
+
+  .guideRoleItem {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .guideRoleTitle {
+    font-size: 13px;
+  }
+
+  .guideRoleDesc {
+    font-size: 11.5px;
+  }
+
+  .guideCardFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .guideCardActionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sectionWrapper {
+    padding: 36px 16px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sectionTitle {
+    font-size: 23px;
+    word-break: break-word;
+  }
+
+  .sectionSubtitle {
+    font-size: 13.5px;
+  }
+
+  .searchBox {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .tabsRow {
+    width: 100%;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabBtn {
+    padding: 9px 15px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .featuredGuideContainer {
+    border-radius: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .guideBannerTop {
+    padding: 16px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .guideBannerTitle {
+    font-size: 15.5px;
+  }
+
+  .guideBannerSub {
+    font-size: 12.5px;
+  }
+
+  .guideBannerBtn {
+    width: 100%;
+    justify-content: center;
   }
 
   .stepsGrid {
     grid-template-columns: 1fr;
-    padding: 18px;
+    padding: 14px 12px;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .stepCard {
+    padding: 16px 14px;
+    border-radius: 14px;
+    box-sizing: border-box;
+  }
+
+  .stepTitle {
+    font-size: 15px;
+  }
+
+  .stepDesc {
+    font-size: 12.5px;
   }
 
   .featuresGrid {
     grid-template-columns: 1fr;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .featureCard {
+    padding: 20px 16px;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .featureTitle {
+    font-size: 17px;
+  }
+
+  .featureDesc {
+    font-size: 13px;
   }
 
   .dossierGrid {
     grid-template-columns: 1fr;
+    gap: 14px;
+    width: 100%;
   }
 
-  .footer {
-    padding: 40px 20px 24px 20px;
+  .dossierCol {
+    padding: 16px 14px;
+    border-radius: 16px;
+    box-sizing: border-box;
   }
 
-  .searchBox {
-    min-width: 100%;
+  .contactCard {
+    padding: 24px 16px;
+    border-radius: 20px;
+    gap: 20px;
+    box-sizing: border-box;
   }
 
-  .sectionTitle {
-    font-size: 25px;
+  .contactTitle {
+    font-size: 22px;
+  }
+
+  .contactSubtitle {
+    font-size: 13.5px;
   }
 
   .contactRow {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
+    width: 100%;
   }
 
-  .contactCard {
-    padding: 28px 20px;
-    gap: 20px;
+  .contactItem {
+    padding: 18px 16px;
+    border-radius: 14px;
+    box-sizing: border-box;
   }
 
-  .contactTitle {
-    font-size: 23px;
+  .contactValue {
+    font-size: 15.5px;
+    word-break: break-all;
   }
 
-  .footerRight {
-    flex-wrap: wrap;
-    gap: 10px;
+  .contactFooterPill {
+    font-size: 12px;
+    padding: 7px 14px;
   }
 
   .faqGrid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .faqItem {
+    padding: 18px 16px;
+    border-radius: 14px;
+    box-sizing: border-box;
+  }
+
+  .faqQuestion {
+    font-size: 15px;
   }
 
   .faqAnswer {
     padding-left: 0;
+    font-size: 13px;
+    margin-top: 6px;
+  }
+
+  .footer {
+    padding: 36px 16px 24px 16px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .footerContent {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .footerLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .footerRight {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .telegramFooterBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .footerCopy {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0 12px;
+    height: 56px;
+  }
+
+  .brandLogo {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brandTitle {
+    font-size: 14px;
+  }
+
+  .brandSubtitle {
+    font-size: 8px;
+  }
+
+  .loginCtaBtn {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  .heroSection {
+    padding: 20px 12px 32px 12px;
+  }
+
+  .sectionWrapper {
+    padding: 26px 12px;
+  }
+
+  .heroTitle {
+    font-size: 22px;
+  }
+
+  .heroDesc {
+    font-size: 13px;
+  }
+
+  .heroStatsRow {
+    gap: 8px;
+  }
+
+  .statCard {
+    padding: 10px 10px;
+    border-radius: 10px;
+  }
+
+  .statValue {
+    font-size: 14px;
+  }
+
+  .statLabel {
+    font-size: 10px;
+  }
+
+  .sectionTitle {
+    font-size: 19px;
+  }
+
+  .sectionSubtitle {
+    font-size: 12px;
+  }
+
+  .footer {
+    padding: 28px 12px 20px 12px;
+  }
+
+  .modalOverlay {
+    padding: 8px;
+  }
+
+  .modalCardWrapper {
+    padding: 20px 14px;
+    border-radius: 18px;
+    max-height: 98vh;
+  }
+
+  .modalTitle {
+    font-size: 18px;
   }
 }
