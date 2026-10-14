@@ -1992,8 +1992,8 @@ export const GroupDetail: React.FC = () => {
                 )}
 
                 {/* Students Table for the Selected Date */}
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--border)', borderRadius: '10px' }}>
-                  <table style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+                <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: '10px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--card-subtle)', color: 'var(--text-muted)' }}>
                         <th style={{ padding: '12px 14px', width: '40px' }}>#</th>
@@ -2650,7 +2650,7 @@ export const GroupDetail: React.FC = () => {
           </div>
 
           {/* Form Fields (Matching Image 3) */}
-          <div className="responsive-form-grid" style={{ gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <Input
               label="Ism"
               required
@@ -2683,7 +2683,7 @@ export const GroupDetail: React.FC = () => {
             onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
           />
 
-          <div className="responsive-form-grid" style={{ gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <Input
               label="Otasining telefoni"
               placeholder="+998 90 123 45 67"

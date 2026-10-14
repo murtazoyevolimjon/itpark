@@ -99,10 +99,9 @@ export const Groups: React.FC = () => {
     onSuccess: () => {
       success(selectedGroup ? 'Guruh tahrirlandi' : 'Yangi guruh ochildi');
       handleCloseModal();
-      queryClient.invalidateQueries();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('groups_updated'));
-      }
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -114,10 +113,9 @@ export const Groups: React.FC = () => {
     onSuccess: () => {
       success('Guruh o\'chirildi');
       setDeleteGroupId(null);
-      queryClient.invalidateQueries();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('groups_updated'));
-      }
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['group'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');
@@ -304,7 +302,7 @@ export const Groups: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Guruhlar</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
           GURUH OCHISH
@@ -388,7 +386,7 @@ export const Groups: React.FC = () => {
             </div>
           </div>
 
-          <div className="responsive-form-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
               label="Boshlanish vaqti"
               type="time"

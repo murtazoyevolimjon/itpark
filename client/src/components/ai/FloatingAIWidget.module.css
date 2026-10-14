@@ -482,18 +482,12 @@
 }
 
 /* Mobile responsive */
-@media (max-width: 992px) {
-  .studentFloatingTrigger {
-    bottom: calc(72px + var(--sab)) !important;
-  }
-}
-
 @media (max-width: 640px) {
   .floatingTrigger {
-    bottom: calc(16px + var(--sab));
-    right: 14px;
-    width: 44px;
-    height: 44px;
+    bottom: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
   }
 
   .drawer,
@@ -502,12 +496,8 @@
     right: 0;
     width: 100vw;
     max-width: 100vw;
-    height: 88dvh;
-    max-height: 88dvh;
+    height: 85vh;
+    max-height: 85vh;
     border-radius: 20px 20px 0 0;
-  }
-
-  .drawerFooter {
-    padding-bottom: calc(12px + var(--sab));
   }
 }

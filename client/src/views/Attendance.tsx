@@ -391,8 +391,8 @@ export const Attendance: React.FC = () => {
             <div style={{ fontSize: '12px', marginTop: '4px' }}>Barcha talabalar darslarga to'liq va o'z vaqtida qatnashmoqda 🎉</div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
-            <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 14px', fontWeight: 600 }}>SANA</th>
@@ -499,7 +499,7 @@ export const Attendance: React.FC = () => {
             Jami qaydlar: <strong>{data?.totalRecords || 0} ta</strong>
           </div>
         </div>
-        <div style={{ width: '100%', height: 300, minWidth: 0 }}>
+        <div style={{ width: '100%', height: 300 }}>
           {isLoading ? (
             <Skeleton height="100%" />
           ) : dailyChart.length === 0 ? (
@@ -508,7 +508,7 @@ export const Attendance: React.FC = () => {
               <span>Tanlangan davr bo'yicha davomat qaydlari topilmadi</span>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailyChart} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.08)" />
                 <XAxis dataKey="date" stroke="#64748b" fontSize={11} />

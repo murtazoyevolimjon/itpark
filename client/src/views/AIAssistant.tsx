@@ -205,11 +205,11 @@ export const AIAssistant: React.FC = () => {
   ];
 
   const quickQuestions = [
-    "Qarzdorlar kimlar va qancha qarz bor?",
-    "Markazning umumiy holati va statistikasi qanday?",
-    "Davomat ko'rsatkichi va kelmaganlar qanday?",
-    "Ustozlar yuklamasi va guruhlari qanday?",
-    "Oylik tushum, xarajat va kassa qoldig'i qancha?",
+    "Bugungi umumiy holat qanday?",
+    "Qaysi o'quvchilar to'lov qilmagan?",
+    "Davomat bo'yicha kimlarda muammo bor?",
+    "Qaysi o'qituvchining yuki eng ko'p?",
+    "Oylik tushumimiz va xarajatimiz qancha?",
   ];
 
   return (

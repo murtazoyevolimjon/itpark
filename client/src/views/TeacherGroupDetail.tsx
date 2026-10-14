@@ -93,41 +93,18 @@ export const TeacherGroupDetail: React.FC = () => {
   const [attendanceSaveSuccess, setAttendanceSaveSuccess] = useState(false);
 
   // 1. Fetch group directly with getOne
-  const { data: rawGroupData, isLoading: isGroupLoading, refetch: refetchGroup } = useQuery({
+  const { data: rawGroupData, isLoading: isGroupLoading } = useQuery({
     queryKey: ['teacherGroupDetail', groupId],
     queryFn: () => groupsApi.getOne(groupId),
     enabled: !!groupId,
     retry: 2,
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
   });
 
   // 2. Fallback: Fetch all groups to ensure we have the group object
-  const { data: allGroupsData, isLoading: isAllLoading, refetch: refetchAll } = useQuery({
+  const { data: allGroupsData, isLoading: isAllLoading } = useQuery({
     queryKey: ['teacherGroupsList'],
     queryFn: () => groupsApi.getAll({ limit: 100 }),
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
   });
-
-  React.useEffect(() => {
-    const handleGroupsUpdate = () => {
-      refetchGroup();
-      refetchAll();
-    };
-    if (typeof window !== 'undefined') {
-      window.addEventListener('groups_updated', handleGroupsUpdate);
-      window.addEventListener('focus', handleGroupsUpdate);
-    }
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('groups_updated', handleGroupsUpdate);
-        window.removeEventListener('focus', handleGroupsUpdate);
-      }
-    };
-  }, [refetchGroup, refetchAll]);
 
   // 3. Fetch center students to allow adding students
   const { data: allStudentsData } = useQuery({

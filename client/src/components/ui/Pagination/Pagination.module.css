@@ -50,22 +50,3 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-@media (max-width: 640px) {
-  .pagination {
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    text-align: center;
-  }
-  .controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-  }
-  .pageBtn {
-    min-width: 38px;
-    height: 38px;
-    font-size: 13.5px;
-  }
-}

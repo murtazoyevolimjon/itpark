@@ -1,5 +1,5 @@
 .container {
-  min-height: 100dvh;
+  min-height: 100vh;
   background: #090d16;
   color: #f1f5f9;
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -7,7 +7,6 @@
   flex-direction: column;
   width: 100%;
   overflow-x: hidden;
-  padding-bottom: var(--sab);
 }
 
 /* TOP NAVBAR */

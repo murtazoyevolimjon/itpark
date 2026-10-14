@@ -697,23 +697,20 @@ export const AttendanceTake: React.FC = () => {
                       </div>
                     ) : (
                       /* INITIAL TAKING CONTROLS: Choose Kelgan or Kelmagan */
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', flex: '1 1 220px', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           type="button"
                           disabled={!timeEligibility.canTakeAttendance}
                           onClick={() => handleStatusChange(studentId, 'KELGAN')}
                           style={{
-                            padding: '8px 16px',
-                            minHeight: '42px',
-                            flex: '1 1 100px',
-                            borderRadius: '10px',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
                             fontSize: '13px',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
                             opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
                             gap: '6px',
                             transition: 'all 0.15s ease',
                             border:
@@ -723,10 +720,9 @@ export const AttendanceTake: React.FC = () => {
                             background:
                               currentStatus === 'KELGAN' ? '#10b981' : 'var(--surface)',
                             color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text)',
-                            touchAction: 'manipulation',
                           }}
                         >
-                          <CheckCircle2 size={16} /> Kelgan
+                          <CheckCircle2 size={15} /> Kelgan
                         </button>
 
                         <button
@@ -734,17 +730,14 @@ export const AttendanceTake: React.FC = () => {
                           disabled={!timeEligibility.canTakeAttendance}
                           onClick={() => handleStatusChange(studentId, 'KELMAGAN')}
                           style={{
-                            padding: '8px 16px',
-                            minHeight: '42px',
-                            flex: '1 1 100px',
-                            borderRadius: '10px',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
                             fontSize: '13px',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             cursor: timeEligibility.canTakeAttendance ? 'pointer' : 'not-allowed',
                             opacity: timeEligibility.canTakeAttendance ? 1 : 0.6,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
                             gap: '6px',
                             transition: 'all 0.15s ease',
                             border:
@@ -754,10 +747,9 @@ export const AttendanceTake: React.FC = () => {
                             background:
                               currentStatus === 'KELMAGAN' ? '#ef4444' : 'var(--surface)',
                             color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text)',
-                            touchAction: 'manipulation',
                           }}
                         >
-                          <XCircle size={16} /> Kelmagan
+                          <XCircle size={15} /> Kelmagan
                         </button>
                       </div>
                     )}

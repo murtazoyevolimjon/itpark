@@ -477,50 +477,6 @@
   }
 }
 
-@media (max-width: 640px) {
-  .heroCard,
-  .glassCard,
-  .createLessonCard,
-  .eslatmaCard,
-  .davomatBottomCard {
-    padding: 16px;
-    border-radius: 16px;
-  }
-  .heroContent {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .formGrid {
-    grid-template-columns: 1fr;
-  }
-  .mainTabsRow,
-  .subtabsRow {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap;
-    padding-bottom: 4px;
-    width: 100%;
-  }
-  .tabBtn,
-  .subtabBtn {
-    flex-shrink: 0;
-  }
-  .modalBackdrop {
-    padding: 0;
-    align-items: flex-end;
-  }
-  .modalContent {
-    border-radius: 20px 20px 0 0;
-    max-height: 90dvh;
-    overflow-y: auto;
-    padding: 20px 16px calc(20px + var(--sab));
-  }
-  .submitBtn {
-    width: 100%;
-    min-height: 44px;
-  }
-}
-
 .noticeAlertBanner {
   display: flex;
   align-items: center;

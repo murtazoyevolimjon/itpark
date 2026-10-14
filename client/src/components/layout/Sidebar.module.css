@@ -1,7 +1,6 @@
 .sidebar {
   width: 260px;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100vh;
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;
@@ -10,9 +9,7 @@
   top: 0;
   left: 0;
   z-index: 50;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
-  padding-top: var(--sat);
-  padding-bottom: var(--sab);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
 }
 
 .logoArea {
@@ -88,7 +85,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  min-height: 44px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 13.5px;
@@ -96,7 +92,6 @@
   transition: all 0.2s ease;
   text-decoration: none;
   cursor: pointer;
-  touch-action: manipulation;
 }
 
 .navItemLeft {
@@ -125,10 +120,7 @@
 }
 
 .subNavItem {
-  padding: 10px 12px;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 13px;
@@ -147,45 +139,24 @@
   background-color: var(--card-subtle) !important;
 }
 
-.sidebarCloseBtn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  border-radius: 8px;
-  color: var(--text-muted);
-  background: var(--card-subtle);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  margin-left: 6px;
-}
-
 .mobileOverlay {
   display: none;
   position: fixed;
   inset: 0;
-  background-color: rgba(15, 23, 42, 0.65);
+  background-color: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   z-index: 45;
 }
 
 @media (max-width: 1023px) {
   .sidebar {
-    width: min(300px, 86vw);
     transform: translateX(-100%);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
   }
   .sidebarOpen {
     transform: translateX(0);
   }
   .mobileOverlayOpen {
     display: block;
-  }
-  .sidebarCloseBtn {
-    display: flex;
   }
 }
 

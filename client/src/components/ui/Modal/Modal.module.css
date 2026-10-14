@@ -4,9 +4,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,42 +20,36 @@
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 520px;
-  max-height: min(90dvh, 800px);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid var(--border);
+  animation: slideUp 0.2s ease-out;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 22px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text);
-  margin: 0;
 }
 
 .closeBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   color: var(--text-muted);
   transition: background-color 0.2s, color 0.2s;
-  cursor: pointer;
 }
 
 .closeBtn:hover {
@@ -65,10 +58,8 @@
 }
 
 .body {
-  padding: 20px 22px;
+  padding: 24px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  flex: 1;
 }
 
 .footer {
@@ -76,10 +67,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 14px 22px;
+  padding: 16px 24px;
   border-top: 1px solid var(--border);
   background-color: var(--card-subtle);
-  flex-shrink: 0;
 }
 
 @keyframes fadeIn {
@@ -88,48 +78,6 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(18px) scale(0.98); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-@keyframes slideUpSheet {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-/* Mobile Bottom-sheet / Full-width Drawer */
-@media (max-width: 640px) {
-  .overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .modal {
-    max-width: 100%;
-    width: 100%;
-    max-height: 92dvh;
-    border-radius: 20px 20px 0 0;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .header {
-    padding: 14px 16px;
-  }
-
-  .body {
-    padding: 16px;
-  }
-
-  .footer {
-    padding: 12px 16px calc(12px + var(--sab));
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-
-  .footer > * {
-    width: 100%;
-  }
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }

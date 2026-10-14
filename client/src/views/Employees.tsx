@@ -189,7 +189,7 @@ export const Employees: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Xodimlar</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
           XODIM QO'SHISH
@@ -234,7 +234,7 @@ export const Employees: React.FC = () => {
         title={selectedEmployee ? 'Xodimni tahrirlash' : 'Xodim Qo\'shish'}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="responsive-form-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
               label="Ism"
               required

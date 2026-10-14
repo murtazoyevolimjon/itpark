@@ -598,7 +598,7 @@ export const Students: React.FC = () => {
             searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
           />
 
-          <div className="responsive-form-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
               label="Ism"
               required
@@ -661,7 +661,7 @@ export const Students: React.FC = () => {
               </span>
             </div>
 
-            <div className="responsive-form-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
                 <Input
                   label="Login (Yunik)"
@@ -767,7 +767,7 @@ export const Students: React.FC = () => {
             </div>
           </div>
 
-          <div className="responsive-form-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
               label="Otasining telefoni"
               placeholder="+998 90 123 45 67"

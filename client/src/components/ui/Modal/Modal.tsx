@@ -27,14 +27,8 @@ export const Modal: React.FC<ModalProps> = ({
         onClose();
       }
     };
-    if (isOpen) {
-      document.body.classList.add('scroll-locked');
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      document.body.classList.remove('scroll-locked');
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
