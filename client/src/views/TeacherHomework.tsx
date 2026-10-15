@@ -441,7 +441,7 @@ export const TeacherHomework: React.FC = () => {
               {filteredHomeworks.map((hw) => (
                 <div key={hw.id} className={styles.hwItem}>
                   <div className={styles.hwItemHeader}>
-                    <div>
+                    <div className={styles.hwItemHeaderMain}>
                       <div className={styles.hwBadgesRow}>
                         <span className={styles.groupBadge}>
                           {hw.groupName}
@@ -484,9 +484,9 @@ export const TeacherHomework: React.FC = () => {
                   {/* Attached File Download Button */}
                   {hw.file && (
                     <div className={styles.downloadFileBox}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <div className={styles.downloadFileInfo}>
                         {getFileIcon(hw.file.name)}
-                        <div style={{ minWidth: 0 }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
                           <div className={styles.downloadFileName} title={hw.file.name}>
                             {hw.file.name}
                           </div>

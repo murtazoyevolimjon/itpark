@@ -3,6 +3,10 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .pageHeader {
@@ -11,6 +15,8 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pageTitle {
@@ -36,12 +42,15 @@
   border-radius: 16px;
   border: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .filterLabel {
   font-size: 13px;
   font-weight: 700;
   color: #475569;
+  white-space: nowrap;
 }
 
 .groupSelect {
@@ -53,18 +62,23 @@
   outline: none;
   cursor: pointer;
   max-width: 260px;
+  min-width: 0;
 }
 
 .contentGrid {
   display: grid;
-  grid-template-columns: 440px 1fr;
+  grid-template-columns: 440px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1024px) {
   .contentGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -79,6 +93,11 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .listCard {
@@ -91,12 +110,18 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .cardHeader {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .cardHeaderIcon {
@@ -107,6 +132,7 @@
   color: #ffffff;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 
 .cardTitle {
@@ -115,12 +141,16 @@
   color: #0f172a;
   margin: 0;
   letter-spacing: -0.3px;
+  word-break: break-word;
 }
 
 .fieldGroup {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .fieldLabel {
@@ -131,6 +161,8 @@
 
 .inputField {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
@@ -149,6 +181,8 @@
 
 .textAreaField {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
@@ -180,6 +214,9 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .dropZone:hover {
@@ -202,6 +239,7 @@
   display: grid;
   place-items: center;
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .dropZone:hover .dropZoneIcon {
@@ -212,17 +250,20 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+  max-width: 100%;
 }
 
 .dropZoneTitle {
   font-size: 13px;
   font-weight: 700;
   color: #1e293b;
+  word-break: break-word;
 }
 
 .dropZoneSub {
   font-size: 11.5px;
   color: #64748b;
+  word-break: break-word;
 }
 
 /* Attached File Preview Card */
@@ -235,6 +276,10 @@
   border-radius: 16px;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .attachedFileName {
@@ -266,6 +311,7 @@
   place-items: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .removeFileBtn:hover {
@@ -276,15 +322,19 @@
 /* File Icons */
 .fileIconPdf {
   color: #dc2626;
+  flex-shrink: 0;
 }
 .fileIconZip {
   color: #d97706;
+  flex-shrink: 0;
 }
 .fileIconImg {
   color: #059669;
+  flex-shrink: 0;
 }
 .fileIconDefault {
   color: #2563eb;
+  flex-shrink: 0;
 }
 
 /* Save Homework Button */
@@ -301,6 +351,7 @@
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .saveHwBtn:hover {
@@ -319,6 +370,7 @@
   color: #dc2626;
   font-size: 12.5px;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 .successAlert {
@@ -332,6 +384,7 @@
   color: #166534;
   font-size: 12.5px;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 /* Homework Items List */
@@ -339,6 +392,10 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .hwItem {
@@ -351,6 +408,11 @@
   flex-direction: column;
   gap: 12px;
   transition: all 0.2s ease;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .hwItem:hover {
@@ -363,14 +425,27 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.hwItemHeaderMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
 }
 
 .hwBadgesRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .groupBadge {
@@ -382,6 +457,8 @@
   color: #0284c7;
   font-size: 11px;
   font-weight: 700;
+  max-width: 100%;
+  word-break: break-word;
 }
 
 .courseBadge {
@@ -393,6 +470,8 @@
   color: #475569;
   font-size: 11px;
   font-weight: 600;
+  max-width: 100%;
+  word-break: break-word;
 }
 
 .dateBadge {
@@ -405,6 +484,7 @@
   color: #64748b;
   font-size: 11px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .hwTitle {
@@ -413,6 +493,8 @@
   color: #0f172a;
   margin: 0;
   line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .hwDesc {
@@ -421,6 +503,8 @@
   margin: 0;
   line-height: 1.5;
   white-space: pre-line;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .deleteHwBtn {
@@ -451,10 +535,14 @@
   background: #fffbeb;
   border: 1px solid #fef3c7;
   width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
 }
 
 .clockIcon {
   color: #d97706;
+  flex-shrink: 0;
 }
 
 .deadlineLabel {
@@ -467,6 +555,7 @@
   font-size: 12px;
   font-weight: 600;
   color: #92400e;
+  word-break: break-all;
 }
 
 /* Download file box */
@@ -480,6 +569,20 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   margin-top: 4px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.downloadFileInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .downloadFileName {
@@ -489,17 +592,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 280px;
+  max-width: 100%;
 }
 
 .downloadFileSize {
   font-size: 11.5px;
   color: #64748b;
+  display: block;
 }
 
 .downloadBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 6px 14px;
   border-radius: 10px;
@@ -512,6 +617,7 @@
   transition: all 0.2s ease;
   box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .downloadBtn:hover {
@@ -538,6 +644,94 @@
   font-size: 14px;
   font-weight: 500;
   max-width: 360px;
+}
+
+/* ========================================================
+   RESPONSIVE DESIGN (TELEFON & PLANSHET)
+   ======================================================== */
+@media (max-width: 768px) {
+  .container {
+    gap: 14px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .groupFilterWrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .groupSelect {
+    max-width: none;
+    flex: 1;
+  }
+
+  .createCard,
+  .listCard {
+    padding: 16px;
+    border-radius: 18px;
+    gap: 14px;
+  }
+
+  .hwItem {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .dropZone {
+    padding: 18px 12px;
+  }
+}
+
+@media (max-width: 540px) {
+  .downloadFileBox {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .downloadBtn {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 14px;
+  }
+
+  .deadlineRow {
+    width: 100%;
+  }
+
+  .attachedFileName {
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 400px) {
+  .createCard,
+  .listCard {
+    padding: 12px;
+  }
+
+  .hwItem {
+    padding: 12px 10px;
+  }
+
+  .hwTitle {
+    font-size: 15px;
+  }
+
+  .saveHwBtn {
+    padding: 10px 14px;
+    font-size: 13.5px;
+  }
 }
 
 /* ========================================================

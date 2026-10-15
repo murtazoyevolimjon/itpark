@@ -4,13 +4,14 @@ import styles from './Input.module.css';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  helperText?: string;
   required?: boolean;
   icon?: React.ReactNode;
   rightElement?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, required, icon, rightElement, className = '', id, ...props }, ref) => {
+  ({ label, error, helperText, required, icon, rightElement, className = '', id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -39,7 +40,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           {rightElement && <div className={styles.rightElement}>{rightElement}</div>}
         </div>
-        {error && <span className={styles.errorText}>{error}</span>}
+        {error ? (
+          <span className={styles.errorText}>{error}</span>
+        ) : helperText ? (
+          <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginTop: '4px', lineHeight: 1.4 }}>
+            {helperText}
+          </span>
+        ) : null}
       </div>
     );
   },

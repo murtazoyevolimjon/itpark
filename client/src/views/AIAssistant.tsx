@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   Sparkles,
@@ -50,6 +50,43 @@ export const AIAssistant: React.FC = () => {
   const [analysisSource, setAnalysisSource] = useState<string>('');
   const [copiedText, setCopiedText] = useState(false);
 
+  // Determine user role and title
+  const [role, setRole] = useState<'ADMIN' | 'TEACHER' | 'STUDENT' | 'SUPERADMIN'>('ADMIN');
+  const [roleTitle, setRoleTitle] = useState<string>('Markaz');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sa = localStorage.getItem('superadmin_user');
+      if (sa) {
+        try {
+          const parsed = JSON.parse(sa);
+          if (parsed && parsed.role === 'SUPERADMIN') {
+            setRole('SUPERADMIN');
+            setRoleTitle('CRM Platformasi (Dasturchi)');
+            return;
+          }
+        } catch {}
+      }
+    }
+
+    if (user) {
+      const r = (user.role || 'ADMIN').toUpperCase();
+      if (r === 'TEACHER') {
+        setRole('TEACHER');
+        setRoleTitle(user.fullName || 'Ustoz');
+      } else if (r === 'STUDENT') {
+        setRole('STUDENT');
+        setRoleTitle(user.fullName || "O'quvchi");
+      } else if (r === 'SUPERADMIN') {
+        setRole('SUPERADMIN');
+        setRoleTitle('Bosh Dasturchi');
+      } else {
+        setRole('ADMIN');
+        setRoleTitle(user.centerName || 'Markaz');
+      }
+    }
+  }, [user]);
+
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -95,11 +132,12 @@ export const AIAssistant: React.FC = () => {
         date_range: 'Oxirgi 30 kun',
       }),
     onSuccess: (data) => {
-      setAnalysisResult(data.result);
-      setAnalysisSource(data.source === 'gemini_ai' ? 'Google Gemini 1.5' : 'Markaz AI Tahlil Dvigateli');
+      const resText = typeof data?.result === 'string' ? data.result : String(data?.result || 'Tahlil muvaffaqiyatli yakunlandi.');
+      setAnalysisResult(resText);
+      setAnalysisSource(data?.source === 'gemini_ai' ? 'Google Gemini AI' : 'Markaz AI Tahlil Dvigateli');
     },
     onError: (err: any) => {
-      error(err.response?.data?.message || 'Tahlil qilishda xatolik yuz berdi');
+      error(err.response?.data?.message || err.message || 'Tahlil qilishda xatolik yuz berdi');
     },
   });
 
@@ -123,18 +161,19 @@ export const AIAssistant: React.FC = () => {
         user_question: question,
       }),
     onSuccess: (data) => {
+      const resText = typeof data?.result === 'string' ? data.result : String(data?.result || 'Javob tayyorlandi.');
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           sender: 'ai',
-          text: data.result,
+          text: resText,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
     },
     onError: (err: any) => {
-      error(err.response?.data?.message || 'Savolga javob olishda xatolik yuz berdi');
+      error(err.response?.data?.message || err.message || 'Savolga javob olishda xatolik yuz berdi');
     },
   });
 
@@ -160,57 +199,173 @@ export const AIAssistant: React.FC = () => {
   }, [messages, chatMutation.isPending]);
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(true);
-    success("Xulosa nusxalandi!");
-    setTimeout(() => setCopiedText(false), 2000);
+    try {
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopiedText(true);
+      success("Xulosa nusxalandi!");
+      setTimeout(() => setCopiedText(false), 2000);
+    } catch {
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2000);
+    }
   };
 
-  const tasksList: { type: AITaskType; title: string; desc: string; icon: any; color: string }[] = [
-    {
-      type: 'dashboard_summary',
-      title: 'Umumiy Dashboard',
-      desc: "O'quvchilar, guruhlar, davomat va to'lovlar holati xulosasi",
-      icon: LayoutDashboard,
-      color: '#3b82f6',
-    },
-    {
-      type: 'student_analysis',
-      title: "O'quvchilar Tahlili",
-      desc: "O'quvchilar holati, qarzdorlar va tark etish xavfidagilar",
-      icon: Users,
-      color: '#10b981',
-    },
-    {
-      type: 'attendance_analysis',
-      title: 'Davomat Tahlili',
-      desc: "Davomati 70% dan past guruhlar va surunkali qoldiruvchilar",
-      icon: CalendarCheck,
-      color: '#f59e0b',
-    },
-    {
-      type: 'finance_analysis',
-      title: 'Moliyaviy Tahlil',
-      desc: "Tushum, xarajat, qarzdorlik va eslatma xabari matni",
-      icon: DollarSign,
-      color: '#8b5cf6',
-    },
-    {
-      type: 'teacher_load',
-      title: 'Ustozlar Yuklamasi',
-      desc: "O'qituvchilar guruhlari balansi va qayta taqsimlash tavsiyasi",
-      icon: GraduationCap,
-      color: '#ec4899',
-    },
-  ];
+  const tasksList: { type: AITaskType; title: string; desc: string; icon: any; color: string }[] = useMemo(() => {
+    if (role === 'SUPERADMIN') {
+      return [
+        {
+          type: 'dashboard_summary',
+          title: 'Platforma Dashboardi',
+          desc: "Barcha markazlar, talabalar va tizim yuklamasi xulosasi",
+          icon: LayoutDashboard,
+          color: '#3b82f6',
+        },
+        {
+          type: 'student_analysis',
+          title: "O'quvchilar Tahlili",
+          desc: "Tizim bo'yicha talabalar faolligi va umumiy soni",
+          icon: Users,
+          color: '#10b981',
+        },
+        {
+          type: 'attendance_analysis',
+          title: 'Platforma Davomati',
+          desc: "O'rtacha akademik davomat darajasi statistikasi",
+          icon: CalendarCheck,
+          color: '#f59e0b',
+        },
+        {
+          type: 'finance_analysis',
+          title: 'Global Moliya',
+          desc: "Barcha markazlar tushumi va to'lovlar balansi",
+          icon: DollarSign,
+          color: '#8b5cf6',
+        },
+        {
+          type: 'teacher_load',
+          title: 'Ustozlar & Markazlar',
+          desc: "O'qituvchilar soni va guruhlar taqsimoti",
+          icon: GraduationCap,
+          color: '#ec4899',
+        },
+      ];
+    }
 
-  const quickQuestions = [
-    "Bugungi umumiy holat qanday?",
-    "Qaysi o'quvchilar to'lov qilmagan?",
-    "Davomat bo'yicha kimlarda muammo bor?",
-    "Qaysi o'qituvchining yuki eng ko'p?",
-    "Oylik tushumimiz va xarajatimiz qancha?",
-  ];
+    if (role === 'TEACHER') {
+      return [
+        {
+          type: 'dashboard_summary',
+          title: 'Mening Guruhlarim',
+          desc: "Biriktirilgan guruhlarim va o'quvchilarim umumiy holati",
+          icon: LayoutDashboard,
+          color: '#3b82f6',
+        },
+        {
+          type: 'student_analysis',
+          title: "O'quvchilarim Faolligi",
+          desc: "Talabalarim faolligi va qarzdorlik holati",
+          icon: Users,
+          color: '#10b981',
+        },
+        {
+          type: 'attendance_analysis',
+          title: 'Guruhlarim Davomati',
+          desc: "Darslarga qatnashish va kechikishlar tahlili",
+          icon: CalendarCheck,
+          color: '#f59e0b',
+        },
+        {
+          type: 'teacher_load',
+          title: 'Dars Yuklamam',
+          desc: "Haftalik dars soatlarim va guruhlar balansi",
+          icon: GraduationCap,
+          color: '#ec4899',
+        },
+        {
+          type: 'finance_analysis',
+          title: 'Metodika & Rejalar',
+          desc: "Dars metodikasi, reja va amaliy mashqlar tavsiyasi",
+          icon: DollarSign,
+          color: '#8b5cf6',
+        },
+      ];
+    }
+
+    return [
+      {
+        type: 'dashboard_summary',
+        title: 'Umumiy Dashboard',
+        desc: "O'quvchilar, guruhlar, davomat va to'lovlar holati xulosasi",
+        icon: LayoutDashboard,
+        color: '#3b82f6',
+      },
+      {
+        type: 'student_analysis',
+        title: "O'quvchilar Tahlili",
+        desc: "O'quvchilar holati, qarzdorlar va tark etish xavfidagilar",
+        icon: Users,
+        color: '#10b981',
+      },
+      {
+        type: 'attendance_analysis',
+        title: 'Davomat Tahlili',
+        desc: "Davomati 70% dan past guruhlar va surunkali qoldiruvchilar",
+        icon: CalendarCheck,
+        color: '#f59e0b',
+      },
+      {
+        type: 'finance_analysis',
+        title: 'Moliyaviy Tahlil',
+        desc: "Tushum, xarajat, qarzdorlik va eslatma xabari matni",
+        icon: DollarSign,
+        color: '#8b5cf6',
+      },
+      {
+        type: 'teacher_load',
+        title: 'Ustozlar Yuklamasi',
+        desc: "O'qituvchilar guruhlari balansi va qayta taqsimlash tavsiyasi",
+        icon: GraduationCap,
+        color: '#ec4899',
+      },
+    ];
+  }, [role]);
+
+  const quickQuestions = useMemo(() => {
+    if (role === 'SUPERADMIN') {
+      return [
+        "Platformadagi umumiy holat qanday?",
+        "Jami nechta faol o'quvchi va guruh bor?",
+        "Qaysi markazlar eng faol ishlamoqda?",
+        "Platforma oylik aylanmasi qancha?",
+        "Tizim yuklamasi va xavfsizlik holati qanday?",
+      ];
+    }
+    if (role === 'TEACHER') {
+      return [
+        "Mening guruhlarimdagi holat qanday?",
+        "Davomati past o'quvchilar kimlar?",
+        "Keyingi dars uchun amaliy mashq tavsiya qil",
+        "Dars metodikasini qanday yaxshilash mumkin?",
+        "O'quvchilar reytingini oshirish sirlari nima?",
+      ];
+    }
+    return [
+      "Bugungi umumiy holat qanday?",
+      "Qaysi o'quvchilar to'lov qilmagan?",
+      "Davomat bo'yicha kimlarda muammo bor?",
+      "Qaysi o'qituvchining yuki eng ko'p?",
+      "Oylik tushumimiz va xarajatimiz qancha?",
+    ];
+  }, [role]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
@@ -271,7 +426,7 @@ export const AIAssistant: React.FC = () => {
               </span>
             </div>
             <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.7)', margin: '4px 0 0 0' }}>
-              {user?.centerName || 'Markaz'} ma'lumotlari asosida sun'iy intellekt xulosalari va tezkor tahlil
+              {roleTitle} ma'lumotlari asosida sun'iy intellekt xulosalari va tezkor tahlil
             </p>
           </div>
         </div>
@@ -468,7 +623,7 @@ export const AIAssistant: React.FC = () => {
                   fontFamily: 'inherit',
                 }}
               >
-                {analysisResult}
+                {typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult, null, 2)}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
@@ -530,7 +685,7 @@ export const AIAssistant: React.FC = () => {
                       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
                     }}
                   >
-                    {m.text}
+                    {typeof m.text === 'string' ? m.text : JSON.stringify(m.text, null, 2)}
                   </div>
                 </div>
               ))}

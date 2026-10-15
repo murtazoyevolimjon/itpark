@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { getSuperAdminAuth } from '@/lib/superadminAuth';
 
 const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv markazlari (IT-markaz, til markazi, repetitorlik markazi) uchun CRM tizimida ishlaydigan aqlli, professional analitik yordamchisan.
 
 ## ROLING
-- Markaz administratori, direktori yoki o'qituvchisi uchun xolis, aniq, tushunarli va foydali maslahatchisan.
+- Markaz administratori, direktori, bosh dasturchisi, o'qituvchisi yoki o'quvchisi uchun xolis, aniq, tushunarli va foydali maslahatchisan.
 - Faqat o'zbek tilida, do'stona, hurmatli va professional uslubda javob berasan.
 - O'quv markaziga oid statistik savollarda faqat berilgan ma'lumotlarga tayangan holda gapirasan.
 
@@ -21,6 +22,7 @@ const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv m
 
 ### 1. dashboard_summary — Umumiy xulosa
 Markazdagi jami o'quvchilar soni, faol guruhlar, davomat ko'rsatkichi, to'lovlar va qarzdorlik holatini umumlashtir.
+Agar foydalanuvchi DASTURCHI (SUPERADMIN) bo'lsa, butun CRM platformasi bo'yicha markazlar soni, jami talabalar va tizim barqarorligini umumlashtir.
 Agar foydalanuvchi o'qituvchi bo'lsa, avvalo uning o'ziga biriktirilgan guruhlari va o'quvchilari holatini ham alohida ko'rsat.
 Chiqish: 3–5 gapdan iborat kunlik/oylik holat xulosasi + eng muhim 1–2 ta amaliy tavsiya.
 
@@ -45,8 +47,12 @@ Foydalanuvchi savoli: "{{user_question}}"
 QOIDALAR:
 A) Agar savol markaz, guruhlar, o'quvchilar, to'lovlar, qarzdorlik yoki davomat haqida bo'lsa:
    Faqat {{data}} dagi aniq raqamlar va faktlar asosida to'g'ri hisob-kitob bilan javob ber.
-B) Agar savol umumiy mavzuda bo'lsa (masalan: dasturlash, Python, JavaScript, ta'lim, dars o'tish metodikasi, dars rejasi tuzish, motivatsiya, biznes, IT tushunchalari, erkin suhbat, maslahat yoki har qanday savol):
-   Juda bilimdon, tushunarli, samimiy va keng qamrovli tarzda to'liq o'zbek tilida erkin javob ber! Hech qachon "bu ma'lumot mavjud emas" deb cheklanib qolma.
+B) Agar foydalanuvchi o'quvchi (STUDENT) bo'lsa va dars mavzusi, dasturlash yoki vazifa bo'yicha savol bersa:
+   O'quvchiga yoqimli, samimiy AI Repetitor sifatida oddiy va amaliy kodlar orqali tushuntir.
+C) Agar foydalanuvchi dasturchi bo'lsa:
+   Texnik, arxitektura va platforma boshqaruvi bo'yicha professional maslahat ber.
+D) Boshqa har qanday savolga:
+   Juda bilimdon, samimiy va keng qamrovli tarzda to'liq o'zbek tilida javob ber.
 
 ## CHIQISH FORMATI
 Oddiy matn ko'rinishida javob ber (CRM interfeysida chiroyli ko'rsatilishi uchun keraksiz murakkab Markdown belgilarisiz). Muhim fikrlarni yangi qatordan "•" bilan ajrat.`;
@@ -63,7 +69,8 @@ function generateBuiltinAnalysis(
   rawData: any,
   userQuestion?: string,
   callerRole?: string,
-  teacherInfo?: { name: string; groupsCount: number; studentsCount: number }
+  teacherInfo?: { name: string; groupsCount: number; studentsCount: number },
+  extraStats?: { centersCount?: number }
 ): string {
   const {
     students = [],
@@ -73,8 +80,10 @@ function generateBuiltinAnalysis(
     attendances = [],
     expenses = [],
     studentGroups = [],
+    centers = [],
   } = rawData || {};
 
+  const totalCenters = extraStats?.centersCount || centers.length || 1;
   const totalStudents = students.length;
   const activeStudents = students.filter((s: any) => s.status === 'FAOL').length;
   const totalGroups = groups.length;
@@ -104,6 +113,24 @@ function generateBuiltinAnalysis(
   if (taskType === 'dashboard_summary') {
     const lines: string[] = [];
 
+    if (callerRole === 'SUPERADMIN') {
+      lines.push(
+        `Hurmatli Bosh Dasturchi! "Markaz CRM" platformasida hozirda jami ${totalCenters} ta markaz ro'yxatga olingan.`
+      );
+      lines.push(
+        `Platforma bo'yicha jami o'quvchilar: ${totalStudents} nafar (${activeStudents} nafari faol ta'lim olmoqda).`
+      );
+      lines.push(
+        `Jami o'qituvchilar soni: ${totalTeachers} nafar, faol guruhlar esa ${totalGroups} tani tashkil etadi.`
+      );
+      lines.push(
+        `Umumiy moliyaviy aylanma: Yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik ${formatMoney(totalDebt)} so'm.`
+      );
+      lines.push(`• Tizim barqaror va barcha markaz ma'lumotlar bazalari normal yuklama bilan ishlamoqda.`);
+      lines.push(`• Tavsiya: Markazlar faolligini oshirish uchun yangi o'quv markazlarini jalb qilish va o'qituvchilar reytingini kengaytirish mumkin.`);
+      return lines.join('\n');
+    }
+
     if (callerRole === 'TEACHER' && teacherInfo) {
       lines.push(
         `Ustoz ${teacherInfo.name}, sizga biriktirilgan ${teacherInfo.groupsCount} ta guruh va jami ${teacherInfo.studentsCount} nafar o'quvchi mavjud.`
@@ -111,12 +138,22 @@ function generateBuiltinAnalysis(
       lines.push(
         `"${centerName}" markazida esa umumiy ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh faoliyat yuritmoqda.`
       );
-    } else {
-      lines.push(
-        `"${centerName}" o'quv markazida hozirda jami ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh mavjud.`
-      );
+      lines.push(`Guruhlaringizda umumiy davomat va faollik ko'rsatkichi ijobiy holatda.`);
+      lines.push(`• Tavsiya: Har bir dars mavzusi va uyga vazifalarni tizimga o'z vaqtida yuklab boring, bu o'quvchilar reytingini oshiradi.`);
+      return lines.join('\n');
     }
 
+    if (callerRole === 'STUDENT') {
+      lines.push(`Salom! Siz "${centerName}" markazining faol o'quvchisisiz.`);
+      lines.push(`AI Repetitor sizga dars mavzularini tushunish, kod yozish va uyga vazifalarni bajarishda 24/7 yordam beradi.`);
+      lines.push(`• O'rganishda davom eting va har bir darsda faol qatnashib IT-Coins ballaringizni yig'ing!`);
+      return lines.join('\n');
+    }
+
+    // Admin / Default
+    lines.push(
+      `"${centerName}" o'quv markazida hozirda jami ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh mavjud.`
+    );
     lines.push(`Umumiy o'rtacha davomat ko'rsatkichi: ${attendanceRate}%.`);
     lines.push(
       `Moliyaviy ko'rsatkichlar: Jami yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik esa ${formatMoney(totalDebt)} so'mni tashkil qiladi.`
@@ -211,9 +248,17 @@ function generateBuiltinAnalysis(
       return "Savolingizni bering. Xoh markazingiz ma'lumotlari, xoh dasturlash yoki boshqa erkin mavzuda javob berishga tayyorman!";
     }
 
+    // Student tutor questions
+    if (callerRole === 'STUDENT' || qLower.includes('mavzu') || qLower.includes('tushuntir') || qLower.includes('kod') || qLower.includes('xato')) {
+      if (qLower.includes('xato') || qLower.includes('error')) {
+        return `Koddagi xatolikni bartaraf etish bosqichlari:\n1. Brauzerda F12 tugmasini bosib Console dagi qizil xatolik matnini o'qing.\n2. O'zgaruvchilar va komponent nomlarining to'g'ri yozilganini (harf kattaligi sezgir) tekshiring.\n3. Qavslar va import yo'llarini tekshiring.\n\nKodingiz qismini yuborsangiz, xatoni birgalikda tuzatamiz! 👍`;
+      }
+      return `Dasturlash bo'yicha tavsiya:\nHar qanday murakkab masalani kichik bo'laklarga ajrating. Nazariyani o'qib, uni amaliy kodda sinab ko'ring. Savolingiz bo'yicha aniq kod yozishingiz mumkin, tahlil qilib beraman!`;
+    }
+
     // Greetings
     if (qLower.match(/^(salom|assalom|qalesiz|qandaysiz|qalaysan|privet|hello|hi)/i)) {
-      return `Assalomu alaykum! Men "${centerName}" markazining AI yordamchisiman. Sizga qanday yordam bera olaman? Xoh markaz statistikasi, xoh dasturlash yoki boshqa mavzuda savol bering.`;
+      return `Assalomu alaykum! Men "${centerName}" tizimining AI yordamchisiman. Sizga qanday yordam bera olaman? Xoh CRM statistikasi, xoh ta'lim va dasturlash mavzusida savol bering.`;
     }
 
     // Center-specific questions
@@ -246,46 +291,99 @@ function generateBuiltinAnalysis(
 
 export async function POST(req: NextRequest) {
   try {
+    const superAdmin = getSuperAdminAuth(req);
     const authUser = getAuthUser(req);
-    if (!authUser || !authUser.centerId) {
+
+    if (!superAdmin && (!authUser || !authUser.centerId)) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const isSuperAdmin = !!superAdmin;
+    const effectiveRole = isSuperAdmin ? 'SUPERADMIN' : (authUser?.role || 'ADMIN');
+    const effectiveCenterId = authUser?.centerId;
+
+    const body = await req.json().catch(() => ({}));
     const {
       task_type = 'dashboard_summary',
       date_range = 'Oxirgi 30 kun',
       user_question = '',
+      prompt = '',
       gemini_api_key = '',
     } = body;
 
+    const effectiveQuestion = user_question || prompt || '';
+
     const supabase = createServerSupabaseClient();
 
-    // 1. Strict multi-tenant data fetching (ONLY for authUser.centerId!)
-    // Using exact schema column names from supabase/schema.sql
-    const [
-      { data: center },
-      { data: groups },
-      { data: students },
-      { data: studentGroups },
-      { data: payments },
-      { data: attendances },
-      { data: teachers },
-      { data: expenses },
-      { data: courses },
-    ] = await Promise.all([
-      supabase.from('centers').select('id, name').eq('id', authUser.centerId).maybeSingle(),
-      supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, courseId, status').eq('centerId', authUser.centerId),
-      supabase.from('students').select('id, firstName, lastName, phone, status, createdAt').eq('centerId', authUser.centerId),
-      supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', authUser.centerId),
-      supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', authUser.centerId),
-      supabase.from('attendances').select('id, status, date, studentId, groupId').eq('centerId', authUser.centerId),
-      supabase.from('teachers').select('id, firstName, lastName, phone, status').eq('centerId', authUser.centerId),
-      supabase.from('expenses').select('id, amount, type, status, createdAt').eq('centerId', authUser.centerId),
-      supabase.from('courses').select('id, name, price').eq('centerId', authUser.centerId),
-    ]);
+    let centerName = 'O\'quv Markazi';
+    let students: any[] = [];
+    let groups: any[] = [];
+    let teachers: any[] = [];
+    let payments: any[] = [];
+    let attendances: any[] = [];
+    let expenses: any[] = [];
+    let courses: any[] = [];
+    let studentGroups: any[] = [];
+    let centersCount = 1;
 
-    const centerName = center?.name || 'O\'quv Markazi';
+    if (isSuperAdmin) {
+      centerName = 'Barcha Markazlar (CRM Platformasi)';
+      const [
+        { data: allCenters },
+        { data: allGroups },
+        { data: allStudents },
+        { data: allTeachers },
+        { data: allPayments },
+        { data: allExpenses },
+      ] = await Promise.all([
+        supabase.from('centers').select('id, name, status, createdAt'),
+        supabase.from('groups').select('id, name, status, centerId'),
+        supabase.from('students').select('id, firstName, lastName, status, centerId'),
+        supabase.from('teachers').select('id, firstName, lastName, status, centerId'),
+        supabase.from('payments').select('id, amount, status, centerId'),
+        supabase.from('expenses').select('id, amount, status, centerId'),
+      ]);
+
+      centersCount = (allCenters || []).length;
+      students = allStudents || [];
+      groups = allGroups || [];
+      teachers = allTeachers || [];
+      payments = allPayments || [];
+      expenses = allExpenses || [];
+    } else {
+      // 1. Strict multi-tenant data fetching (ONLY for authUser.centerId!)
+      const [
+        { data: center },
+        { data: cGroups },
+        { data: cStudents },
+        { data: cStudentGroups },
+        { data: cPayments },
+        { data: cAttendances },
+        { data: cTeachers },
+        { data: cExpenses },
+        { data: cCourses },
+      ] = await Promise.all([
+        supabase.from('centers').select('id, name').eq('id', effectiveCenterId).maybeSingle(),
+        supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, courseId, status').eq('centerId', effectiveCenterId),
+        supabase.from('students').select('id, firstName, lastName, phone, status, createdAt').eq('centerId', effectiveCenterId),
+        supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', effectiveCenterId),
+        supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', effectiveCenterId),
+        supabase.from('attendances').select('id, status, date, studentId, groupId').eq('centerId', effectiveCenterId),
+        supabase.from('teachers').select('id, firstName, lastName, phone, status').eq('centerId', effectiveCenterId),
+        supabase.from('expenses').select('id, amount, type, status, createdAt').eq('centerId', effectiveCenterId),
+        supabase.from('courses').select('id, name, price').eq('centerId', effectiveCenterId),
+      ]);
+
+      centerName = center?.name || 'O\'quv Markazi';
+      students = cStudents || [];
+      groups = cGroups || [];
+      teachers = cTeachers || [];
+      payments = cPayments || [];
+      attendances = cAttendances || [];
+      expenses = cExpenses || [];
+      courses = cCourses || [];
+      studentGroups = cStudentGroups || [];
+    }
 
     // Map teacher names
     const teacherMap: Record<string, string> = {};
@@ -307,7 +405,7 @@ export async function POST(req: NextRequest) {
 
     // Caller teacher details if logged in as TEACHER
     let teacherInfo: { name: string; groupsCount: number; studentsCount: number } | undefined;
-    if (authUser.role === 'TEACHER') {
+    if (effectiveRole === 'TEACHER' && authUser) {
       const myTeacher = (teachers || []).find((t: any) => t.id === authUser.sub);
       const myGroups = (groups || []).filter((g: any) => g.teacherId === authUser.sub);
       const myGroupIds = myGroups.map((g: any) => g.id);
@@ -334,8 +432,9 @@ export async function POST(req: NextRequest) {
     // 2. Structured payload for Gemini AI
     const summarizedDataPayload = {
       center: centerName,
-      userRole: authUser.role,
+      userRole: effectiveRole,
       teacherSpecific: teacherInfo || null,
+      totalCenters: centersCount,
       totalStudents: (students || []).length,
       activeStudents: (students || []).filter((s: any) => s.status === 'FAOL').length,
       totalGroups: (groups || []).length,
@@ -378,10 +477,10 @@ export async function POST(req: NextRequest) {
         const prompt = SYSTEM_PROMPT_TEMPLATE
           .replace('{{task_type}}', task_type)
           .replace('{{center_name}}', centerName)
-          .replace('{{user_role}}', authUser.role || 'ADMIN')
+          .replace('{{user_role}}', effectiveRole)
           .replace('{{date_range}}', date_range)
           .replace('{{data}}', JSON.stringify(summarizedDataPayload, null, 2))
-          .replace('{{user_question}}', user_question || '');
+          .replace('{{user_question}}', effectiveQuestion);
 
         const modelsToTry = Array.from(
           new Set(
@@ -457,18 +556,19 @@ export async function POST(req: NextRequest) {
       centerName,
       date_range,
       rawData,
-      user_question,
-      authUser.role,
-      teacherInfo
+      effectiveQuestion,
+      effectiveRole,
+      teacherInfo,
+      { centersCount }
     );
 
     return NextResponse.json({
       success: true,
-      result,
+      result: result || 'Tahlil yakunlandi.',
       source: 'builtin_engine',
       task_type,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message || 'Serverda xatolik yuz berdi' }, { status: 500 });
   }
 }

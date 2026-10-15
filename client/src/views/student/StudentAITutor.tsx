@@ -63,7 +63,18 @@ export const StudentAITutor: React.FC = () => {
   }, [messages, isTyping]);
 
   const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+    } catch {}
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -112,13 +123,15 @@ export const StudentAITutor: React.FC = () => {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
+            task_type: 'chat_qa',
+            user_question: textToSend.trim(),
             prompt: `Sen IT Park o'quv markazining tajribali AI Repetitorisan. O'quvchi ismi: ${studentFirstName}. Kurs: ${group?.course?.name || 'Frontend'}. O'tilgan dars mavzusi: ${latestTopic.topic}. O'quvchi savoli: ${textToSend.trim()}. O'zbek tilida sodda, aniq, amaliy kod namunalari bilan javob ber.`,
           }),
         });
 
         if (res.ok) {
           const data = await res.json();
-          aiReplyText = data.text || data.response || data.message || '';
+          aiReplyText = data.result || data.text || data.response || data.message || '';
         }
       } catch {}
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
@@ -32,7 +33,9 @@ import {
   RefreshCw,
   Activity,
   BarChart3,
+  Bot,
 } from 'lucide-react';
+import { FloatingAIWidget } from '../components/ai/FloatingAIWidget';
 import { superadminApi } from '../api/superadmin.api';
 import { useSuperAdmin } from '../hooks/useSuperAdmin';
 import { useToast } from '../components/ui/Toast/Toast';
@@ -285,6 +288,20 @@ export const SuperAdminDashboard: React.FC = () => {
             <span className={styles.addBtnTextMobile}>+ Yangi Markaz</span>
           </button>
 
+          <Link
+            href="/ai-assistant"
+            className={styles.secondaryBtn}
+            style={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.25) 100%)',
+              borderColor: 'rgba(99, 102, 241, 0.5)',
+              color: '#a5b4fc',
+            }}
+            title="AI Yordamchi"
+          >
+            <Sparkles size={16} />
+            <span className={styles.navBtnText}>AI Tahlil</span>
+          </Link>
+
           <a href="/dashboard" className={styles.secondaryBtn} title="CRM Paneli">
             <ExternalLink size={16} />
             <span className={styles.navBtnText}>CRM</span>
@@ -312,6 +329,80 @@ export const SuperAdminDashboard: React.FC = () => {
             <ShieldCheck size={16} />
             <span>Izolyatsiyalangan Baza</span>
           </div>
+        </div>
+
+        {/* AI TAHLIL BANNER */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.35)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+            marginBottom: '20px',
+            boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Bot size={22} color="#ffffff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Platforma AI Tahlili (Dasturchi)</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: '6px',
+                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                    color: '#ffffff',
+                  }}
+                >
+                  YANGI
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
+                Barcha markazlar, talabalar statistikasi va tizim yuklamasi bo&apos;yicha sun&apos;iy intellekt tahlili
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/ai-assistant"
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Sparkles size={15} /> AI Tahlilini Ko&apos;rish
+          </Link>
         </div>
 
         {/* METRICS STATS GRID */}
@@ -355,6 +446,83 @@ export const SuperAdminDashboard: React.FC = () => {
               <div className={styles.statLabel}>Jami O&apos;qituvchilar</div>
             </div>
           </div>
+        </div>
+
+        {/* PLATFORM AI ASSISTANT HERO CARD */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+            borderRadius: '20px',
+            padding: '20px 24px',
+            color: '#ffffff',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
+            marginBottom: '24px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+              }}
+            >
+              <Bot size={24} color="#ffffff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 800 }}>Platforma AI Tahlili (Dasturchi)</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: 'rgba(99, 102, 241, 0.3)',
+                    border: '1px solid rgba(99, 102, 241, 0.6)',
+                    color: '#c7d2fe',
+                  }}
+                >
+                  YANGI
+                </span>
+              </div>
+              <p style={{ fontSize: '12.5px', color: 'rgba(255, 255, 255, 0.75)', margin: '3px 0 0 0' }}>
+                Barcha markazlar, talabalar, to&apos;lovlar balansi va tizim yuklamasi bo&apos;yicha sun&apos;iy intellekt tahlili
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/ai-assistant"
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Sparkles size={16} /> AI Tahlilini Ko&apos;rish
+          </a>
         </div>
 
         {/* DATABASE STORAGE MONITOR */}
@@ -1039,6 +1207,9 @@ export const SuperAdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating AI Assistant Widget for SuperAdmin */}
+      <FloatingAIWidget />
     </div>
   );
 };

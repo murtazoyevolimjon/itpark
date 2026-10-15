@@ -37,14 +37,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
 
     if (!isLoading && isAuthenticated && user) {
+      const isAiRoute = pathname === '/ai-assistant' || pathname === '/dashboard/ai-assistant';
       if (user.role === 'TEACHER') {
-        // Teacher is strictly restricted to /teacher routes and /profile
-        if (!isTeacherRoute && pathname !== '/profile') {
+        // Teacher is strictly restricted to /teacher routes, /profile, and /ai-assistant
+        if (!isTeacherRoute && pathname !== '/profile' && !isAiRoute) {
           router.replace('/teacher');
         }
       } else if (user.role === 'STUDENT') {
-        // Student is restricted to /student routes and /profile
-        if (!isStudentRoute && pathname !== '/profile') {
+        // Student is restricted to /student routes, /profile, and /ai-assistant
+        if (!isStudentRoute && pathname !== '/profile' && !isAiRoute) {
           router.replace('/student');
         }
       }

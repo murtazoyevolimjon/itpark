@@ -24,6 +24,7 @@ import {
   FileText,
   ChevronRight,
   ExternalLink,
+  Bot,
 } from 'lucide-react';
 import styles from './StudentDashboard.module.css';
 
@@ -183,6 +184,79 @@ export const StudentDashboard: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* AI TAHLIL BANNER */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          border: '1px solid rgba(99, 102, 241, 0.35)',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          flexWrap: 'wrap',
+          boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.3)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Bot size={22} color="#ffffff" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>O&apos;quvchi AI Yordamchisi (AI Repetitor)</span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  padding: '2px 6px',
+                  borderRadius: '6px',
+                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                  color: '#ffffff',
+                }}
+              >
+                YANGI
+              </span>
+            </div>
+            <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
+              Dars mavzulari, uyga vazifa yordami va kod xatoliklarini tushuntiruvchi sun&apos;iy intellekt
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/student/ai"
+          style={{
+            padding: '8px 16px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            color: '#ffffff',
+            fontSize: '13px',
+            fontWeight: 700,
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Sparkles size={15} /> AI Tahlilini Ko&apos;rish
+        </Link>
+      </div>
 
       {/* 3. Quick Metrics Overview (4 Cards) */}
       <section className={styles.statsGrid}>

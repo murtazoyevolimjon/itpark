@@ -23,7 +23,9 @@ import {
   X,
   Check,
   Compass,
+  Sparkles,
 } from 'lucide-react';
+import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 import styles from './TeacherLayout.module.css';
 
 interface TeacherLayoutProps {
@@ -67,12 +69,14 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const isAttendanceActive = pathname.startsWith('/teacher/attendance');
   const isHomeworkActive = pathname.startsWith('/teacher/homework');
   const isVideosActive = pathname.startsWith('/teacher/videos');
+  const isAiActive = pathname.startsWith('/teacher/ai') || pathname === '/ai-assistant';
   const isGroupsActive =
     (pathname.startsWith('/teacher/groups') || pathname === '/teacher') &&
     !isAttendanceActive &&
     !isHomeworkActive &&
     !isVideosActive &&
-    !isProfileActive;
+    !isProfileActive &&
+    !isAiActive;
 
   const handleLogout = async () => {
     try {
@@ -118,6 +122,13 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
       icon: Video,
       number: '05',
       isActive: isVideosActive,
+    },
+    {
+      label: dict.teacher?.aiAssistant || 'AI Yordamchi',
+      href: '/teacher/ai',
+      icon: Sparkles,
+      number: '06',
+      isActive: isAiActive,
     },
   ];
 
@@ -248,6 +259,16 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                 <Bell size={18} />
               </button>
 
+              <Link
+                href="/teacher/ai"
+                className={styles.iconBtn}
+                title="AI Yordamchi"
+                aria-label="AI Yordamchi"
+                style={{ color: '#6366f1' }}
+              >
+                <Sparkles size={18} />
+              </Link>
+
               <button
                 className={styles.iconBtn}
                 title={dict.teacher?.theme || 'Mavzu (Tun / Kun)'}
@@ -344,6 +365,7 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
           <main className={styles.pageBody}>{children}</main>
         </div>
       </div>
+      <FloatingAIWidget />
     </div>
   );
 };
