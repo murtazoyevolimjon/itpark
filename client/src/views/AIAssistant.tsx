@@ -673,15 +673,20 @@ export const AIAssistant: React.FC = () => {
 
                   <div
                     style={{
-                      maxWidth: '82%',
-                      padding: '12px 16px',
+                      maxWidth: '92%',
+                      padding: '14px 18px',
                       borderRadius: m.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                       background: m.sender === 'user' ? 'var(--primary)' : 'var(--background)',
                       color: m.sender === 'user' ? '#ffffff' : 'var(--text)',
                       border: m.sender === 'user' ? 'none' : '1px solid var(--border)',
-                      fontSize: '14px',
+                      fontSize: '13.5px',
                       lineHeight: 1.6,
                       whiteSpace: 'pre-wrap',
+                      fontFamily:
+                        m.sender === 'ai' && typeof m.text === 'string' && (m.text.includes('|') || m.text.includes('---'))
+                          ? 'Consolas, "Roboto Mono", "Courier New", monospace'
+                          : 'inherit',
+                      overflowX: 'auto',
                       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
                     }}
                   >

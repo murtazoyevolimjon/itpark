@@ -951,8 +951,76 @@ export const TeacherAttendance: React.FC = () => {
                       <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>
                         {student.firstName} {student.lastName}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {formatPhone(student.phone)}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '2px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          {student.phone ? (
+                            <a
+                              href={`tel:${student.phone}`}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                color: 'var(--text-muted)',
+                                textDecoration: 'none',
+                              }}
+                              title="Talabaga qo'ng'iroq qilish"
+                            >
+                              <Phone size={12} />
+                              <span>{formatPhone(student.phone)}</span>
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Tel: yo'q</span>
+                          )}
+                        </div>
+                        {(student.fatherPhone || student.motherPhone) ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {student.fatherPhone && (
+                              <a
+                                href={`tel:${student.fatherPhone}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '2px 7px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(56, 189, 248, 0.12)',
+                                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                                  color: '#38bdf8',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  textDecoration: 'none',
+                                }}
+                                title="Otasiga qo'ng'iroq qilish"
+                              >
+                                <Phone size={10} />
+                                <span>Otasi: {formatPhone(student.fatherPhone)}</span>
+                              </a>
+                            )}
+                            {student.motherPhone && (
+                              <a
+                                href={`tel:${student.motherPhone}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '2px 7px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(244, 114, 182, 0.12)',
+                                  border: '1px solid rgba(244, 114, 182, 0.25)',
+                                  color: '#f472b6',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  textDecoration: 'none',
+                                }}
+                                title="Onasiga qo'ng'iroq qilish"
+                              >
+                                <Phone size={10} />
+                                <span>Onasi: {formatPhone(student.motherPhone)}</span>
+                              </a>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>

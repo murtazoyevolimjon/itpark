@@ -45,10 +45,6 @@ export const FloatingAIWidget: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // If we are already on the full AI assistant page, don't show the floating widget
-  if (pathname.startsWith('/ai-assistant')) {
-    return null;
-  }
 
   // Determine current page context
   const getPageContext = () => {
@@ -213,6 +209,15 @@ export const FloatingAIWidget: React.FC = () => {
   const handleClear = () => {
     setMessages([]);
   };
+
+  // If on full AI assistant page, do not render floating widget
+  if (
+    pathname.startsWith('/ai-assistant') ||
+    pathname.startsWith('/teacher/ai') ||
+    pathname.startsWith('/student/ai')
+  ) {
+    return null;
+  }
 
   return (
     <>

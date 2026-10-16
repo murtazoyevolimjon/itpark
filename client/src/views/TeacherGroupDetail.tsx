@@ -539,7 +539,81 @@ export const TeacherGroupDetail: React.FC = () => {
                         <div className={styles.studentName}>
                           {st.firstName} {st.lastName}
                         </div>
-                        <div className={styles.studentPhone}>{st.phone || 'Telefon kiritilmagan'}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {st.phone ? (
+                              <a
+                                href={`tel:${st.phone}`}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '11.5px',
+                                  color: 'var(--text-muted, #94a3b8)',
+                                  textDecoration: 'none',
+                                }}
+                                title="Talabaga qo'ng'iroq qilish"
+                              >
+                                <Phone size={11} />
+                                <span>{st.phone}</span>
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted, #94a3b8)' }}>Tel: yo'q</span>
+                            )}
+                          </div>
+                          {(st.fatherPhone || st.motherPhone) ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {st.fatherPhone && (
+                                <a
+                                  href={`tel:${st.fatherPhone}`}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 7px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(56, 189, 248, 0.12)',
+                                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                                    color: '#38bdf8',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                  }}
+                                  title="Otasiga qo'ng'iroq qilish"
+                                >
+                                  <Phone size={10} />
+                                  <span>Otasi: {st.fatherPhone}</span>
+                                </a>
+                              )}
+                              {st.motherPhone && (
+                                <a
+                                  href={`tel:${st.motherPhone}`}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '2px 7px',
+                                    borderRadius: '6px',
+                                    background: 'rgba(244, 114, 182, 0.12)',
+                                    border: '1px solid rgba(244, 114, 182, 0.25)',
+                                    color: '#f472b6',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                  }}
+                                  title="Onasiga qo'ng'iroq qilish"
+                                >
+                                  <Phone size={10} />
+                                  <span>Onasi: {st.motherPhone}</span>
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '10.5px', color: 'rgba(148, 163, 184, 0.65)', fontStyle: 'italic' }}>
+                              Ota-ona raqami kiritilmagan
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <span
