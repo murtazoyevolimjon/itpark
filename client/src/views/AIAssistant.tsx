@@ -620,7 +620,11 @@ export const AIAssistant: React.FC = () => {
                   lineHeight: '1.7',
                   color: 'var(--text)',
                   whiteSpace: 'pre-wrap',
-                  fontFamily: 'inherit',
+                  fontFamily:
+                    typeof analysisResult === 'string' && (analysisResult.includes('|') || analysisResult.includes('---'))
+                      ? 'Consolas, "Roboto Mono", "Courier New", monospace'
+                      : 'inherit',
+                  overflowX: 'auto',
                 }}
               >
                 {typeof analysisResult === 'string' ? analysisResult : JSON.stringify(analysisResult, null, 2)}

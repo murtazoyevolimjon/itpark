@@ -105,6 +105,15 @@ export async function POST(req: NextRequest) {
       status,
     } = body;
 
+    const cleanFather = (fatherPhone || '').replace(/\D/g, '');
+    const cleanMother = (motherPhone || '').replace(/\D/g, '');
+    if (!cleanFather && !cleanMother) {
+      return NextResponse.json(
+        { message: "Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi qat'iy kiritilishi shart)" },
+        { status: 400 }
+      );
+    }
+
     const supabase = createServerSupabaseClient();
     const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();

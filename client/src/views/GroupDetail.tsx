@@ -834,6 +834,13 @@ export const GroupDetail: React.FC = () => {
       return;
     }
 
+    const cleanFather = unmaskPhone(studentForm.fatherPhone);
+    const cleanMother = unmaskPhone(studentForm.motherPhone);
+    if (!cleanFather && !cleanMother) {
+      error("Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi)!");
+      return;
+    }
+
     if (selectedProbaId) {
       // Update student details if modified, then attach to group
       try {
@@ -2883,19 +2890,24 @@ export const GroupDetail: React.FC = () => {
             onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <Input
-              label="Otasining telefoni"
-              placeholder="+998 90 123 45 67"
-              value={formatPhone(studentForm.fatherPhone)}
-              onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
-            />
-            <Input
-              label="Onasining telefoni"
-              placeholder="+998 90 123 45 67"
-              value={formatPhone(studentForm.motherPhone)}
-              onChange={(e) => setStudentForm({ ...studentForm, motherPhone: unmaskPhone(e.target.value) })}
-            />
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <Input
+                label="Otasining telefoni *"
+                placeholder="+998 90 123 45 67"
+                value={formatPhone(studentForm.fatherPhone)}
+                onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
+              />
+              <Input
+                label="Onasining telefoni *"
+                placeholder="+998 90 123 45 67"
+                value={formatPhone(studentForm.motherPhone)}
+                onChange={(e) => setStudentForm({ ...studentForm, motherPhone: unmaskPhone(e.target.value) })}
+              />
+            </div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', fontWeight: 500 }}>
+              * Otasi yoki onasining telefon raqamidan kamida bittasi qat'iy kiritilishi shart
+            </p>
           </div>
 
           {/* Fan tanlash */}

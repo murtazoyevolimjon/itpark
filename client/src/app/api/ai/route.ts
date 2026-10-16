@@ -35,8 +35,13 @@ Dars qoldirgan (kelmagan) o'quvchilar ro'yxati va umumiy davomat darajasi.
 Chiqish: Dars qoldirgan o'quvchilarni jadval ko'rinishida (№ | O'quvchi F.I.Sh | Guruhi | Ustozi | Qoldirgan | Oxirgi dars | Ota-onasining telefoni) ko'rsat va ota-onalar bilan bog'lanish bo'yicha amaliy tavsiya ber.
 
 ### 4. finance_analysis — Moliyaviy tahlil
-Tushumlar, qarzdorlik va xarajatlar holati.
-Chiqish: Qarzdor o'quvchilar ro'yxati (jadval) + moliyaviy muvozanat xulosasi + qarzdorlarga yuborish uchun xushmuomala, lekin jiddiy SMS/xabar matni namunasi.
+Markazning to'liq moliyaviy balansi, qarzdorliklar, xarajatlar va o'qituvchilar oyliklari hisoboti.
+CHIQISH FORMATI (5 ta asosiy bo'limdan iborat bo'lishi shart):
+1. 💵 ASOSIY MOLIYAVIY KO'RSATKICHLAR (Tushumlar, Jami xarajatlar, Sof foyda, Kutilayotgan qarzdorlik va o'qituvchilar oyliklari)
+2. 📋 QARZDOR O'QUVCHILAR RO'YXATI (Jadval: № | O'quvchi F.I.Sh | Guruhi | Kurs narxi | To'langan | Qarzdorlik | Ota-onasining telefoni) + Qarzdorlarga SMS eslatma matni
+3. 🏢 MARKAZ NIMAGA XARAJAT QILISHI (Xarajatlar tahlili: Ijara, Kommunal, Reklama, Jihozlar, Ustoz maoshi, Boshqa toifalar summasi va oxirgi chiqimlar jadvali)
+4. 👨‍🏫 O'QITUVCHILARGA TO'LANGAN OYLIKLAR (Ustozlar maosh stavkalari, to'langan oyliklar jadvali va jami berilgan maoshlar)
+5. 💡 TEZKOR MOLIYAVIY TAVSIYALAR VA BOSHQARUV XULOSASI.
 
 ### 5. teacher_load — Ustozlar va guruhlar yuklamasi
 O'qituvchilar bo'yicha guruhlar va talabalar taqsimoti.
@@ -172,7 +177,10 @@ function generateTodayStatusAnalysis(
   teachersMap: Map<string, string>,
   roomsMap: Map<string, string>,
   groupStudentCounts: Record<string, number>,
-  studentsMap: Map<string, any>
+  studentsMap: Map<string, any>,
+  totalExpenses?: number,
+  totalTeacherSalaries?: number,
+  debtorsCount?: number
 ): string {
   const lines: string[] = [];
 
@@ -232,8 +240,17 @@ function generateTodayStatusAnalysis(
 
   // 4. Moliya
   lines.push(`4. 💰 MOLIYAVIY KO'RSATKICHLAR:`);
-  lines.push(`   • Yig'ilgan to'lovlar: ${formatMoney(totalCollected)} so'm.`);
-  lines.push(`   • Kutilayotgan qarzdorlik: ${formatMoney(totalDebt)} so'm.`);
+  lines.push(`   • Yig'ilgan to'lovlar (Tushum): ${formatMoney(totalCollected)} so'm.`);
+  if (totalExpenses !== undefined) {
+    lines.push(`   • Markaz jami xarajatlari: ${formatMoney(totalExpenses)} so'm.`);
+    const balance = totalCollected - totalExpenses;
+    lines.push(`   • Sof kassa balansi: ${formatMoney(balance)} so'm.`);
+  }
+  const debtorsStr = debtorsCount !== undefined ? ` (${debtorsCount} nafar talaba)` : '';
+  lines.push(`   • Kutilayotgan qarzdorlik: ${formatMoney(totalDebt)} so'm${debtorsStr}.`);
+  if (totalTeacherSalaries !== undefined && totalTeacherSalaries > 0) {
+    lines.push(`   • O'qituvchilarga to'langan oyliklar: ${formatMoney(totalTeacherSalaries)} so'm.`);
+  }
   lines.push('');
 
   // 5. Tavsiya
@@ -249,46 +266,386 @@ function generateTodayStatusAnalysis(
   return lines.join('\n');
 }
 
-function generateDebtorsAnalysis(
+function generateFinanceAnalysis(
   centerName: string,
+  students: any[],
+  groups: any[],
+  courses: any[],
+  studentGroups: any[],
   payments: any[],
-  studentsMap: Map<string, any>,
-  groupsMap: Map<string, any>,
-  totalDebt: number
+  expenses: any[],
+  teachers: any[],
+  options?: { onlyDebtors?: boolean; onlyExpenses?: boolean; onlySalaries?: boolean }
 ): string {
-  const unpaidPayments = payments.filter((p: any) => p.status === 'TOLANMAGAN' || p.status === 'QISMAN');
+  const studentsMap = new Map<string, any>();
+  students.forEach((s: any) => studentsMap.set(s.id, s));
 
-  if (unpaidPayments.length === 0 && totalDebt === 0) {
-    return `"${centerName}" markazida to'lov bo'yicha qarzdorlik mavjud emas. Barcha to'lovlar to'liq qoplangan!`;
-  }
+  const groupsMap = new Map<string, any>();
+  groups.forEach((g: any) => groupsMap.set(g.id, g));
 
-  const lines: string[] = [];
-  lines.push(`💰 "${centerName}" — TO'LOV QILMAGAN (QARZDOR) O'QUVCHILAR RO'YXATI:`);
-  lines.push('');
-  lines.push(`№  | O'quvchi F.I.Sh               | Guruhi               | Qarzdorlik       | Ota-onasining telefoni`);
-  lines.push(`---+-------------------------------+----------------------+------------------+--------------------------------`);
+  const coursesMap = new Map<string, any>();
+  courses.forEach((c: any) => coursesMap.set(c.id, c));
 
-  unpaidPayments.slice(0, 20).forEach((p: any, index: number) => {
-    const st = studentsMap.get(p.studentId);
-    const gr = groupsMap.get(p.groupId);
-    const fullName = st ? `${st.firstName || ''} ${st.lastName || ''}`.trim() : 'Noma\'lum o\'quvchi';
-    const groupName = gr?.name || 'Guruh';
-    const amount = formatMoney(Number(p.amount) || 0) + ' so\'m';
-    const parentPhone = getParentPhoneDisplay(st);
+  const teachersMap = new Map<string, any>();
+  teachers.forEach((t: any) => teachersMap.set(t.id, t));
 
-    const padNum = String(index + 1).padEnd(2, ' ');
-    const padName = (fullName.length > 29 ? fullName.slice(0, 26) + '...' : fullName).padEnd(29, ' ');
-    const padGroup = (groupName.length > 20 ? groupName.slice(0, 17) + '...' : groupName).padEnd(20, ' ');
-    const padAmt = amount.padEnd(16, ' ');
-
-    lines.push(`${padNum} | ${padName} | ${padGroup} | ${padAmt} | ${parentPhone}`);
+  // Map student groups
+  const studentGroupsMap = new Map<string, any[]>();
+  studentGroups.forEach((sg: any) => {
+    const list = studentGroupsMap.get(sg.studentId) || [];
+    list.push(sg);
+    studentGroupsMap.set(sg.studentId, list);
   });
 
-  lines.push(`---+-------------------------------+----------------------+------------------+--------------------------------`);
+  // 1. Calculate Debtors
+  interface DebtorItem {
+    studentId: string;
+    fullName: string;
+    groupNames: string;
+    coursePrice: number;
+    totalPaid: number;
+    debtAmount: number;
+    parentPhone: string;
+    paymentStatus: string;
+  }
+
+  const debtorsList: DebtorItem[] = [];
+  const processedStudentIds = new Set<string>();
+
+  students.forEach((st: any) => {
+    const sgs = studentGroupsMap.get(st.id) || [];
+    const activeGroups = sgs.map((sg: any) => groupsMap.get(sg.groupId)).filter(Boolean);
+
+    const stPayments = payments.filter((p: any) => p.studentId === st.id);
+    const totalPaid = stPayments
+      .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+      .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+    let totalDue = 0;
+    const gNames: string[] = [];
+    activeGroups.forEach((g: any) => {
+      gNames.push(g.name || 'Guruh');
+      const course = coursesMap.get(g.courseId);
+      if (course && Number(course.price)) {
+        totalDue += Number(course.price);
+      }
+    });
+
+    const debt = Math.max(0, totalDue - totalPaid);
+    const hasPaidFull = stPayments.some((p: any) => p.status === 'TOLANGAN');
+    const hasPartial = totalPaid > 0 && debt > 0;
+    const paymentStatus =
+      (totalPaid >= totalDue && totalDue > 0) || hasPaidFull
+        ? 'TOLANGAN'
+        : hasPartial
+        ? 'QISMAN'
+        : 'TOLANMAGAN';
+
+    if (debt > 0 && totalDue > 0) {
+      processedStudentIds.add(st.id);
+      debtorsList.push({
+        studentId: st.id,
+        fullName: `${st.firstName || ''} ${st.lastName || ''}`.trim() || "Noma'lum o'quvchi",
+        groupNames: gNames.join(', ') || 'Guruh',
+        coursePrice: totalDue,
+        totalPaid,
+        debtAmount: debt,
+        parentPhone: getParentPhoneDisplay(st),
+        paymentStatus,
+      });
+    }
+  });
+
+  // Explicit unpaid payment records in payments table
+  payments.forEach((p: any) => {
+    if ((p.status === 'TOLANMAGAN' || p.status === 'QISMAN') && p.studentId && !processedStudentIds.has(p.studentId)) {
+      const st = studentsMap.get(p.studentId);
+      const gr = groupsMap.get(p.groupId);
+      const debt = Number(p.amount) || 0;
+      if (debt > 0) {
+        processedStudentIds.add(p.studentId);
+        debtorsList.push({
+          studentId: p.studentId,
+          fullName: st ? `${st.firstName || ''} ${st.lastName || ''}`.trim() : "Noma'lum o'quvchi",
+          groupNames: gr?.name || 'Guruh',
+          coursePrice: debt,
+          totalPaid: 0,
+          debtAmount: debt,
+          parentPhone: getParentPhoneDisplay(st),
+          paymentStatus: p.status,
+        });
+      }
+    }
+  });
+
+  debtorsList.sort((a, b) => b.debtAmount - a.debtAmount);
+  const totalDebt = debtorsList.reduce((sum, d) => sum + d.debtAmount, 0);
+
+  const totalCollected = payments
+    .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+    .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+  // 2. Expenses breakdown
+  const paidExpenses = expenses.filter((e: any) => e.status !== 'BEKOR_QILINDI');
+  const totalExpenses = paidExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+  const categoryTotals: Record<string, { total: number; count: number; title: string }> = {
+    IJARA: { total: 0, count: 0, title: '🏢 Bino va xona ijarasi' },
+    KOMMUNAL: { total: 0, count: 0, title: '💡 Kommunal (elektr, suv, isitish, internet)' },
+    REKLAMA: { total: 0, count: 0, title: '📢 Reklama va marketing' },
+    JIHOZLAR: { total: 0, count: 0, title: '🖥️ Jihozlar va texnikalar' },
+    USTOZ_MAOSHI: { total: 0, count: 0, title: '👨‍🏫 O\'qituvchilar maoshi (oyliklar)' },
+    BOSHQA: { total: 0, count: 0, title: '📦 Boshqa xo\'jalik xarajatlari' },
+  };
+
+  paidExpenses.forEach((e: any) => {
+    const rawType = (e.type || 'BOSHQA').toUpperCase();
+    const cat = categoryTotals[rawType] ? rawType : 'BOSHQA';
+    categoryTotals[cat].total += Number(e.amount) || 0;
+    categoryTotals[cat].count += 1;
+  });
+
+  // 3. Teacher Salaries
+  const teacherSalaryExpenses = paidExpenses.filter((e: any) => {
+    const t = (e.type || '').toUpperCase();
+    const note = (e.note || '').toLowerCase();
+    return t === 'USTOZ_MAOSHI' || note.includes('maosh') || note.includes('oylik');
+  });
+
+  const totalTeacherSalariesPaid = teacherSalaryExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+  // Map teacher groups and student counts
+  const teacherGroupsCount: Record<string, number> = {};
+  const teacherStudentsCount: Record<string, number> = {};
+  groups.forEach((g: any) => {
+    if (g.teacherId) {
+      teacherGroupsCount[g.teacherId] = (teacherGroupsCount[g.teacherId] || 0) + 1;
+      const count = studentGroups.filter((sg: any) => sg.groupId === g.id).length;
+      teacherStudentsCount[g.teacherId] = (teacherStudentsCount[g.teacherId] || 0) + count;
+    }
+  });
+
+  // ONLY DEBTORS SECTION
+  if (options?.onlyDebtors) {
+    const lines: string[] = [];
+    lines.push(`💰 "${centerName}" — QARZDOR O'QUVCHILAR RO'YXATI:`);
+    lines.push('');
+    if (debtorsList.length === 0) {
+      lines.push(`• Markazda to'lov bo'yicha qarzdorlik mavjud emas. Barcha to'lovlar to'liq to'langan!`);
+    } else {
+      lines.push(`№  | O'quvchi F.I.Sh               | Guruhi               | Kurs narxi   | To'langan    | Qarzdorlik   | Ota-onasining telefoni`);
+      lines.push(`---+-------------------------------+----------------------+--------------+--------------+--------------+--------------------------------`);
+      debtorsList.slice(0, 25).forEach((d, idx) => {
+        const pNum = String(idx + 1).padEnd(2, ' ');
+        const pName = (d.fullName.length > 29 ? d.fullName.slice(0, 26) + '...' : d.fullName).padEnd(29, ' ');
+        const pGroup = (d.groupNames.length > 20 ? d.groupNames.slice(0, 17) + '...' : d.groupNames).padEnd(20, ' ');
+        const pPrice = `${formatMoney(d.coursePrice)}`.padEnd(12, ' ');
+        const pPaid = `${formatMoney(d.totalPaid)}`.padEnd(12, ' ');
+        const pDebt = `${formatMoney(d.debtAmount)}`.padEnd(12, ' ');
+        lines.push(`${pNum} | ${pName} | ${pGroup} | ${pPrice} | ${pPaid} | ${pDebt} | ${d.parentPhone}`);
+      });
+      lines.push(`---+-------------------------------+----------------------+--------------+--------------+--------------+--------------------------------`);
+      lines.push('');
+      lines.push(`• Jami qarzdor o'quvchilar soni: ${debtorsList.length} nafar.`);
+      lines.push(`• Jami kutilayotgan qarzdorlik summasi: ${formatMoney(totalDebt)} so'm.`);
+      lines.push(`• Qarzdorlarga yuborish uchun SMS eslatma matni:`);
+      lines.push(`  "Hurmatli ota-ona! Farzandingizning ${centerName} o'quv markazidagi o'qish to'lovi bo'yicha qarzdorligi mavjud. Darslar to'xtab qolmasligi uchun to'lovni o'z vaqtida amalga oshirishingizni so'raymiz."`);
+    }
+    return lines.join('\n');
+  }
+
+  // ONLY EXPENSES SECTION
+  if (options?.onlyExpenses) {
+    const lines: string[] = [];
+    lines.push(`🏢 "${centerName}" — XARAJATLAR VA CHIQIMLAR TAHLILI:`);
+    lines.push('');
+    lines.push(`• Jami amalga oshirilgan xarajatlar: ${formatMoney(totalExpenses)} so'm (${paidExpenses.length} ta chiqim).`);
+    lines.push('');
+    lines.push(`XARAJATLAR TOIFALARI BO'YICHA TAQSIMOT:`);
+    Object.entries(categoryTotals).forEach(([_, cat]) => {
+      lines.push(`• ${cat.title}: ${formatMoney(cat.total)} so'm (${cat.count} ta chiqim)`);
+    });
+    lines.push('');
+    if (paidExpenses.length > 0) {
+      lines.push(`SO'NGGI AMALGA OSHIRILGAN CHIQIMLAR:`);
+      lines.push(`№  | Chiqim turi       | Egasi / Qabul qiluvchi        | Summa            | Sana       | Izoh`);
+      lines.push(`---+-------------------+-------------------------------+------------------+------------+--------------------------------`);
+      paidExpenses.slice(0, 15).forEach((e: any, idx: number) => {
+        const pNum = String(idx + 1).padEnd(2, ' ');
+        const rawT = (e.type || 'BOSHQA').toUpperCase();
+        const pType = (rawT.length > 17 ? rawT.slice(0, 14) + '...' : rawT).padEnd(17, ' ');
+        const owner = e.ownerName || '-';
+        const pOwner = (owner.length > 29 ? owner.slice(0, 26) + '...' : owner).padEnd(29, ' ');
+        const pAmt = `${formatMoney(Number(e.amount) || 0)} so'm`.padEnd(16, ' ');
+        const dStr = (e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-')).padEnd(10, ' ');
+        const note = e.note || '-';
+        lines.push(`${pNum} | ${pType} | ${pOwner} | ${pAmt} | ${dStr} | ${note}`);
+      });
+      lines.push(`---+-------------------+-------------------------------+------------------+------------+--------------------------------`);
+    }
+    return lines.join('\n');
+  }
+
+  // ONLY SALARIES SECTION
+  if (options?.onlySalaries) {
+    const lines: string[] = [];
+    lines.push(`👨‍🏫 "${centerName}" — O'QITUVCHILARGA TO'LANGAN OYLIKLAR (MAOSHLAR HISOBOTI):`);
+    lines.push('');
+    lines.push(`• Ustozlarga berilgan jami oyliklar summasi: ${formatMoney(totalTeacherSalariesPaid)} so'm (${teacherSalaryExpenses.length} ta to'lov).`);
+    lines.push('');
+    if (teacherSalaryExpenses.length > 0) {
+      lines.push(`AMALGA OSHIRILGAN OYLIK TO'LOVLARI RO'YXATI:`);
+      lines.push(`№  | Ustoz F.I.Sh                  | Berilgan oylik   | To'lov sanasi | Izoh / Status`);
+      lines.push(`---+-------------------------------+------------------+---------------+--------------------------------`);
+      teacherSalaryExpenses.slice(0, 15).forEach((e: any, idx: number) => {
+        const pNum = String(idx + 1).padEnd(2, ' ');
+        const owner = e.ownerName || 'Ustoz';
+        const pOwner = (owner.length > 29 ? owner.slice(0, 26) + '...' : owner).padEnd(29, ' ');
+        const pAmt = `${formatMoney(Number(e.amount) || 0)} so'm`.padEnd(16, ' ');
+        const dStr = (e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-')).padEnd(13, ' ');
+        const note = e.note || e.status || 'TOLANGAN';
+        lines.push(`${pNum} | ${pOwner} | ${pAmt} | ${dStr} | ${note}`);
+      });
+      lines.push(`---+-------------------------------+------------------+---------------+--------------------------------`);
+      lines.push('');
+    } else {
+      lines.push(`• Hozircha "Chiqimlar" bo'limida 'USTOZ MAOSHI' turi bo'yicha oylik to'lovlari kiritilmagan.`);
+      lines.push(`• O'qituvchilarga oylik berilganda "Moliya -> Chiqimlar" bo'limiga 'USTOZ MAOSHI' sifatida kiritilsa, bu yerda avtomatik to'liq yozilib boriladi.`);
+      lines.push('');
+    }
+
+    lines.push(`O'QITUVCHILARNING MAOSH SHARTLARI VA FAOLIYATI:`);
+    teachers.forEach((t: any) => {
+      const tName = `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Ustoz';
+      const sType = t.salaryType === 'FIXED' ? 'Fikslangan oylik' : 'Guruh to\'lovlaridan foiz';
+      const sVal = t.salaryType === 'FIXED' ? `${formatMoney(Number(t.salaryValue) || 0)} so'm` : `${t.salaryValue}% (Foiz)`;
+      const grCount = teacherGroupsCount[t.id] || 0;
+      const stCount = teacherStudentsCount[t.id] || 0;
+
+      const mySalaryPaid = teacherSalaryExpenses
+        .filter((e: any) => {
+          const o = (e.ownerName || '').toLowerCase();
+          return o.includes((t.firstName || '').toLowerCase()) || o.includes((t.lastName || '').toLowerCase());
+        })
+        .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+      lines.push(`• ${tName} (${sType}: ${sVal}) | Guruhlar: ${grCount} ta | O'quvchilar: ${stCount} nafar | Jami to'langan maosh: ${formatMoney(mySalaryPaid)} so'm`);
+    });
+
+    return lines.join('\n');
+  }
+
+  // FULL 5-SECTION MASTER FINANCIAL REPORT
+  const lines: string[] = [];
+  lines.push(`💰 "${centerName}" O'QUV MARKAZINING MOLIYAVIY TAHLILI VA BALANSI:`);
   lines.push('');
-  lines.push(`• Jami mavjud qarzdorlik: ${formatMoney(totalDebt)} so'm (${unpaidPayments.length} ta holat).`);
-  lines.push(`• Tavsiya etiladigan SMS eslatma matni:`);
-  lines.push(`  "Assalomu alaykum, hurmatli ota-ona! Sizning ${centerName} o'quv markazimiz oldidagi o'qish to'lovingiz bo'yicha qarzdorligingiz mavjud. Farzandingiz darslardan to'xtab qolmasligi uchun to'lovni o'z vaqtida amalga oshirishingizni so'raymiz."`);
+
+  // 1. Asosiy Moliyaviy Ko'rsatkichlar
+  const netProfit = totalCollected - totalExpenses;
+  lines.push(`1. 💵 ASOSIY MOLIYAVIY KO'RSATKICHLAR:`);
+  lines.push(`   • Jami yig'ilgan to'lovlar (Kassa / Tushum): ${formatMoney(totalCollected)} so'm`);
+  lines.push(`   • Markazning jami chiqimlari (Xarajatlar): ${formatMoney(totalExpenses)} so'm`);
+  lines.push(`   • Sof moliyaviy muvozanat (Kassa balansi): ${formatMoney(netProfit)} so'm`);
+  lines.push(`   • Talabalardan kutilayotgan qarzdorlik: ${formatMoney(totalDebt)} so'm (${debtorsList.length} nafar o'quvchi)`);
+  lines.push(`   • Ustozlarga to'langan oyliklar miqdori: ${formatMoney(totalTeacherSalariesPaid)} so'm`);
+  lines.push('');
+
+  // 2. Qarzdor O'quvchilar Ro'yxati
+  lines.push(`2. 📋 TO'LOV QILMAGAN (QARZDOR) O'QUVCHILAR RO'YXATI (${debtorsList.length} nafar):`);
+  if (debtorsList.length === 0) {
+    lines.push(`   • Markazda to'lov bo'yicha qarzdorlik mavjud emas. Barcha to'lovlar to'liq qoplangan!`);
+  } else {
+    lines.push(`№  | O'quvchi F.I.Sh               | Guruhi               | Kurs narxi   | To'langan    | Qarzdorlik   | Ota-onasining telefoni`);
+    lines.push(`---+-------------------------------+----------------------+--------------+--------------+--------------+--------------------------------`);
+    debtorsList.slice(0, 20).forEach((d, idx) => {
+      const pNum = String(idx + 1).padEnd(2, ' ');
+      const pName = (d.fullName.length > 29 ? d.fullName.slice(0, 26) + '...' : d.fullName).padEnd(29, ' ');
+      const pGroup = (d.groupNames.length > 20 ? d.groupNames.slice(0, 17) + '...' : d.groupNames).padEnd(20, ' ');
+      const pPrice = `${formatMoney(d.coursePrice)}`.padEnd(12, ' ');
+      const pPaid = `${formatMoney(d.totalPaid)}`.padEnd(12, ' ');
+      const pDebt = `${formatMoney(d.debtAmount)}`.padEnd(12, ' ');
+      lines.push(`${pNum} | ${pName} | ${pGroup} | ${pPrice} | ${pPaid} | ${pDebt} | ${d.parentPhone}`);
+    });
+    lines.push(`---+-------------------------------+----------------------+--------------+--------------+--------------+--------------------------------`);
+    lines.push(`   • Jami kutilayotgan qarzdorlik: ${formatMoney(totalDebt)} so'm (${debtorsList.length} ta holat).`);
+    lines.push(`   • Qarzdorlarga tavsiya etiladigan SMS matni:`);
+    lines.push(`     "Hurmatli ota-ona! Sizning ${centerName} o'quv markazimiz oldidagi o'qish to'lovi bo'yicha qarzdorligingiz mavjud. Farzandingiz darslardan to'xtab qolmasligi uchun to'lovni amalga oshirishingizni so'raymiz."`);
+  }
+  lines.push('');
+
+  // 3. Markaz Nimaga Xarajat Qilishi
+  lines.push(`3. 🏢 MARKAZ NIMAGA XARAJAT QILISHI (XARAJATLAR VA CHIQIMLAR TAHLILI):`);
+  lines.push(`   • Jami xarajatlar: ${formatMoney(totalExpenses)} so'm (${paidExpenses.length} ta chiqim)`);
+  lines.push(`   Kategoriyalar bo'yicha taqsimot:`);
+  Object.entries(categoryTotals).forEach(([_, cat]) => {
+    lines.push(`   • ${cat.title}: ${formatMoney(cat.total)} so'm (${cat.count} ta chiqim)`);
+  });
+  if (paidExpenses.length > 0) {
+    lines.push('');
+    lines.push(`   So'nggi xarajatlar ro'yxati:`);
+    lines.push(`№  | Chiqim turi       | Egasi / Qabul qiluvchi        | Summa            | Sana       | Izoh`);
+    lines.push(`---+-------------------+-------------------------------+------------------+------------+--------------------------------`);
+    paidExpenses.slice(0, 10).forEach((e: any, idx: number) => {
+      const pNum = String(idx + 1).padEnd(2, ' ');
+      const rawT = (e.type || 'BOSHQA').toUpperCase();
+      const pType = (rawT.length > 17 ? rawT.slice(0, 14) + '...' : rawT).padEnd(17, ' ');
+      const owner = e.ownerName || '-';
+      const pOwner = (owner.length > 29 ? owner.slice(0, 26) + '...' : owner).padEnd(29, ' ');
+      const pAmt = `${formatMoney(Number(e.amount) || 0)} so'm`.padEnd(16, ' ');
+      const dStr = (e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-')).padEnd(10, ' ');
+      const note = e.note || '-';
+      lines.push(`${pNum} | ${pType} | ${pOwner} | ${pAmt} | ${dStr} | ${note}`);
+    });
+    lines.push(`---+-------------------+-------------------------------+------------------+------------+--------------------------------`);
+  }
+  lines.push('');
+
+  // 4. O'qituvchilarga To'langan Oyliklar
+  lines.push(`4. 👨‍🏫 O'QITUVCHILARGA TO'LANGAN OYLIKLAR (MAOSHLAR HISOBOTI):`);
+  lines.push(`   • Ustozlarga berilgan jami oyliklar summasi: ${formatMoney(totalTeacherSalariesPaid)} so'm`);
+  if (teacherSalaryExpenses.length > 0) {
+    lines.push(`   Amalga oshirilgan oylik to'lovlari:`);
+    lines.push(`№  | Ustoz F.I.Sh                  | Berilgan oylik   | To'lov sanasi | Izoh / Status`);
+    lines.push(`---+-------------------------------+------------------+---------------+--------------------------------`);
+    teacherSalaryExpenses.slice(0, 10).forEach((e: any, idx: number) => {
+      const pNum = String(idx + 1).padEnd(2, ' ');
+      const owner = e.ownerName || 'Ustoz';
+      const pOwner = (owner.length > 29 ? owner.slice(0, 26) + '...' : owner).padEnd(29, ' ');
+      const pAmt = `${formatMoney(Number(e.amount) || 0)} so'm`.padEnd(16, ' ');
+      const dStr = (e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-')).padEnd(13, ' ');
+      const note = e.note || e.status || 'TOLANGAN';
+      lines.push(`${pNum} | ${pOwner} | ${pAmt} | ${dStr} | ${note}`);
+    });
+    lines.push(`---+-------------------------------+------------------+---------------+--------------------------------`);
+  } else {
+    lines.push(`   • Hozircha "Chiqimlar" bo'limida ustozlarga to'langan oylik to'lovlari kiritilmagan.`);
+    lines.push(`   • O'qituvchilarga oylik berilganda "Moliya -> Chiqimlar" bo'limiga 'USTOZ MAOSHI' turi bo'yicha kiritiladi va bu yerda o'qituvchilar kesimida avtomatik hisoboti yuritilib boriladi.`);
+  }
+  lines.push('');
+  lines.push(`   Ustozlarning maosh shartlari:`);
+  teachers.forEach((t: any) => {
+    const tName = `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Ustoz';
+    const sType = t.salaryType === 'FIXED' ? 'Fikslangan' : 'Foiz';
+    const sVal = t.salaryType === 'FIXED' ? `${formatMoney(Number(t.salaryValue) || 0)} so'm` : `${t.salaryValue}%`;
+    const grCount = teacherGroupsCount[t.id] || 0;
+    const stCount = teacherStudentsCount[t.id] || 0;
+    const mySalaryPaid = teacherSalaryExpenses
+      .filter((e: any) => {
+        const o = (e.ownerName || '').toLowerCase();
+        return o.includes((t.firstName || '').toLowerCase()) || o.includes((t.lastName || '').toLowerCase());
+      })
+      .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+    lines.push(`   • ${tName} (${sType}: ${sVal}) | Guruhlar: ${grCount} ta (${stCount} o'quvchi) | To'langan: ${formatMoney(mySalaryPaid)} so'm`);
+  });
+  lines.push('');
+
+  // 5. Tavsiyalar
+  lines.push(`5. 💡 TEZKOR MOLIYAVIY TAVSIYALAR:`);
+  if (debtorsList.length > 0) {
+    lines.push(`   • Qarzdor ${debtorsList.length} nafar o'quvchining ota-onalariga eslatma yuborib, ${formatMoney(totalDebt)} so'm kutilayotgan tushumni kassaga jalb qilish.`);
+  }
+  lines.push(`   • Markaz sof moliyaviy muvozanati ijobiy (+${formatMoney(netProfit)} so'm). Xarajatlar nazorati muntazam olib borilsin.`);
+  lines.push(`   • O'qituvchilarga oylik berilganda "Moliya -> Chiqimlar" bo'limida o'z vaqtida qayd etib borilsin.`);
 
   return lines.join('\n');
 }
@@ -402,8 +759,69 @@ function generateBuiltinAnalysis(
   const coursesMap = new Map<string, string>();
   courses.forEach((c: any) => coursesMap.set(c.id, c.name || 'Kurs'));
 
+  const coursesPriceMap = new Map<string, number>();
+  courses.forEach((c: any) => coursesPriceMap.set(c.id, Number(c.price) || 0));
+
   const groupsMap = new Map<string, any>();
   groups.forEach((g: any) => groupsMap.set(g.id, g));
+
+  const studentGroupsMap = new Map<string, any[]>();
+  studentGroups.forEach((sg: any) => {
+    const list = studentGroupsMap.get(sg.studentId) || [];
+    list.push(sg);
+    studentGroupsMap.set(sg.studentId, list);
+  });
+
+  // Calculate actual debtors and debt
+  let calculatedDebt = 0;
+  let calculatedDebtorsCount = 0;
+  const processedStIds = new Set<string>();
+
+  students.forEach((st: any) => {
+    const sgs = studentGroupsMap.get(st.id) || [];
+    const activeGroups = sgs.map((sg: any) => groupsMap.get(sg.groupId)).filter(Boolean);
+
+    const stPayments = payments.filter((p: any) => p.studentId === st.id);
+    const paid = stPayments
+      .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+      .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+
+    let due = 0;
+    activeGroups.forEach((g: any) => {
+      due += coursesPriceMap.get(g.courseId) || 0;
+    });
+
+    const debt = Math.max(0, due - paid);
+    if (debt > 0 && due > 0) {
+      processedStIds.add(st.id);
+      calculatedDebt += debt;
+      calculatedDebtorsCount += 1;
+    }
+  });
+
+  payments.forEach((p: any) => {
+    if ((p.status === 'TOLANMAGAN' || p.status === 'QISMAN') && p.studentId && !processedStIds.has(p.studentId)) {
+      const debt = Number(p.amount) || 0;
+      if (debt > 0) {
+        processedStIds.add(p.studentId);
+        calculatedDebt += debt;
+        calculatedDebtorsCount += 1;
+      }
+    }
+  });
+
+  const effectiveDebt = calculatedDebt > 0 ? calculatedDebt : totalDebt;
+
+  // Expenses and Teacher salaries
+  const paidExpensesList = expenses.filter((e: any) => e.status !== 'BEKOR_QILINDI');
+  const totalExpensesAmount = paidExpensesList.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+  const totalTeacherSalariesAmount = paidExpensesList
+    .filter((e: any) => {
+      const t = (e.type || '').toUpperCase();
+      const note = (e.note || '').toLowerCase();
+      return t === 'USTOZ_MAOSHI' || note.includes('maosh') || note.includes('oylik');
+    })
+    .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
   // Tashkent Time & Day of Week calculation
   const now = new Date();
@@ -440,7 +858,7 @@ function generateBuiltinAnalysis(
         `Jami o'qituvchilar soni: ${totalTeachers} nafar, faol guruhlar esa ${totalGroups} tani tashkil etadi.`
       );
       lines.push(
-        `Umumiy moliyaviy aylanma: Yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik ${formatMoney(totalDebt)} so'm.`
+        `Umumiy moliyaviy aylanma: Yig'ilgan to'lovlar ${formatMoney(totalCollected)} so'm, kutilayotgan qarzdorlik ${formatMoney(effectiveDebt)} so'm.`
       );
       lines.push(`• Tizim barqaror va barcha markaz ma'lumotlar bazalari normal yuklama bilan ishlamoqda.`);
       lines.push(`• Tavsiya: Markazlar faolligini oshirish uchun yangi o'quv markazlarini jalb qilish va o'qituvchilar reytingini kengaytirish mumkin.`);
@@ -470,13 +888,16 @@ function generateBuiltinAnalysis(
       totalTeachers,
       attendanceRate,
       totalCollected,
-      totalDebt,
+      effectiveDebt,
       todayTashkentIso,
       todayDayNameUz,
       teachersMap,
       roomsMap,
       groupStudentCounts,
-      studentsMap
+      studentsMap,
+      totalExpensesAmount,
+      totalTeacherSalariesAmount,
+      calculatedDebtorsCount
     );
   }
 
@@ -517,7 +938,7 @@ function generateBuiltinAnalysis(
 
   // 4. finance_analysis
   if (taskType === 'finance_analysis') {
-    return generateDebtorsAnalysis(centerName, payments, studentsMap, groupsMap, totalDebt);
+    return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers);
   }
 
   // 5. teacher_load
@@ -577,26 +998,54 @@ function generateBuiltinAnalysis(
         totalTeachers,
         attendanceRate,
         totalCollected,
-        totalDebt,
+        effectiveDebt,
         todayTashkentIso,
         todayDayNameUz,
         teachersMap,
         roomsMap,
         groupStudentCounts,
-        studentsMap
+        studentsMap,
+        totalExpensesAmount,
+        totalTeacherSalariesAmount,
+        calculatedDebtorsCount
       );
     }
 
-    // 3. Debts / unpaid students
+    // 3. Debts / unpaid students / finance
     if (
       qLower.includes('to\'lov') ||
       qLower.includes('tolov') ||
       qLower.includes('qarz') ||
       qLower.includes('qarzdor') ||
-      qLower.includes('pul') ||
+      qLower.includes('moliya') ||
       qLower.includes('kassa')
     ) {
-      return generateDebtorsAnalysis(centerName, payments, studentsMap, groupsMap, totalDebt);
+      if (qLower.includes('qarz') || qLower.includes('qarzdor')) {
+        return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers, { onlyDebtors: true });
+      }
+      return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers);
+    }
+
+    // 4. Center Expenses / Chiqimlar (Requirement 1: markaz nimaga xarajat qilishi yozilsin)
+    if (
+      qLower.includes('xarajat') ||
+      qLower.includes('chiqim') ||
+      qLower.includes('sarf') ||
+      qLower.includes('nimaga xarajat') ||
+      qLower.includes('xarajatlar')
+    ) {
+      return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers, { onlyExpenses: true });
+    }
+
+    // 5. Teacher Salaries / Oyliklar (Requirement 1: O'qituvchilarga oylik berilganda yozilib borilsin shu yerga)
+    if (
+      qLower.includes('oylik') ||
+      qLower.includes('maosh') ||
+      qLower.includes('ustoz oyligi') ||
+      qLower.includes('ustoz maoshi') ||
+      qLower.includes('oyliklar')
+    ) {
+      return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers, { onlySalaries: true });
     }
 
     // 4. Teachers' load
@@ -665,13 +1114,16 @@ function generateBuiltinAnalysis(
       totalTeachers,
       attendanceRate,
       totalCollected,
-      totalDebt,
+      effectiveDebt,
       todayTashkentIso,
       todayDayNameUz,
       teachersMap,
       roomsMap,
       groupStudentCounts,
-      studentsMap
+      studentsMap,
+      totalExpensesAmount,
+      totalTeacherSalariesAmount,
+      calculatedDebtorsCount
     );
   }
 
@@ -733,9 +1185,9 @@ export async function POST(req: NextRequest) {
         supabase.from('centers').select('id, name, status, createdAt'),
         supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, courseId, roomId, status, centerId'),
         supabase.from('students').select('id, firstName, lastName, phone, fatherPhone, motherPhone, status, centerId'),
-        supabase.from('teachers').select('id, firstName, lastName, phone, status, centerId'),
-        supabase.from('payments').select('id, amount, status, centerId'),
-        supabase.from('expenses').select('id, amount, status, centerId'),
+        supabase.from('teachers').select('id, firstName, lastName, phone, status, salaryType, salaryValue, centerId'),
+        supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId, centerId'),
+        supabase.from('expenses').select('id, amount, type, ownerName, status, note, date, createdAt, centerId').order('date', { ascending: false }),
         supabase.from('courses').select('id, name, price, centerId'),
         supabase.from('rooms').select('id, name, centerId'),
         supabase.from('attendances').select('id, status, date, studentId, groupId, note, centerId').order('date', { ascending: false }),
@@ -772,8 +1224,8 @@ export async function POST(req: NextRequest) {
         supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', effectiveCenterId),
         supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', effectiveCenterId),
         supabase.from('attendances').select('id, status, date, studentId, groupId, note').eq('centerId', effectiveCenterId).order('date', { ascending: false }),
-        supabase.from('teachers').select('id, firstName, lastName, phone, status').eq('centerId', effectiveCenterId),
-        supabase.from('expenses').select('id, amount, type, status, createdAt').eq('centerId', effectiveCenterId),
+        supabase.from('teachers').select('id, firstName, lastName, phone, status, salaryType, salaryValue').eq('centerId', effectiveCenterId),
+        supabase.from('expenses').select('id, amount, type, ownerName, status, note, date, createdAt').eq('centerId', effectiveCenterId).order('date', { ascending: false }),
         supabase.from('courses').select('id, name, price').eq('centerId', effectiveCenterId),
         supabase.from('rooms').select('id, name').eq('centerId', effectiveCenterId),
       ]);
@@ -836,6 +1288,106 @@ export async function POST(req: NextRequest) {
       rooms: rooms || [],
     };
 
+    // Calculate debtors for Gemini payload
+    const sMap = new Map<string, any>();
+    (students || []).forEach((s: any) => sMap.set(s.id, s));
+    const gMap = new Map<string, any>();
+    (groups || []).forEach((g: any) => gMap.set(g.id, g));
+    const cMap = new Map<string, any>();
+    (courses || []).forEach((c: any) => cMap.set(c.id, c));
+    const sgMap = new Map<string, any[]>();
+    (studentGroups || []).forEach((sg: any) => {
+      const list = sgMap.get(sg.studentId) || [];
+      list.push(sg);
+      sgMap.set(sg.studentId, list);
+    });
+
+    const calculatedDebtors: any[] = [];
+    const seenStIds = new Set<string>();
+
+    (students || []).forEach((st: any) => {
+      const sgs = sgMap.get(st.id) || [];
+      const activeG = sgs.map((sg: any) => gMap.get(sg.groupId)).filter(Boolean);
+      const stP = (payments || []).filter((p: any) => p.studentId === st.id);
+      const paid = stP
+        .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+        .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+      let due = 0;
+      const gN: string[] = [];
+      activeG.forEach((g: any) => {
+        gN.push(g.name || 'Guruh');
+        const crs = cMap.get(g.courseId);
+        if (crs && Number(crs.price)) due += Number(crs.price);
+      });
+      const d = Math.max(0, due - paid);
+      if (d > 0 && due > 0) {
+        seenStIds.add(st.id);
+        calculatedDebtors.push({
+          student: `${st.firstName || ''} ${st.lastName || ''}`.trim(),
+          group: gN.join(', '),
+          coursePrice: due,
+          totalPaid: paid,
+          debt: d,
+          parentPhone: getParentPhoneDisplay(st),
+        });
+      }
+    });
+
+    (payments || []).forEach((p: any) => {
+      if ((p.status === 'TOLANMAGAN' || p.status === 'QISMAN') && p.studentId && !seenStIds.has(p.studentId)) {
+        const amt = Number(p.amount) || 0;
+        if (amt > 0) {
+          seenStIds.add(p.studentId);
+          const st = sMap.get(p.studentId);
+          calculatedDebtors.push({
+            student: st ? `${st.firstName || ''} ${st.lastName || ''}`.trim() : "O'quvchi",
+            group: gMap.get(p.groupId)?.name || 'Guruh',
+            coursePrice: amt,
+            totalPaid: 0,
+            debt: amt,
+            parentPhone: getParentPhoneDisplay(st),
+          });
+        }
+      }
+    });
+
+    calculatedDebtors.sort((a, b) => b.debt - a.debt);
+
+    // Expenses breakdown for Gemini payload
+    const pExpenses = (expenses || []).filter((e: any) => e.status !== 'BEKOR_QILINDI');
+    const expensesByCategorySummary: Record<string, number> = {
+      IJARA: 0,
+      KOMMUNAL: 0,
+      REKLAMA: 0,
+      JIHOZLAR: 0,
+      USTOZ_MAOSHI: 0,
+      BOSHQA: 0,
+    };
+    pExpenses.forEach((e: any) => {
+      const t = (e.type || 'BOSHQA').toUpperCase();
+      const k = expensesByCategorySummary[t] !== undefined ? t : 'BOSHQA';
+      expensesByCategorySummary[k] += Number(e.amount) || 0;
+    });
+
+    const teacherSalaryList = pExpenses
+      .filter((e: any) => {
+        const t = (e.type || '').toUpperCase();
+        const note = (e.note || '').toLowerCase();
+        return t === 'USTOZ_MAOSHI' || note.includes('maosh') || note.includes('oylik');
+      })
+      .map((e: any) => ({
+        teacher: e.ownerName || 'Ustoz',
+        amount: Number(e.amount) || 0,
+        date: e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-'),
+        note: e.note || '-',
+      }));
+
+    const totalCollectedAmount = (payments || [])
+      .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+      .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const totalExpensesAmount = pExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+    const totalCalculatedDebt = calculatedDebtors.reduce((sum: number, d: any) => sum + d.debt, 0);
+
     // 2. Structured payload for Gemini AI
     const summarizedDataPayload = {
       center: centerName,
@@ -854,17 +1406,28 @@ export async function POST(req: NextRequest) {
       teachersList: (teachers || []).map((t: any) => ({
         name: `${t.firstName || ''} ${t.lastName || ''}`.trim(),
         phone: t.phone,
+        salaryType: t.salaryType,
+        salaryValue: t.salaryValue,
       })),
       financials: {
-        totalCollected: (payments || [])
-          .filter((p: any) => p.status === 'TOLANGAN')
-          .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
-        totalDebt: (payments || [])
-          .filter((p: any) => p.status === 'TOLANMAGAN' || p.status === 'QISMAN')
-          .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
-        totalExpenses: (expenses || [])
-          .filter((e: any) => e.status === 'TOLANGAN')
-          .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0),
+        totalCollected: totalCollectedAmount,
+        totalExpenses: totalExpensesAmount,
+        netBalance: totalCollectedAmount - totalExpensesAmount,
+        totalDebt: totalCalculatedDebt,
+        debtorsCount: calculatedDebtors.length,
+      },
+      debtorsList: calculatedDebtors.slice(0, 30),
+      expensesBreakdown: expensesByCategorySummary,
+      recentExpenses: pExpenses.slice(0, 15).map((e: any) => ({
+        type: e.type,
+        owner: e.ownerName || '-',
+        amount: Number(e.amount) || 0,
+        date: e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-'),
+        note: e.note || '-',
+      })),
+      teacherSalaries: {
+        totalPaid: teacherSalaryList.reduce((sum: number, s: any) => sum + s.amount, 0),
+        payouts: teacherSalaryList.slice(0, 15),
       },
       attendanceCount: {
         total: (attendances || []).length,
