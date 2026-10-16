@@ -1715,12 +1715,16 @@ export async function POST(req: NextRequest) {
         ? 'SUPERADMIN'
         : (authUser?.role?.toUpperCase() === 'SUPERADMIN' ? 'SUPERADMIN' : 'ADMIN');
 
-    if (!superAdmin && (!authUser || !authUser.centerId) && !isStudent) {
+    if (!superAdmin && (!authUser || !authUser.centerId) && !isStudent && !isTeacher) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
     }
 
-    const effectiveCenterId = authUser?.centerId;
     const supabase = createServerSupabaseClient();
+    let effectiveCenterId = authUser?.centerId;
+    if (!effectiveCenterId && isTeacher) {
+      const { data: firstCenter } = await supabase.from('centers').select('id').limit(1).maybeSingle();
+      effectiveCenterId = firstCenter?.id;
+    }
 
     // ====================================================
     // PATH 1: STUDENT AI REPETITOR (100% ISOLATED & SAFE)
