@@ -123,7 +123,12 @@ export const StudentAITutor: React.FC = () => {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            task_type: 'chat_qa',
+            task_type: 'student_tutor',
+            role: 'STUDENT',
+            context: 'STUDENT_TUTOR',
+            student_name: studentFirstName,
+            course_name: group?.course?.name || 'Frontend Web Dasturlash',
+            topic: latestTopic.topic || 'Dasturlash asoslari',
             user_question: textToSend.trim(),
             prompt: `Sen IT Park o'quv markazining tajribali AI Repetitorisan. O'quvchi ismi: ${studentFirstName}. Kurs: ${group?.course?.name || 'Frontend'}. O'tilgan dars mavzusi: ${latestTopic.topic}. O'quvchi savoli: ${textToSend.trim()}. O'zbek tilida sodda, aniq, amaliy kod namunalari bilan javob ber.`,
           }),
@@ -131,21 +136,32 @@ export const StudentAITutor: React.FC = () => {
 
         if (res.ok) {
           const data = await res.json();
-          aiReplyText = data.result || data.text || data.response || data.message || '';
+          const rawText = data.result || data.text || data.response || data.message || '';
+          // Security / context guard: never show admin/center overview to student
+          const isLeakedAdminReport =
+            rawText.includes('BUGUNGI HOLATI') ||
+            rawText.includes('REJALASHTIRILGAN DARSLAR') ||
+            rawText.includes('SOF FOYDA') ||
+            rawText.includes('QARZDOR O\'QUVCHILAR');
+          if (!isLeakedAdminReport) {
+            aiReplyText = rawText;
+          }
         }
       } catch {}
 
-      // Fallback smart response generator if AI API offline
+      // Fallback smart response generator if AI API offline or filtered
       if (!aiReplyText) {
         const lower = textToSend.toLowerCase();
-        if (lower.includes('mavzu') || lower.includes('tushuntir')) {
-          aiReplyText = `**"${latestTopic.topic}"** mavzusi juda muhim dasturlash asosidir!\n\nAsosiy tushunchalar:\n1. **Maqsad:** Kodni toza, modulli va qayta ishlatiladigan qilib yozish.\n2. **Amaliyot:** Kichik komponentlarga bo'lib, har bir bo'lakni alohida sinab ko'ring.\n3. **Maslahat:** Ustoz yuklagan video darsni ko'rib, kodlarni qo'lda yozib mashq qiling!`;
+        if (lower.includes('vazifa') || lower.includes('uyga') || lower.includes('tartib')) {
+          aiReplyText = `Uyga vazifani a'lo darajada bajarish bo'yicha 5 ta oltin qadam:\n\n1. 📖 **Topshiriq shartini o'qish:** Ustoz bergan vazifa shartlarini va oxirgi o'tilgan "${latestTopic.topic}" mavzusi materiallarini diqqat bilan ko'rib chiqing.\n2. 🧩 **Bosqichlarga bo'lish:** Murakkab loyihani kichik qismlarga bo'ling (masalan: 1-qadamda HTML suyak, 2-qadamda CSS dizayn, 3-qadamda JS/React mantiq).\n3. 💻 **Kodni mustaqil yozish:** Har bir funksiya yoki komponentni o'zingiz yozing. Nusxa ko'chirmaslik kodni yaxshi eslab qolishga yordam beradi.\n4. 🔍 **Xatolarni tekshirish:** Brauzerda F12 tugmasini bosib, "Console"da qizil xatoliklar yo'qligini tekshiring.\n5. 🚀 **Platformaga topshirish:** Yozgan kodingizni GitHub-ga yuklang va havolasini "Uyga vazifalar" sahifasiga joylang. Bu sizga +50 XP va 5 IT-Coins taqdim etadi!`;
+        } else if (lower.includes('mavzu') || lower.includes('tushuntir')) {
+          aiReplyText = `**"${latestTopic.topic}"** mavzusi bo'yicha qisqa va sodda qo'llanma:\n\n• **Asosiy mazmuni:** Bu mavzu ${group?.course?.name || 'Dasturlash'} yo'nalishida mantiqiy fikrlash va toza kod yozish asosidir.\n• **Amaliyotda qo'llash:** Har bir qadam ketma-ketlikda, aniq tartib bilan bajarilishi shart.\n• **Ustoz maslahati:** Video darslar bo'limida ustozingiz yuklagan videoni ko'rib, kodni qayta yozib chiqing!`;
         } else if (lower.includes('xato') || lower.includes('error') || lower.includes('ishlamayapti')) {
-          aiReplyText = `Koddagi xatolikni tuzatish bo'yicha yo'riqnoma:\n\n1. Brauzerda **F12** tugmasini bosib **Console** bo'limidagi qizil xatolik matnini o'qing.\n2. O'zgaruvchilar nomi to'g'ri yozilganini (harflar kattaligi sezgir) tekshiring.\n3. Qavslar va nuqta-vergullarni tekshiring.\n\nAgar kodingizni bu yerga tashlasangiz, qaysi qatorda xato borligini ko'rsatib beraman!`;
-        } else if (lower.includes('vazifa') || lower.includes('uyga')) {
-          aiReplyText = `Uyga vazifani a'lo bahoga bajarish rejasi:\n\n1. Avvalo vazifa talablarini diqqat bilan o'qib chiqing.\n2. Dastur fayllarini to'g'ri papkalarga ajrating (masalan, components, styles).\n3. Natijani GitHubga yuklang va havolani "Uyga vazifalar" bo'limida topshiring. Bu sizga +50 XP va 5 IT-Coins taqdim etadi! 🚀`;
+          aiReplyText = `Koddagi xatolikni bartaraf etish bosqichlari:\n\n1. Brauzerda **F12** tugmasini bosib **Console** dagi qizil xatolik matnini o'qing.\n2. O'zgaruvchilar va komponent nomlarining to'g'ri yozilganini (harf kattaligi sezgir) tekshiring.\n3. Qavslar, import yo'llari va nuqta-vergullarni tekshiring.\n\nKodingiz qismini shu yerga yuborsangiz, qaysi qatorda xato borligini birgalikda tuzatamiz! 👍`;
+        } else if (lower.includes('react') && lower.includes('javascript')) {
+          aiReplyText = `JavaScript va React o'rtasidagi asosiy farqlar:\n\n• **JavaScript:** Bu veb-sahifalarga jon bag'ishlaydigan asosiy dasturlash tili (Vanilla JS).\n• **React:** Bu JavaScript tilida yozilgan, foydalanuvchi interfeysini (UI) tez va qulay yaratish uchun mo'ljallangan zamonaviy kutubxona.\n• **Asosiy ustunligi:** Reactda sahifa komponentlarga bo'linadi (Header, Card, Button) va virtual DOM orqali butun sahifani qayta yuklamasdan faqat o'zgargan qismini yangilaydi.`;
         } else {
-          aiReplyText = `Savolingiz uchun rahmat, ${studentFirstName}! Ushbu masala dasturlashda juda ko'p uchraydi.\n\nMaslahatim: har bir texnologiyani amaliy loyihada sinab ko'ring. Agar aniq kod bo'yicha yordam kerak bo'lsa, kodingizni yozib qoldiring, birgalikda tahlil qilamiz! 👍`;
+          aiReplyText = `Salom, ${studentFirstName}! "${latestTopic.topic}" mavzusi yoki "${group?.course?.name || 'Dasturlash'}" kursi bo'yicha qanday savolingiz bo'lsa, bemalol yozing. Sizga darslarni chuqur o'rganishda yordam berishdan xursandman! 🚀`;
         }
       }
 

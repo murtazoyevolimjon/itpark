@@ -93,15 +93,21 @@ export const AIAssistant: React.FC = () => {
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let welcomeText = `Assalomu alaykum! Men "Markaz CRM AI Yordamchisi"man. Markazingizdagi o'quvchilar, guruhlar, davomat, moliyaviy balans, qarzdorliklar va ustozlar yuklamasi bo'yicha tahlillar beraman.`;
+    if (role === 'TEACHER') {
+      welcomeText = `Assalomu alaykum, Ustoz! Men sizning AI dars va metodika yordamchingizman 🎓. Biriktirilgan guruhlaringiz, talabalar davomati, dars metodikasi va yangi amaliy mashqlar bo'yicha savollaringizga mamnuniyat bilan javob beraman.`;
+    } else if (role === 'SUPERADMIN') {
+      welcomeText = `Assalomu alaykum, Hurmatli Bosh Dasturchi! CRM platformasi bo'yicha markazlar, talabalar, to'lovlar va umumiy statistika bo'yicha xizmatdaman.`;
+    }
     setMessages([
       {
         id: 'welcome',
         sender: 'ai',
-        text: `Assalomu alaykum! Men "Markaz CRM AI Yordamchisi"man. Markazingizdagi o'quvchilar, guruhlar, davomat, to'lovlar va ustozlar yuklamasi bo'yicha har qanday savolingizga faqat haqiqiy ma'lumotlar asosida javob beraman.`,
+        text: welcomeText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
-  }, []);
+  }, [role]);
 
   // Settings: Gemini API Key in localStorage
   const [apiKey, setApiKey] = useState('');
@@ -130,6 +136,9 @@ export const AIAssistant: React.FC = () => {
       aiApi.analyze({
         task_type: taskType,
         date_range: 'Oxirgi 30 kun',
+        role: role,
+        context: role === 'TEACHER' ? 'TEACHER_ASSISTANT' : undefined,
+        teacher_name: role === 'TEACHER' ? roleTitle : undefined,
       }),
     onSuccess: (data) => {
       const resText = typeof data?.result === 'string' ? data.result : String(data?.result || 'Tahlil muvaffaqiyatli yakunlandi.');
@@ -146,7 +155,7 @@ export const AIAssistant: React.FC = () => {
     if (!analysisResult && !analyzeMutation.isPending) {
       analyzeMutation.mutate('dashboard_summary');
     }
-  }, []);
+  }, [role]);
 
   const handleSelectTask = (task: AITaskType) => {
     setSelectedTask(task);
@@ -159,6 +168,9 @@ export const AIAssistant: React.FC = () => {
       aiApi.analyze({
         task_type: 'chat_qa',
         user_question: question,
+        role: role,
+        context: role === 'TEACHER' ? 'TEACHER_ASSISTANT' : undefined,
+        teacher_name: role === 'TEACHER' ? roleTitle : undefined,
       }),
     onSuccess: (data) => {
       const resText = typeof data?.result === 'string' ? data.result : String(data?.result || 'Javob tayyorlandi.');
@@ -272,7 +284,7 @@ export const AIAssistant: React.FC = () => {
         {
           type: 'student_analysis',
           title: "O'quvchilarim Faolligi",
-          desc: "Talabalarim faolligi va qarzdorlik holati",
+          desc: "Talabalarim faolligi va dars o'zlashtirishi",
           icon: Users,
           color: '#10b981',
         },
@@ -291,10 +303,10 @@ export const AIAssistant: React.FC = () => {
           color: '#ec4899',
         },
         {
-          type: 'finance_analysis',
+          type: 'teacher_methodology',
           title: 'Metodika & Rejalar',
           desc: "Dars metodikasi, reja va amaliy mashqlar tavsiyasi",
-          icon: DollarSign,
+          icon: Sparkles,
           color: '#8b5cf6',
         },
       ];

@@ -696,7 +696,476 @@ function generateTeacherWorkloadAnalysis(
   return lines.join('\n');
 }
 
-// Built-in rule-based analytical engine (fallback)
+// ==========================================
+// 1. DEDICATED STUDENT AI TUTOR ENGINE
+// ==========================================
+function generateStudentTutorAnswer(
+  question: string,
+  studentName?: string,
+  courseName?: string,
+  topic?: string,
+  centerName?: string
+): string {
+  const sName = studentName || "O'quvchi";
+  const cName = courseName || "Dasturlash";
+  const top = topic || "Dasturlash asoslari";
+  const q = (question || '').trim();
+  const qLower = q.toLowerCase();
+
+  // 1. Uyga vazifa / Topshiriqlar bo'yicha maslahat
+  if (
+    qLower.includes('vazifa') ||
+    qLower.includes('uyga') ||
+    qLower.includes('tartib') ||
+    qLower.includes('bajarish') ||
+    qLower.includes('topshiriq') ||
+    qLower.includes('maslahat berasan') ||
+    qLower.includes('rejasi') ||
+    qLower.includes('yordam')
+  ) {
+    return [
+      `Assalomu alaykum, ${sName}! Uyga vazifani a'lo bahoga va eng samarali tartibda bajarish bo'yicha 5 ta oltin qoidam:`,
+      '',
+      `1. 📖 **Topshiriq shartlarini diqqat bilan tahlil qiling:**`,
+      `   Ustozingiz bergan topshiriq talablarini va oxirgi o'tilgan "${top}" mavzusi materiallarini to'liq ko'rib chiqing. Koddan nima kutilayotganini aniq belgilab oling.`,
+      '',
+      `2. 🧩 **Masalani kichik bo'laklarga ajrating (Dekompozitsiya):**`,
+      `   Katta masalani birdaniga yozishga shoshilmang. Avval algoritmni qoralama qog'ozda yoki kod ichida izoh (// comment) sifatida qadamlarga bo'ling:`,
+      `   • 1-qadam: Boshlang'ich ma'lumotlar va o'zgaruvchilarni aniqlash`,
+      `   • 2-qadam: Asosiy mantiq (funksiyalar, shartlar, hisob-kitoblar)`,
+      `   • 3-qadam: Natijani foydalanuvchiga chiqarish (UI/Console)`,
+      '',
+      `3. 💻 **Kodni mustaqil va tushunib yozing:**`,
+      `   Kodni ko'chirib bosishdan ko'ra, har bir qatorni o'zingiz qo'lda yozing. O'zgaruvchilarga mantiqiy va tushunarli nomlar bering. Har bir qismni yozgach darhol sinab ko'ring.`,
+      '',
+      `4. 🔍 **Xatolarni tekshiring (Debug):**`,
+      `   Dastur to'g'ri ishlayotganini turli xil qiymatlar bilan tekshiring. Brauzerda F12 tugmasini bosib, "Console" bo'limida qizil xatoliklar yo'qligiga ishonch hosil qiling.`,
+      '',
+      `5. 🚀 **Platformaga yuklash va topshirish:**`,
+      `   Yozgan kodingizni GitHub repositoriyingizga yuklang (push qiling). Shaxsiy kabinetingizdagi "Uyga vazifalar" bo'limida havola (link)ni topshiring. Bu sizga reytingingiz uchun +50 XP va 5 IT-Coins keltiradi!`,
+      '',
+      `💡 Agar biron qatorda qiynalsangiz, kodingiz qismini yuboring, birgalikda tahlil qilamiz! Omad, ${sName}! 👍`,
+    ].join('\n');
+  }
+
+  // 2. Mavzu tushuntirish
+  if (
+    qLower.includes('mavzu') ||
+    qLower.includes('tushuntir') ||
+    qLower.includes('chiziqli algoritm') ||
+    qLower.includes('algoritm') ||
+    qLower.includes('nima u') ||
+    qLower.includes('tushunmadim')
+  ) {
+    if (qLower.includes('chiziqli') || top.toLowerCase().includes('chiziqli')) {
+      return [
+        `**"Chiziqli algoritmlar"** — bu har bir amal qat'iy ketma-ketlikda, yuqoridan pastga qarab, hech qanday shartsiz yoki takrorlanishsiz (siklsiz) bir martadan bajariladigan algoritmdir.`,
+        '',
+        `☕ Hayotiy misol: Choy damlash jarayoni:`,
+        `1. Chovgumga suv quyiladi`,
+        `2. Gazga qo'yiladi va qaynatiladi`,
+        `3. Choynakka quruq choy solinadi`,
+        `4. Qaynagan suv quyiladi va 5 daqiqa damlanadi`,
+        '',
+        `💻 Dasturlashda sodda namuna:`,
+        `\`\`\`javascript`,
+        `// Ikki sonning yig'indisini hisoblash (chiziqli ketma-ketlik):`,
+        `let a = 15;`,
+        `let b = 25;`,
+        `let yigindi = a + b;`,
+        `console.log("Natija:", yigindi); // Natija: 40`,
+        `\`\`\``,
+        '',
+        `Bu yerda dastur qatorlari 1-qatordan 4-qatorgacha navbatma-navbat bajariladi. Qandaydir qo'shimcha savolingiz bormi?`,
+      ].join('\n');
+    }
+
+    return [
+      `Siz o'rganayotgan **"${top}"** mavzusi (${cName} kursi) dasturlashning asosiy tayanch tushunchalaridan biridir.`,
+      '',
+      `Asosiy qoidalar:`,
+      `• Nazariyani darhol amaliyotga aylantiring: har bir tushuncha bo'yicha kamida 2-3 ta sodda kod yozib ko'ring.`,
+      `• Platformaning "Video darslar" bo'limida ustoz yuklagan dars videosini ko'rib, ustoz bilan birga kodni yozing.`,
+      `• Dars kodlarini o'zgartirib, natijasi qanday o'zgarishini kuzating.`,
+      '',
+      `Ushbu mavzuning qaysi qismida ikkilanyapsiz? Masalan, sintaksisdami yoki amaliy qo'llashdami? Yozing, batafsil tushuntiraman!`,
+    ].join('\n');
+  }
+
+  // 3. Kod xatolari (debugging)
+  if (
+    qLower.includes('xato') ||
+    qLower.includes('error') ||
+    qLower.includes('ishlamayapti') ||
+    qLower.includes('kodim') ||
+    qLower.includes('bug') ||
+    qLower.includes('tuzat')
+  ) {
+    return [
+      `Koddagi xatolikni (bug) tezda topish va tuzatish bo'yicha professional tavsiyalar:`,
+      '',
+      `1. 🔴 **Xatolik matnini o'qing:**`,
+      `   Brauzerda F12 tugmasini bosing -> "Console" bo'limini oching. Qizil rangdagi xato matnida fayl nomi va qaysi qatorda xato yuz bergani aniq ko'rsatiladi.`,
+      '',
+      `2. ⚠️ **Ko'p uchraydigan xatolar:**`,
+      `   • "Uncaught ReferenceError: x is not defined" — o'zgaruvchi e'lon qilinmagan yoki nomi noto'g'ri (katta-kichik harf sezgir).`,
+      `   • "Uncaught TypeError: Cannot read properties of undefined" — hali yuklanmagan yoki mavjud bo'lmagan obyekt xususiyati chaqirilgan.`,
+      `   • "SyntaxError: Unexpected token" — qavs, nuqta-vergul yoki qo'shtirnoq yopilmay qolgan.`,
+      '',
+      `3. 🛠️ **Tuzatish uchun:**`,
+      `   Xato berayotgan kod qatoringizni shu chatga tashlang, xatoni darhol ko'rsatib, to'g'ri variantini yozib beraman!`,
+    ].join('\n');
+  }
+
+  // 4. Taqqoslash (JS vs React, CSS vs HTML, etc.)
+  if (qLower.includes('farq') || qLower.includes('vs') || (qLower.includes('react') && qLower.includes('javascript'))) {
+    return [
+      `**JavaScript (Vanilla JS) va React o'rtasidagi asosiy farqlar:**`,
+      '',
+      `• **JavaScript:** Brauzerlar tushunadigan asosiy dasturlash tili. Har qanday veb sahifaga interaktivlik berish uning yordamida amalga oshiriladi.`,
+      `• **React:** Facebook (Meta) tomonidan yaratilgan, JavaScript-da yozilgan qulay va zamonaviy kutubxona.`,
+      '',
+      `Asosiy farqlari:`,
+      `1. **Komponentlar:** React-da sahifa mustaqil bo'laklarga (Header, Button, Card) bo'linadi va ularni qayta-qayta ishlatish mumkin.`,
+      `2. **Virtual DOM:** Oddiy JS butun DOM-ni qayta chizishi mumkin, React esa faqat o'zgargan qismnigina tezda yangilaydi.`,
+      `3. **Holat (State):** React-da ma'lumot (state) o'zgarganda sahifa avtomatik yangilanadi (re-render bo'ladi).`,
+      '',
+      `Xulosa: JavaScript-ni yaxshi o'rgansangiz, React-ni tushunish juda oson kechadi! 🚀`,
+    ].join('\n');
+  }
+
+  // 5. Salomlashish
+  if (qLower.match(/^(salom|assalom|qalaysan|qalesiz|hi|hello)/i)) {
+    return `Assalomu alaykum, ${sName}! Men sizning "${cName}" kursi bo'yicha shaxsiy AI repetitoringizman. Oxirgi mavzuingiz: "${top}". Bugun qaysi mavzu yoki vazifa bo'yicha yordam bera olaman? 😊`;
+  }
+
+  // 6. Maslahat / Karyera / Dasturchilik
+  if (qLower.includes('maslahat') || qLower.includes('tavsiya') || qLower.includes('dasturchi') || qLower.includes('o\'rganish')) {
+    return [
+      `Dasturlashni muvaffaqiyatli o'zlashtirish uchun 4 ta amaliy maslahat, ${sName}:`,
+      '',
+      `1. ⏱️ **Muntazamlik:** Haftada bir kun 7 soat o'tirgandan ko'ra, har kuni 1–2 soat doimiy kod yozish 10 barobar foydaliroq.`,
+      `2. ✍️ **Kodni qo'lda yozing:** Tayyor kodni nusxalamang, har bir satrni qo'lda terib, nima ishlayotganini tushunishga harakat qiling.`,
+      `3. 🛠️ **Mini loyihalar qiling:** Faqat darsdagi mashq bilan to'xtamang. O'zingiz yoqtirgan biror sodda sayt (kalkulyator, to-do list, ob-havo) yasashga urinib ko'ring.`,
+      `4. 🤝 **Savol berishdan tortinmang:** Tushunmagan joyingizni ustozingizdan yoki mendan so'rang.`,
+      '',
+      `Bugungi o'tilgan "${top}" mavzusini mustahkamlash uchun qanday mashq qilmoqchisiz?`,
+    ].join('\n');
+  }
+
+  // 7. General smart educational response (NEVER admin status)
+  return [
+    `Salom, ${sName}! "${q}" savolingiz dasturlashda juda muhim ahamiyatga ega.`,
+    '',
+    `"${cName}" kursi va "${top}" mavzusi doirasida:`,
+    `• Har bir dasturiy tushunchani amaliy mashqlar bilan mustahkamlang.`,
+    `• Agar biron aniq kod yozayotgan bo'lsangiz yoki topshiriqda qiyinchilik bo'lsa, kod matnini shu yerga yozing.`,
+    `• Qadamma-qadam tahlil qilib, to'g'ri yechimini ko'rsatib beraman! 👍`,
+  ].join('\n');
+}
+
+// ==========================================
+// 2. DEDICATED TEACHER ASSISTANT ENGINE
+// ==========================================
+function generateTeacherMethodologyAdvice(
+  teacherName: string,
+  teacherGroups: any[],
+  centerName: string
+): string {
+  const grNames = teacherGroups.map((g: any) => g.name).join(', ') || 'Dasturlash guruhlari';
+  return [
+    `🎓 Ustoz ${teacherName} uchun dars metodikasi, rejalashtirish va amaliy mashqlar bo'yicha tavsiyalar:`,
+    '',
+    `1. 🎯 DARSNI SAMARALI TASHKIL ETISH METODIKASI (80/20 QOIDASI):`,
+    `   • 20% Nazariya (15–20 daqiqa): Yangi mavzuni faqat eng kerakli asosiy tushunchalar bilan tushuntirish.`,
+    `   • 60% Amaliyot (Live Coding va mustaqil mashq): O'quvchilar bilan birgalikda kod yozish.`,
+    `   • 20% Tahlil va savol-javob: O'quvchilar yozgan kodlarini ekranda tekshirish va xatolarni tahlil qilish.`,
+    '',
+    `2. 💡 INTERAKTIV MASHQLAR VA GAMIFIKATSIYA:`,
+    `   • "Juftlikda dasturlash" (Pair Programming): Kuchliroq o'quvchini sekinroq o'zlashtirayotgan o'quvchi bilan juft qilib, bitta loyihani birga yozdirish.`,
+    `   • "Xatoni top" (Bug Hunting): Darsda ekranga ataylab 2–3 ta xatosi bor kod chiqarib, o'quvchilardan xatoni birinchi bo'lib topishini so'rash (bu ularni juda faollashtiradi).`,
+    `   • Platforma reytingi (XP & Coins): Uyga vazifani vaqtida topshirganlarga +50 XP va 5 IT-Coins berilishini eslatib, guruhlararo raqobat muhitini yaratish.`,
+    '',
+    `3. 📝 KEYINGI DARS UCHUN AMALIY TOPSHIRIQ G'OYALARI:`,
+    `   • Mini loyiha: O'tilgan mavzu bo'yicha real hayotda ishlatiladigan interaktiv mini-loyiha (masalan: hisoblagich, to'lov shakli, interaktiv kartochka).`,
+    `   • Mustaqil qidiruv: O'quvchilarga bitta kichik qo'shimcha parametrni hujjatlardan (MDN / W3Schools) topib, loyihaga qo'shish topshirig'i.`,
+    '',
+    `4. 👥 SUSST O'ZLASHTIRAYOTGAN O'QUVCHILAR BILAN ISHLASH:`,
+    `   • Dars oxirida ularga 5 daqiqa alohida e'tibor qaratib, eng qiyin tuyulgan qismini so'rash.`,
+    `   • "Video darslar" bo'limidagi dars yozuvini qayta ko'rib chiqishni tayinlash va ota-onalari bilan do'stona aloqa o'rnatish.`,
+    '',
+    `Sizning guruhlaringiz: ${grNames}. Har bir dars o'quvchilar uchun qiziqarli sarguzashtga aylansin! 🚀`,
+  ].join('\n');
+}
+
+function generateTeacherDashboardSummary(
+  teacherName: string,
+  centerName: string,
+  myGroups: any[],
+  myStudents: any[],
+  todayMyGroups: any[],
+  roomsMap: Map<string, string>,
+  groupStudentCounts: Record<string, number>,
+  todayDayNameUz: string,
+  myAttendances: any[]
+): string {
+  const lines: string[] = [];
+  lines.push(`🎓 Ustoz ${teacherName}, "${centerName}"dagi o'quv faoliyatingiz xulosasi:`);
+  lines.push('');
+  lines.push(`📊 ASOSIY KO'RSATKICHLARINGIZ:`);
+  lines.push(`• Biriktirilgan guruhlar soni: ${myGroups.length} ta`);
+  lines.push(`• Jami ta'lim olayotgan o'quvchilaringiz: ${myStudents.length} nafar`);
+  lines.push('');
+
+  lines.push(`📅 BUGUNGI DARSLARINGIZ (${todayDayNameUz}):`);
+  if (todayMyGroups.length === 0) {
+    lines.push(`• Bugun jadvalingiz bo'yicha darslar rejalashtirilmagan. Keyingi darslarga metodik tayyorgarlik ko'rishingiz mumkin.`);
+  } else {
+    todayMyGroups.forEach((g: any, idx: number) => {
+      const room = g.roomId ? roomsMap.get(g.roomId) || 'Xona' : 'Xona';
+      const count = groupStudentCounts[g.id] || 0;
+      const timeStr = g.startTime ? `${g.startTime.slice(0, 5)} - ${g.endTime ? g.endTime.slice(0, 5) : '--:--'}` : '--:--';
+      lines.push(`${idx + 1}) "${g.name}"`);
+      lines.push(`   ⏰ Vaqti: ${timeStr} | 🚪 Xona: ${room} | 👥 O'quvchilar: ${count} nafar`);
+    });
+  }
+  lines.push('');
+
+  lines.push(`💡 PEDAGOGIK TAVSIYALAR:`);
+  lines.push(`• Bugungi darslarda davomatni belgilangan dars vaqti oralig'ida olishni unutmang.`);
+  lines.push(`• Dars yakunida o'quvchilarga platforma orqali uyga vazifa yuklang, bu ularning bilimini mustahkamlaydi.`);
+  lines.push(`• Dars qoldirgan o'quvchilarning ota-onalari bilan bog'lanib, sababini aniqlash tavsiya etiladi.`);
+
+  return lines.join('\n');
+}
+
+function generateTeacherAttendanceAnalysis(
+  teacherName: string,
+  centerName: string,
+  myGroups: any[],
+  myStudents: any[],
+  myAttendances: any[],
+  todayTashkentIso: string
+): string {
+  const lines: string[] = [];
+  lines.push(`📋 Ustoz ${teacherName} — BIRIKTIRILGAN GURUHLARINGIZNING DAVOMAT TAHLILI:`);
+  lines.push('');
+
+  const totalMyAtt = myAttendances.length;
+  const presentMyAtt = myAttendances.filter((a: any) => a.status === 'KELGAN' || a.status === 'KECHIKKAN').length;
+  const rate = totalMyAtt > 0 ? Math.round((presentMyAtt / totalMyAtt) * 100) : 100;
+
+  lines.push(`• Guruhlaringizdagi umumiy davomat darajasi: ${rate}%`);
+
+  const absentMyAtt = myAttendances.filter((a: any) => a.status === 'KELMAGAN');
+  if (absentMyAtt.length === 0) {
+    lines.push(`• Guruhlaringizda dars qoldirgan o'quvchilar ro'yxatga olinmagan. Barcha talabalaringiz darslarga to'liq qatnashmoqda! 👍`);
+    return lines.join('\n');
+  }
+
+  // Count absent per student
+  const stAbsentMap: Record<string, { count: number; student: any; lastDate: string; groupName: string }> = {};
+  const groupsLookup = new Map<string, any>();
+  myGroups.forEach((g: any) => groupsLookup.set(g.id, g));
+  const stLookup = new Map<string, any>();
+  myStudents.forEach((s: any) => stLookup.set(s.id, s));
+
+  absentMyAtt.forEach((att: any) => {
+    const st = stLookup.get(att.studentId);
+    const gr = groupsLookup.get(att.groupId);
+    if (!stAbsentMap[att.studentId]) {
+      stAbsentMap[att.studentId] = {
+        count: 0,
+        student: st,
+        lastDate: att.date ? att.date.split('T')[0] : todayTashkentIso,
+        groupName: gr?.name || 'Guruh',
+      };
+    }
+    stAbsentMap[att.studentId].count += 1;
+  });
+
+  const sorted = Object.values(stAbsentMap).sort((a, b) => b.count - a.count);
+
+  lines.push(`DARS QOLDIRGAN O'QUVCHILAR RO'YXATI (Ota-onalar bilan bog'lanish uchun):`);
+  lines.push(`№  | O'quvchi F.I.Sh               | Guruhi               | Qoldirgan | Oxirgi dars | Ota-onasining telefoni`);
+  lines.push(`---+-------------------------------+----------------------+-----------+-------------+--------------------------------`);
+  sorted.slice(0, 15).forEach((item, idx) => {
+    const st = item.student;
+    const fullName = st ? `${st.firstName || ''} ${st.lastName || ''}`.trim() : 'O\'quvchi';
+    const parentPhone = getParentPhoneDisplay(st);
+
+    const padNum = String(idx + 1).padEnd(2, ' ');
+    const padName = (fullName.length > 29 ? fullName.slice(0, 26) + '...' : fullName).padEnd(29, ' ');
+    const padGroup = (item.groupName.length > 20 ? item.groupName.slice(0, 17) + '...' : item.groupName).padEnd(20, ' ');
+    const padCount = `${item.count} marta`.padEnd(9, ' ');
+    const padDate = item.lastDate.padEnd(11, ' ');
+
+    lines.push(`${padNum} | ${padName} | ${padGroup} | ${padCount} | ${padDate} | ${parentPhone}`);
+  });
+  lines.push(`---+-------------------------------+----------------------+-----------+-------------+--------------------------------`);
+  lines.push('');
+  lines.push(`• Tavsiya: 2 martadan ortiq sababsiz dars qoldirgan o'quvchilarning ota-onalari bilan qo'ng'iroqlashib, vaziyatni aniqlash ta'lim sifatini oshiradi.`);
+
+  return lines.join('\n');
+}
+
+function generateTeacherStudentAnalysis(
+  teacherName: string,
+  myGroups: any[],
+  myStudents: any[],
+  myAttendances: any[]
+): string {
+  const lines: string[] = [];
+  lines.push(`👥 Ustoz ${teacherName} — O'QUVCHILARINGIZNING AKADEMIK FAOLLIGI TAHLILI:`);
+  lines.push('');
+  lines.push(`• Biriktirilgan guruhlaringizdagi jami o'quvchilar: ${myStudents.length} nafar`);
+  const activeCount = myStudents.filter((s: any) => s.status === 'FAOL').length;
+  lines.push(`• Faol ta'lim olayotganlar: ${activeCount} nafar`);
+  lines.push('');
+
+  lines.push(`GURUHLAR BO'YICHA TAQSIMOT:`);
+  myGroups.forEach((g: any, idx: number) => {
+    lines.push(`${idx + 1}. "${g.name}" guruhi`);
+  });
+  lines.push('');
+
+  lines.push(`PEDAGOGIK TAVSIYALAR:`);
+  lines.push(`• Darsda eng faol o'quvchilarni taqdirlang, ularga murakkabroq mini-loyihalar bering.`);
+  lines.push(`• Sekin o'zlashtirayotgan talabalar bilan darsdan so'ng 5-10 daqiqa qo'shimcha tushuntirish o'tkazing.`);
+  lines.push(`• O'quvchilarning uyga vazifalarini muntazam tekshirib, izoh (feedback) qoldiring.`);
+
+  return lines.join('\n');
+}
+
+function generateTeacherOwnWorkload(
+  teacherName: string,
+  centerName: string,
+  myGroups: any[],
+  groupStudentCounts: Record<string, number>
+): string {
+  const lines: string[] = [];
+  lines.push(`👨‍🏫 Ustoz ${teacherName} — SHAXSIY DARS YUKLAMANGIZ VA JADVALINGIZ:`);
+  lines.push('');
+  lines.push(`• Jami biriktirilgan guruhlar: ${myGroups.length} ta`);
+
+  let totalStudents = 0;
+  myGroups.forEach((g: any) => {
+    totalStudents += (groupStudentCounts[g.id] || 0);
+  });
+  lines.push(`• Ta'lim berayotgan jami talabalaringiz: ${totalStudents} nafar`);
+  lines.push('');
+
+  lines.push(`GURUHLAR RO'YXATI VA DARS VAQTLARI:`);
+  lines.push(`№  | Guruh nomi                    | Dars kunlari      | Vaqti         | O'quvchilar`);
+  lines.push(`---+-------------------------------+-------------------+---------------+------------`);
+  myGroups.forEach((g: any, idx: number) => {
+    const padNum = String(idx + 1).padEnd(2, ' ');
+    const name = (g.name.length > 29 ? g.name.slice(0, 26) + '...' : g.name).padEnd(29, ' ');
+    const days = (Array.isArray(g.days) ? g.days.join(', ') : '-').padEnd(17, ' ');
+    const time = (g.startTime ? `${g.startTime.slice(0, 5)}-${g.endTime ? g.endTime.slice(0, 5) : ''}` : '-').padEnd(13, ' ');
+    const count = `${groupStudentCounts[g.id] || 0} nafar`.padEnd(10, ' ');
+    lines.push(`${padNum} | ${name} | ${days} | ${time} | ${count}`);
+  });
+  lines.push(`---+-------------------------------+-------------------+---------------+------------`);
+  lines.push('');
+  lines.push(`• Tavsiya: Dars oralig'ida dam olish va har bir dars oldidan 15 daqiqa rejalashtirishga vaqt ajratish samaradorlikni oshiradi.`);
+
+  return lines.join('\n');
+}
+
+function generateTeacherAssistantAnswer(
+  question: string,
+  teacherName: string,
+  centerName: string,
+  myGroups: any[],
+  myStudents: any[],
+  todayMyGroups: any[],
+  roomsMap: Map<string, string>,
+  groupStudentCounts: Record<string, number>,
+  todayDayNameUz: string,
+  myAttendances: any[],
+  todayTashkentIso: string
+): string {
+  const q = (question || '').trim();
+  const qLower = q.toLowerCase();
+
+  // 1. Guruhlarim holati
+  if (
+    qLower.includes('mening guruh') ||
+    qLower.includes('guruhlarimdagi holat') ||
+    qLower.includes('guruhlarim') ||
+    qLower.includes('darslarim')
+  ) {
+    return generateTeacherDashboardSummary(
+      teacherName,
+      centerName,
+      myGroups,
+      myStudents,
+      todayMyGroups,
+      roomsMap,
+      groupStudentCounts,
+      todayDayNameUz,
+      myAttendances
+    );
+  }
+
+  // 2. Davomat / Kelmagan o'quvchilar
+  if (
+    qLower.includes('davomat') ||
+    qLower.includes('kelmagan') ||
+    qLower.includes('qoldirgan') ||
+    qLower.includes('kelmadi') ||
+    qLower.includes('muammo')
+  ) {
+    return generateTeacherAttendanceAnalysis(
+      teacherName,
+      centerName,
+      myGroups,
+      myStudents,
+      myAttendances,
+      todayTashkentIso
+    );
+  }
+
+  // 3. Metodika / Rejalar / Amaliy mashq
+  if (
+    qLower.includes('metodika') ||
+    qLower.includes('mashq') ||
+    qLower.includes('amaliy mashq') ||
+    qLower.includes('reja') ||
+    qLower.includes('dars rejasi') ||
+    qLower.includes('o\'rgatish') ||
+    qLower.includes('reyting') ||
+    qLower.includes('qiziqtirish') ||
+    qLower.includes('motivatsiya')
+  ) {
+    return generateTeacherMethodologyAdvice(teacherName, myGroups, centerName);
+  }
+
+  // 4. O'quvchilar haqida
+  if (qLower.includes('o\'quvchi') || qLower.includes('talaba')) {
+    return generateTeacherStudentAnalysis(teacherName, myGroups, myStudents, myAttendances);
+  }
+
+  // 5. Salomlashish
+  if (qLower.match(/^(salom|assalom|qalaysiz|qalesiz)/i)) {
+    return `Assalomu alaykum, Ustoz ${teacherName}! Guruhlaringiz darslari, o'quvchilar davomati yoki yangi dars metodikasi bo'yicha qanday yordam bera olaman?`;
+  }
+
+  // 6. Pedagogical default fallback (NEVER center finances!)
+  return [
+    `Hurmatli Ustoz ${teacherName}!`,
+    '',
+    `"${q}" savolingiz yuzasidan tavsiyalar:`,
+    `• Guruhlaringizdagi talabalar faolligini oshirish uchun har bir darsda yangi tushunchani amaliy kod yozish bilan mustahkamlang.`,
+    `• O'quvchilarning savollarini dars davomida rag'batlantirib boring.`,
+    `• Agar aniq dars mavzusi yoki mashq tuzish bo'yicha maslahat kerak bo'lsa, mavzu nomini yozing, dars rejasi va topshiriqlarni tuzib beraman!`,
+  ].join('\n');
+}
+
+// ==========================================
+// 3. BUILT-IN RULE-BASED ANALYTICAL ENGINE
+// ==========================================
 function generateBuiltinAnalysis(
   taskType: string,
   centerName: string,
@@ -704,9 +1173,29 @@ function generateBuiltinAnalysis(
   rawData: any,
   userQuestion?: string,
   callerRole?: string,
-  teacherInfo?: { name: string; groupsCount: number; studentsCount: number },
-  extraStats?: { centersCount?: number }
+  teacherInfo?: {
+    name: string;
+    teacherId?: string;
+    groupsCount?: number;
+    studentsCount?: number;
+    myGroups?: any[];
+    myStudents?: any[];
+    myAttendances?: any[];
+  },
+  extraStats?: { centersCount?: number },
+  studentInfo?: { studentName?: string; courseName?: string; topic?: string }
 ): string {
+  // Guard 1: Direct route for Student
+  if (callerRole === 'STUDENT' || taskType === 'student_tutor') {
+    return generateStudentTutorAnswer(
+      userQuestion || '',
+      studentInfo?.studentName,
+      studentInfo?.courseName,
+      studentInfo?.topic,
+      centerName
+    );
+  }
+
   const {
     students = [],
     groups = [],
@@ -844,6 +1333,81 @@ function generateBuiltinAnalysis(
   const todayGroups = groups.filter((g: any) => Array.isArray(g.days) && g.days.includes(todayDayCode));
   const todayAttendances = attendances.filter((a: any) => a.date && a.date.startsWith(todayTashkentIso));
 
+  // Guard 2: Direct route for Teacher
+  if (callerRole === 'TEACHER') {
+    const tName = teacherInfo?.name || 'Ustoz';
+    const myGroups = teacherInfo?.myGroups || groups.filter((g: any) => g.teacherId === teacherInfo?.teacherId);
+    const myGroupIds = new Set(myGroups.map((g: any) => g.id));
+    const myStudents = teacherInfo?.myStudents || students.filter((s: any) => {
+      const sgs = studentGroupsMap.get(s.id) || [];
+      return sgs.some((sg: any) => myGroupIds.has(sg.groupId));
+    });
+    const myAttendances = teacherInfo?.myAttendances || attendances.filter((a: any) => myGroupIds.has(a.groupId));
+    const todayMyGroups = myGroups.filter((g: any) => Array.isArray(g.days) && g.days.includes(todayDayCode));
+
+    if (taskType === 'dashboard_summary') {
+      return generateTeacherDashboardSummary(
+        tName,
+        centerName,
+        myGroups,
+        myStudents,
+        todayMyGroups,
+        roomsMap,
+        groupStudentCounts,
+        todayDayNameUz,
+        myAttendances
+      );
+    }
+
+    if (taskType === 'student_analysis') {
+      return generateTeacherStudentAnalysis(tName, myGroups, myStudents, myAttendances);
+    }
+
+    if (taskType === 'attendance_analysis') {
+      return generateTeacherAttendanceAnalysis(tName, centerName, myGroups, myStudents, myAttendances, todayTashkentIso);
+    }
+
+    if (taskType === 'teacher_load') {
+      return generateTeacherOwnWorkload(tName, centerName, myGroups, groupStudentCounts);
+    }
+
+    if (taskType === 'finance_analysis' || taskType === 'teacher_methodology') {
+      return generateTeacherMethodologyAdvice(tName, myGroups, centerName);
+    }
+
+    if (taskType === 'chat_qa') {
+      return generateTeacherAssistantAnswer(
+        userQuestion || '',
+        tName,
+        centerName,
+        myGroups,
+        myStudents,
+        todayMyGroups,
+        roomsMap,
+        groupStudentCounts,
+        todayDayNameUz,
+        myAttendances,
+        todayTashkentIso
+      );
+    }
+
+    return generateTeacherDashboardSummary(
+      tName,
+      centerName,
+      myGroups,
+      myStudents,
+      todayMyGroups,
+      roomsMap,
+      groupStudentCounts,
+      todayDayNameUz,
+      myAttendances
+    );
+  }
+
+  // ==========================================
+  // 4. ADMIN & SUPERADMIN ANALYTICS DISPATCH
+  // ==========================================
+
   // 1. dashboard_summary
   if (taskType === 'dashboard_summary') {
     if (callerRole === 'SUPERADMIN') {
@@ -862,19 +1426,6 @@ function generateBuiltinAnalysis(
       );
       lines.push(`• Tizim barqaror va barcha markaz ma'lumotlar bazalari normal yuklama bilan ishlamoqda.`);
       lines.push(`• Tavsiya: Markazlar faolligini oshirish uchun yangi o'quv markazlarini jalb qilish va o'qituvchilar reytingini kengaytirish mumkin.`);
-      return lines.join('\n');
-    }
-
-    if (callerRole === 'TEACHER' && teacherInfo) {
-      const lines: string[] = [];
-      lines.push(
-        `Ustoz ${teacherInfo.name}, sizga biriktirilgan ${teacherInfo.groupsCount} ta guruh va jami ${teacherInfo.studentsCount} nafar o'quvchi mavjud.`
-      );
-      lines.push(
-        `"${centerName}" markazida esa umumiy ${totalStudents} nafar o'quvchi (${activeStudents} nafari faol) va ${totalGroups} ta faol guruh faoliyat yuritmoqda.`
-      );
-      lines.push(`Bugun dars jadvalingiz bo'yicha guruhlaringiz davomatini dars vaqtida o'z vaqtida saqlashni unutmang.`);
-      lines.push(`• Tavsiya: Har bir dars mavzusi va uyga vazifalarni tizimga o'z vaqtida yuklab boring, bu o'quvchilar reytingini oshiradi.`);
       return lines.join('\n');
     }
 
@@ -946,7 +1497,7 @@ function generateBuiltinAnalysis(
     return generateTeacherWorkloadAnalysis(centerName, teachers, groups, groupStudentCounts);
   }
 
-  // 6. chat_qa (Open Q&A on any topic)
+  // 6. chat_qa (Admin Q&A on any center topic)
   if (taskType === 'chat_qa') {
     const q = (userQuestion || '').trim();
     const qLower = q.toLowerCase();
@@ -955,7 +1506,7 @@ function generateBuiltinAnalysis(
       return `"${centerName}" AI yordamchisiman. Markazingiz bugungi holati, davomat, qarzdorlar, ustozlar yoki guruhlar bo'yicha savolingizni bering!`;
     }
 
-    // 1. Attendance issues / absent students (Question 4 requested specifically)
+    // 1. Attendance issues / absent students
     if (
       qLower.includes('davomat') ||
       qLower.includes('kelmagan') ||
@@ -978,7 +1529,7 @@ function generateBuiltinAnalysis(
       );
     }
 
-    // 2. Today's general status (Question 3 requested specifically)
+    // 2. Today's general status
     if (
       qLower.includes('bugun') ||
       qLower.includes('umumiy holat') ||
@@ -1026,7 +1577,7 @@ function generateBuiltinAnalysis(
       return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers);
     }
 
-    // 4. Center Expenses / Chiqimlar (Requirement 1: markaz nimaga xarajat qilishi yozilsin)
+    // 4. Center Expenses / Chiqimlar
     if (
       qLower.includes('xarajat') ||
       qLower.includes('chiqim') ||
@@ -1037,7 +1588,7 @@ function generateBuiltinAnalysis(
       return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers, { onlyExpenses: true });
     }
 
-    // 5. Teacher Salaries / Oyliklar (Requirement 1: O'qituvchilarga oylik berilganda yozilib borilsin shu yerga)
+    // 5. Teacher Salaries / Oyliklar
     if (
       qLower.includes('oylik') ||
       qLower.includes('maosh') ||
@@ -1048,7 +1599,7 @@ function generateBuiltinAnalysis(
       return generateFinanceAnalysis(centerName, students, groups, courses, studentGroups, payments, expenses, teachers, { onlySalaries: true });
     }
 
-    // 4. Teachers' load
+    // 6. Teachers' load
     if (
       qLower.includes('ustoz') ||
       qLower.includes('o\'qituvchi') ||
@@ -1060,7 +1611,7 @@ function generateBuiltinAnalysis(
       return generateTeacherWorkloadAnalysis(centerName, teachers, groups, groupStudentCounts);
     }
 
-    // 5. Groups info
+    // 7. Groups info
     if (qLower.includes('guruh')) {
       const gLines: string[] = [
         `🏫 "${centerName}" markazida jami ${totalGroups} ta faol guruh mavjud:`,
@@ -1079,31 +1630,17 @@ function generateBuiltinAnalysis(
       return gLines.join('\n');
     }
 
-    // 6. Students info
+    // 8. Students info
     if (qLower.includes('o\'quvchi') || qLower.includes('talaba') || qLower.includes('nechta')) {
       return `"${centerName}" markazida jami ${totalStudents} nafar o'quvchi ro'yxatga olingan (${activeStudents} nafari faol ta'lim olmoqda). Guruhlar soni esa ${totalGroups} tani tashkil etadi.`;
     }
 
-    // 7. Student coding / tutor questions
-    if (
-      callerRole === 'STUDENT' ||
-      qLower.includes('mavzu') ||
-      qLower.includes('tushuntir') ||
-      qLower.includes('kod') ||
-      qLower.includes('xato')
-    ) {
-      if (qLower.includes('xato') || qLower.includes('error')) {
-        return `Koddagi xatolikni bartaraf etish bosqichlari:\n1. Brauzerda F12 tugmasini bosib Console dagi qizil xatolik matnini o'qing.\n2. O'zgaruvchilar va komponent nomlarining to'g'ri yozilganini (harf kattaligi sezgir) tekshiring.\n3. Qavslar va import yo'llarini tekshiring.\n\nKodingiz qismini yuborsangiz, xatoni birgalikda tuzatamiz! 👍`;
-      }
-      return `Dasturlash bo'yicha tavsiya:\nHar qanday murakkab masalani kichik bo'laklarga ajrating. Nazariyani o'qib, uni amaliy kodda sinab ko'ring. Savolingiz bo'yicha aniq kod yozishingiz mumkin, tahlil qilib beraman!`;
-    }
-
-    // 8. Greetings
+    // 9. Greetings
     if (qLower.match(/^(salom|assalom|qalesiz|qandaysiz|qalaysan|privet|hello|hi)/i)) {
       return `Assalomu alaykum! Men "${centerName}" o'quv markazining AI yordamchisiman. Sizga markazdagi darslar, bugungi davomat, qarzdorlik yoki ustozlar yuklamasi bo'yicha yordam berishga tayyorman.`;
     }
 
-    // 9. Intelligent fallback for other center questions
+    // 10. Intelligent fallback for admin center questions
     return generateTodayStatusAnalysis(
       centerName,
       todayGroups,
@@ -1135,14 +1672,6 @@ export async function POST(req: NextRequest) {
     const superAdmin = getSuperAdminAuth(req);
     const authUser = getAuthUser(req);
 
-    if (!superAdmin && (!authUser || !authUser.centerId)) {
-      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
-    }
-
-    const isSuperAdmin = !!superAdmin;
-    const effectiveRole = isSuperAdmin ? 'SUPERADMIN' : (authUser?.role || 'ADMIN');
-    const effectiveCenterId = authUser?.centerId;
-
     const body = await req.json().catch(() => ({}));
     const {
       task_type = 'dashboard_summary',
@@ -1150,12 +1679,145 @@ export async function POST(req: NextRequest) {
       user_question = '',
       prompt = '',
       gemini_api_key = '',
+      role: bodyRole = '',
+      context: bodyContext = '',
+      student_name = '',
+      course_name = '',
+      topic = '',
+      teacher_name = '',
     } = body;
 
-    const effectiveQuestion = user_question || prompt || '';
+    const effectiveQuestion = (user_question || prompt || '').trim();
 
+    const isSuperAdmin = !!superAdmin;
+    const reqRoleUpper = (bodyRole || bodyContext || '').toUpperCase();
+    const isStudent =
+      task_type === 'student_tutor' ||
+      reqRoleUpper === 'STUDENT' ||
+      reqRoleUpper === 'STUDENT_TUTOR' ||
+      bodyContext === 'STUDENT_TUTOR' ||
+      authUser?.role?.toUpperCase() === 'STUDENT';
+
+    const isTeacher =
+      !isStudent &&
+      (task_type === 'teacher_methodology' ||
+       reqRoleUpper === 'TEACHER' ||
+       reqRoleUpper === 'TEACHER_ASSISTANT' ||
+       bodyContext === 'TEACHER_ASSISTANT' ||
+       authUser?.role?.toUpperCase() === 'TEACHER');
+
+    const effectiveRole: 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPERADMIN' =
+      isStudent
+        ? 'STUDENT'
+        : isTeacher
+        ? 'TEACHER'
+        : isSuperAdmin
+        ? 'SUPERADMIN'
+        : (authUser?.role?.toUpperCase() === 'SUPERADMIN' ? 'SUPERADMIN' : 'ADMIN');
+
+    if (!superAdmin && (!authUser || !authUser.centerId) && !isStudent) {
+      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
+    }
+
+    const effectiveCenterId = authUser?.centerId;
     const supabase = createServerSupabaseClient();
 
+    // ====================================================
+    // PATH 1: STUDENT AI REPETITOR (100% ISOLATED & SAFE)
+    // ====================================================
+    if (isStudent) {
+      let centerName = "Toyloq IT Park";
+      if (effectiveCenterId) {
+        const { data: center } = await supabase.from('centers').select('name').eq('id', effectiveCenterId).maybeSingle();
+        if (center?.name) centerName = center.name;
+      }
+
+      const apiKey =
+        gemini_api_key ||
+        process.env.GEMINI_API_KEY ||
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+        '';
+
+      if (apiKey) {
+        try {
+          const studentPrompt = `SEN — IT PARK O'QUV MARKAZINING SHAXSIY AI REPETITORISAN.
+O'quvchi ismi: ${student_name || "O'quvchi"}
+Kurs: ${course_name || "Frontend Web Dasturlash"}
+Oxirgi o'tilgan dars mavzusi: ${topic || "Dasturlash asoslari"}
+O'quv markazi: "${centerName}"
+
+O'QUVCHINING SAVOLI: "${effectiveQuestion}"
+
+VAZIFANG:
+1. O'quvchiga do'stona, samimiy va ilhomlantiruvchi tilda javob ber.
+2. Agar o'quvchi "uyga vazifa" haqida so'rasa, vazifani qanday tartibda bajarish bo'yicha aniq 5 ta amaliy qadamni tushuntir (talablarni o'qish, modullarga bo'lish, mustaqil kod yozish, F12 konsolda testlash, GitHub orqali platformaga topshirish).
+3. Agar kod xatoligi yoki dasturlash tushunchasi so'ralsa, sodda hayotiy misol va amaliy kodlar orqali tushuntir.
+4. HECH QACHON markaz ma'muriyati, moliyaviy hisobotlar, qarzdorliklar, xarajatlar yoki boshqa o'quvchilar ro'yxatini BERMA! Javobing toza o'zbek tilida bo'lsin.`;
+
+          const modelsToTry = [
+            process.env.GEMINI_MODEL,
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
+            'gemini-1.5-pro',
+            'gemini-1.5-flash',
+            'gemini-flash-latest',
+          ].filter(Boolean) as string[];
+
+          for (const model of modelsToTry) {
+            try {
+              const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: [{ text: studentPrompt }] }],
+                    generationConfig: {
+                      temperature: 0.4,
+                      maxOutputTokens: 1200,
+                    },
+                  }),
+                }
+              );
+
+              if (response.ok) {
+                const result = await response.json();
+                const candidate = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (candidate && candidate.trim()) {
+                  const cleaned = candidate.trim();
+                  const isLeaked =
+                    cleaned.includes('BUGUNGI HOLATI') ||
+                    cleaned.includes('REJALASHTIRILGAN DARSLAR') ||
+                    cleaned.includes('SOF FOYDA') ||
+                    cleaned.includes('QARZDOR O\'QUVCHILAR');
+                  if (!isLeaked) {
+                    return NextResponse.json({
+                      success: true,
+                      result: cleaned,
+                      source: 'gemini_ai',
+                      task_type: 'student_tutor',
+                    });
+                  }
+                }
+              }
+            } catch {}
+          }
+        } catch {}
+      }
+
+      // Built-in rule-based student repetitor
+      const result = generateStudentTutorAnswer(effectiveQuestion, student_name, course_name, topic, centerName);
+      return NextResponse.json({
+        success: true,
+        result,
+        source: 'builtin_engine',
+        task_type: 'student_tutor',
+      });
+    }
+
+    // ====================================================
+    // PATH 2: DATA FETCHING FOR TEACHER & ADMIN
+    // ====================================================
     let centerName = 'O\'quv Markazi';
     let students: any[] = [];
     let groups: any[] = [];
@@ -1205,7 +1867,7 @@ export async function POST(req: NextRequest) {
       attendances = allAttendances || [];
       studentGroups = allStudentGroups || [];
     } else {
-      // 1. Strict multi-tenant data fetching (ONLY for authUser.centerId!)
+      // Strict multi-tenant data fetching (ONLY for authUser.centerId!)
       const [
         { data: center },
         { data: cGroups },
@@ -1260,19 +1922,57 @@ export async function POST(req: NextRequest) {
       groupStudentCountMap[sg.groupId] = (groupStudentCountMap[sg.groupId] || 0) + 1;
     });
 
+    // Lookup maps
+    const sMap = new Map<string, any>();
+    (students || []).forEach((s: any) => sMap.set(s.id, s));
+    const gMap = new Map<string, any>();
+    (groups || []).forEach((g: any) => gMap.set(g.id, g));
+    const cMap = new Map<string, any>();
+    (courses || []).forEach((c: any) => cMap.set(c.id, c));
+    const sgMap = new Map<string, any[]>();
+    (studentGroups || []).forEach((sg: any) => {
+      const list = sgMap.get(sg.studentId) || [];
+      list.push(sg);
+      sgMap.set(sg.studentId, list);
+    });
+
     // Caller teacher details if logged in as TEACHER
-    let teacherInfo: { name: string; groupsCount: number; studentsCount: number } | undefined;
-    if (effectiveRole === 'TEACHER' && authUser) {
-      const myTeacher = (teachers || []).find((t: any) => t.id === authUser.sub);
-      const myGroups = (groups || []).filter((g: any) => g.teacherId === authUser.sub);
-      const myGroupIds = myGroups.map((g: any) => g.id);
-      const myUniqueStudents = new Set(
-        (studentGroups || []).filter((sg: any) => myGroupIds.includes(sg.groupId)).map((sg: any) => sg.studentId)
+    let teacherInfo: {
+      name: string;
+      teacherId?: string;
+      groupsCount: number;
+      studentsCount: number;
+      myGroups?: any[];
+      myStudents?: any[];
+      myAttendances?: any[];
+    } | undefined;
+
+    if (effectiveRole === 'TEACHER') {
+      const myTeacher =
+        (teachers || []).find((t: any) => t.id === authUser?.sub) ||
+        (teachers || []).find((t: any) =>
+          teacher_name &&
+          ((t.firstName && teacher_name.includes(t.firstName)) || (t.lastName && teacher_name.includes(t.lastName)))
+        ) ||
+        (teachers || [])[0];
+
+      const teacherId = myTeacher?.id;
+      const myGroups = teacherId ? (groups || []).filter((g: any) => g.teacherId === teacherId) : groups;
+      const myGroupIds = new Set(myGroups.map((g: any) => g.id));
+      const myStudentIds = new Set(
+        (studentGroups || []).filter((sg: any) => myGroupIds.has(sg.groupId)).map((sg: any) => sg.studentId)
       );
+      const myStudents = (students || []).filter((st: any) => myStudentIds.has(st.id));
+      const myAttendances = (attendances || []).filter((att: any) => myGroupIds.has(att.groupId));
+
       teacherInfo = {
-        name: myTeacher ? `${myTeacher.firstName} ${myTeacher.lastName}`.trim() : 'Ustoz',
+        name: myTeacher ? `${myTeacher.firstName || ''} ${myTeacher.lastName || ''}`.trim() : (teacher_name || 'Ustoz'),
+        teacherId,
         groupsCount: myGroups.length,
-        studentsCount: myUniqueStudents.size,
+        studentsCount: myStudents.length,
+        myGroups,
+        myStudents,
+        myAttendances,
       };
     }
 
@@ -1288,20 +1988,7 @@ export async function POST(req: NextRequest) {
       rooms: rooms || [],
     };
 
-    // Calculate debtors for Gemini payload
-    const sMap = new Map<string, any>();
-    (students || []).forEach((s: any) => sMap.set(s.id, s));
-    const gMap = new Map<string, any>();
-    (groups || []).forEach((g: any) => gMap.set(g.id, g));
-    const cMap = new Map<string, any>();
-    (courses || []).forEach((c: any) => cMap.set(c.id, c));
-    const sgMap = new Map<string, any[]>();
-    (studentGroups || []).forEach((sg: any) => {
-      const list = sgMap.get(sg.studentId) || [];
-      list.push(sg);
-      sgMap.set(sg.studentId, list);
-    });
-
+    // Calculate debtors for Admin Gemini payload
     const calculatedDebtors: any[] = [];
     const seenStIds = new Set<string>();
 
@@ -1353,7 +2040,7 @@ export async function POST(req: NextRequest) {
 
     calculatedDebtors.sort((a, b) => b.debt - a.debt);
 
-    // Expenses breakdown for Gemini payload
+    // Expenses breakdown for Admin Gemini payload
     const pExpenses = (expenses || []).filter((e: any) => e.status !== 'BEKOR_QILINDI');
     const expensesByCategorySummary: Record<string, number> = {
       IJARA: 0,
@@ -1388,54 +2075,7 @@ export async function POST(req: NextRequest) {
     const totalExpensesAmount = pExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
     const totalCalculatedDebt = calculatedDebtors.reduce((sum: number, d: any) => sum + d.debt, 0);
 
-    // 2. Structured payload for Gemini AI
-    const summarizedDataPayload = {
-      center: centerName,
-      userRole: effectiveRole,
-      teacherSpecific: teacherInfo || null,
-      totalCenters: centersCount,
-      totalStudents: (students || []).length,
-      activeStudents: (students || []).filter((s: any) => s.status === 'FAOL').length,
-      totalGroups: (groups || []).length,
-      groupsList: (groups || []).map((g: any) => ({
-        name: g.name,
-        teacher: teacherMap[g.teacherId] || 'Biriktirilmagan',
-        course: courseMap[g.courseId] || 'Kurs',
-        studentsCount: groupStudentCountMap[g.id] || 0,
-      })),
-      teachersList: (teachers || []).map((t: any) => ({
-        name: `${t.firstName || ''} ${t.lastName || ''}`.trim(),
-        phone: t.phone,
-        salaryType: t.salaryType,
-        salaryValue: t.salaryValue,
-      })),
-      financials: {
-        totalCollected: totalCollectedAmount,
-        totalExpenses: totalExpensesAmount,
-        netBalance: totalCollectedAmount - totalExpensesAmount,
-        totalDebt: totalCalculatedDebt,
-        debtorsCount: calculatedDebtors.length,
-      },
-      debtorsList: calculatedDebtors.slice(0, 30),
-      expensesBreakdown: expensesByCategorySummary,
-      recentExpenses: pExpenses.slice(0, 15).map((e: any) => ({
-        type: e.type,
-        owner: e.ownerName || '-',
-        amount: Number(e.amount) || 0,
-        date: e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-'),
-        note: e.note || '-',
-      })),
-      teacherSalaries: {
-        totalPaid: teacherSalaryList.reduce((sum: number, s: any) => sum + s.amount, 0),
-        payouts: teacherSalaryList.slice(0, 15),
-      },
-      attendanceCount: {
-        total: (attendances || []).length,
-        present: (attendances || []).filter((a: any) => a.status === 'KELGAN' || a.status === 'KECHIKKAN').length,
-      },
-    };
-
-    // 3. Check for external Gemini API Key
+    // External Gemini API key check
     const apiKey =
       gemini_api_key ||
       process.env.GEMINI_API_KEY ||
@@ -1444,13 +2084,80 @@ export async function POST(req: NextRequest) {
 
     if (apiKey) {
       try {
-        const prompt = SYSTEM_PROMPT_TEMPLATE
-          .replace('{{task_type}}', task_type)
-          .replace('{{center_name}}', centerName)
-          .replace('{{user_role}}', effectiveRole)
-          .replace('{{date_range}}', date_range)
-          .replace('{{data}}', JSON.stringify(summarizedDataPayload, null, 2))
-          .replace('{{user_question}}', effectiveQuestion);
+        let prompt = '';
+
+        if (effectiveRole === 'TEACHER') {
+          // Dedicated TEACHER prompt for Gemini (NO center expenses or debts)
+          prompt = `SEN — O'QUV MARKAZINING TAJRIBALI PEDAGOGIK VA METODIK AI YORDAMCHISISAN.
+Ustoz ismi: ${teacherInfo?.name || "Ustoz"}
+Markaz nomi: "${centerName}"
+Biriktirilgan guruhlar: ${(teacherInfo?.myGroups || []).map((g: any) => g.name).join(', ') || 'Dasturlash guruhlari'}
+O'quvchilar soni: ${teacherInfo?.studentsCount || 0} nafar
+Vazifa turi: ${task_type} (dashboard_summary, student_analysis, attendance_analysis, teacher_load, teacher_methodology, chat_qa)
+Ustoz savoli: "${effectiveQuestion}"
+
+VAZIFANG:
+1. Ustozga zamonaviy ta'lim metodikasi, dars rejalari, interaktiv dasturlash mashqlari va talabalar faolligini oshirish bo'yicha amaliy yordam ber.
+2. Agar davomat haqida so'ralsa, o'quvchilar dars qoldirmasligi uchun pedagogik choralarni tushuntir.
+3. Agar dars rejasi yoki amaliy mashq so'ralsa, aniq kod misollari va mini-loyihalar taklif qil.
+4. HECH QACHON markazning umumiy kassa balansi, xarajatlari, ijarasi, boshqa ustozlarning oyliklari yoki markaz qarzdorligini aytma!
+Javobing toza, chiroyli va o'qishli o'zbek tilida bo'lsin.`;
+        } else {
+          // ADMIN / SUPERADMIN full management prompt
+          const summarizedDataPayload = {
+            center: centerName,
+            userRole: effectiveRole,
+            teacherSpecific: teacherInfo || null,
+            totalCenters: centersCount,
+            totalStudents: (students || []).length,
+            activeStudents: (students || []).filter((s: any) => s.status === 'FAOL').length,
+            totalGroups: (groups || []).length,
+            groupsList: (groups || []).map((g: any) => ({
+              name: g.name,
+              teacher: teacherMap[g.teacherId] || 'Biriktirilmagan',
+              course: courseMap[g.courseId] || 'Kurs',
+              studentsCount: groupStudentCountMap[g.id] || 0,
+            })),
+            teachersList: (teachers || []).map((t: any) => ({
+              name: `${t.firstName || ''} ${t.lastName || ''}`.trim(),
+              phone: t.phone,
+              salaryType: t.salaryType,
+              salaryValue: t.salaryValue,
+            })),
+            financials: {
+              totalCollected: totalCollectedAmount,
+              totalExpenses: totalExpensesAmount,
+              netBalance: totalCollectedAmount - totalExpensesAmount,
+              totalDebt: totalCalculatedDebt,
+              debtorsCount: calculatedDebtors.length,
+            },
+            debtorsList: calculatedDebtors.slice(0, 30),
+            expensesBreakdown: expensesByCategorySummary,
+            recentExpenses: pExpenses.slice(0, 15).map((e: any) => ({
+              type: e.type,
+              owner: e.ownerName || '-',
+              amount: Number(e.amount) || 0,
+              date: e.date ? e.date.split('T')[0] : (e.createdAt ? e.createdAt.split('T')[0] : '-'),
+              note: e.note || '-',
+            })),
+            teacherSalaries: {
+              totalPaid: teacherSalaryList.reduce((sum: number, s: any) => sum + s.amount, 0),
+              payouts: teacherSalaryList.slice(0, 15),
+            },
+            attendanceCount: {
+              total: (attendances || []).length,
+              present: (attendances || []).filter((a: any) => a.status === 'KELGAN' || a.status === 'KECHIKKAN').length,
+            },
+          };
+
+          prompt = SYSTEM_PROMPT_TEMPLATE
+            .replace('{{task_type}}', task_type)
+            .replace('{{center_name}}', centerName)
+            .replace('{{user_role}}', effectiveRole)
+            .replace('{{date_range}}', date_range)
+            .replace('{{data}}', JSON.stringify(summarizedDataPayload, null, 2))
+            .replace('{{user_question}}', effectiveQuestion);
+        }
 
         const modelsToTry = Array.from(
           new Set(
@@ -1460,15 +2167,12 @@ export async function POST(req: NextRequest) {
               'gemini-2.5-pro',
               'gemini-1.5-pro',
               'gemini-1.5-flash',
-              'gemini-3.8-flash',
               'gemini-flash-latest',
-              'gemini-pro-latest',
             ].filter(Boolean) as string[]
           )
         );
 
         let generatedText = '';
-        let lastErrorMsg = '';
 
         for (const model of modelsToTry) {
           try {
@@ -1491,16 +2195,23 @@ export async function POST(req: NextRequest) {
               const result = await response.json();
               const candidate = result.candidates?.[0]?.content?.parts?.[0]?.text;
               if (candidate && candidate.trim()) {
-                generatedText = candidate.trim();
-                break;
+                const cleaned = candidate.trim();
+                if (effectiveRole === 'TEACHER') {
+                  const leaksCenterAdmin =
+                    cleaned.includes('SOF FOYDA') ||
+                    cleaned.includes('KASSA') ||
+                    cleaned.includes('QARZDOR O\'QUVCHILAR');
+                  if (!leaksCenterAdmin) {
+                    generatedText = cleaned;
+                    break;
+                  }
+                } else {
+                  generatedText = cleaned;
+                  break;
+                }
               }
-            } else {
-              const errBody = await response.json().catch(() => ({}));
-              lastErrorMsg = errBody?.error?.message || `HTTP ${response.status}`;
             }
-          } catch (mErr: any) {
-            lastErrorMsg = mErr?.message || String(mErr);
-          }
+          } catch {}
         }
 
         if (generatedText) {
@@ -1511,16 +2222,12 @@ export async function POST(req: NextRequest) {
             task_type,
           });
         }
-
-        if (lastErrorMsg) {
-          console.warn('Gemini API call attempts failed:', lastErrorMsg);
-        }
       } catch (geminiError) {
         console.error('Gemini API call failed, falling back to built-in analytics:', geminiError);
       }
     }
 
-    // 4. Built-in high-precision analytics fallback
+    // High-precision role-specific built-in engine fallback
     const result = generateBuiltinAnalysis(
       task_type,
       centerName,
@@ -1529,7 +2236,8 @@ export async function POST(req: NextRequest) {
       effectiveQuestion,
       effectiveRole,
       teacherInfo,
-      { centersCount }
+      { centersCount },
+      { studentName: student_name, courseName: course_name, topic }
     );
 
     return NextResponse.json({

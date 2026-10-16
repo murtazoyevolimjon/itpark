@@ -6,12 +6,21 @@ export type AITaskType =
   | 'attendance_analysis'
   | 'finance_analysis'
   | 'teacher_load'
+  | 'teacher_methodology'
+  | 'student_tutor'
   | 'chat_qa';
 
 export interface AIAnalysisRequest {
-  task_type: AITaskType;
+  task_type: AITaskType | string;
   date_range?: string;
   user_question?: string;
+  role?: string;
+  context?: string;
+  student_name?: string;
+  course_name?: string;
+  topic?: string;
+  teacher_name?: string;
+  prompt?: string;
   gemini_api_key?: string;
 }
 
@@ -19,7 +28,7 @@ export interface AIAnalysisResponse {
   success: boolean;
   result: string;
   source: 'gemini_ai' | 'builtin_engine';
-  task_type: AITaskType;
+  task_type: string;
 }
 
 export const aiApi = {
