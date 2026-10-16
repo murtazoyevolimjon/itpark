@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStudentPortal } from '../../hooks/useStudentPortal';
 import { useTheme } from '../../hooks/useTheme';
 import { useLanguage } from '../../hooks/useLanguage';
+import { parseStudentCreds } from '../../lib/credentials';
 import {
   User,
   Phone,
@@ -14,6 +15,9 @@ import {
   Moon,
   Sun,
   Shield,
+  Send,
+  CheckCircle2,
+  MessageCircle,
 } from 'lucide-react';
 import styles from './StudentProfile.module.css';
 
@@ -22,9 +26,40 @@ export const StudentProfile: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang } = useLanguage();
 
+  const [testSent, setTestSent] = useState(false);
+  const [sendingTest, setSendingTest] = useState(false);
+
   const studentName = student
     ? `${student.firstName} ${student.lastName}`
     : 'Sardor Aliyev';
+
+  const creds = parseStudentCreds(student?.passportSeries, student?.phone);
+  const isStudentConnected = !!creds.tgChatId;
+  const isParentConnected = !!creds.parentTgChatId;
+
+  const handleSendTestMessage = async () => {
+    if (!creds.tgChatId) return;
+    setSendingTest(true);
+    try {
+      const res = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test_message',
+          chatId: creds.tgChatId,
+          text: `🔔 <b>IT Park Test Xabarnomasi</b>\n\nAssalomu alaykum <b>${studentName}</b>!\nSizning profilingiz @crm_olimjonbot bilan muvaffaqiyatli bog'langan.\n\nEndilikda barcha dars eslatmalari, davomat (keldi/kelmadi/kechikdi) va to'lov kvitansiyalari avtomatik shu yerga yuboriladi! 🚀`,
+        }),
+      });
+      if (res.ok) {
+        setTestSent(true);
+        setTimeout(() => setTestSent(false), 4000);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
@@ -130,8 +165,129 @@ export const StudentProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Security & Preferences */}
+        {/* Right Column: Security, Telegram & Preferences */}
         <div className={styles.rightCol}>
+          {/* Telegram Notifications Card */}
+          <div className={`${styles.card} ${styles.telegramCard}`}>
+            <div className={styles.cardHeader}>
+              <Send size={18} className={styles.cardIconTelegram} />
+              <h3>Telegram Xabarnomalar Boti</h3>
+            </div>
+
+            <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Dars eslatmalari, davomat (kelgan/kelmagan/kechikkan) va to'lov kvitansiyalari bepul va tezkor Telegram botimiz orqali avtomatik yuboriladi.
+            </p>
+
+            {/* O'quvchi holati */}
+            <div className={styles.tgAccountRow}>
+              <div className={styles.tgAccountInfo}>
+                <span className={styles.tgAccountTitle}>
+                  <User size={14} color="#0ea5e9" />
+                  O'quvchi Telegrami
+                </span>
+                <span className={styles.tgAccountSub}>
+                  {isStudentConnected
+                    ? `Ulangan ID: ${creds.tgChatId} ${creds.tgUser ? `(@${creds.tgUser})` : ''}`
+                    : "Botga ulanmagan"}
+                </span>
+              </div>
+              <div>
+                {isStudentConnected ? (
+                  <span className={styles.tgStatusBadgeConnected}>
+                    <CheckCircle2 size={13} />
+                    Ulangan
+                  </span>
+                ) : (
+                  <span className={styles.tgStatusBadgeDisconnected}>
+                    Ulanmagan
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Ota-ona holati */}
+            <div className={styles.tgAccountRow}>
+              <div className={styles.tgAccountInfo}>
+                <span className={styles.tgAccountTitle}>
+                  <Shield size={14} color="#38bdf8" />
+                  Ota-ona Telegrami
+                </span>
+                <span className={styles.tgAccountSub}>
+                  {isParentConnected
+                    ? `Ulangan Chat ID: ${creds.parentTgChatId}`
+                    : "Botga ulanmagan"}
+                </span>
+              </div>
+              <div>
+                {isParentConnected ? (
+                  <span className={styles.tgStatusBadgeConnected}>
+                    <CheckCircle2 size={13} />
+                    Ulangan
+                  </span>
+                ) : (
+                  <span className={styles.tgStatusBadgeDisconnected}>
+                    Ulanmagan
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className={styles.tgActionsGroup}>
+              <a
+                href={`https://t.me/crm_olimjonbot?start=stu_${student?.id || ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.tgConnectBtn}
+              >
+                <Send size={15} />
+                <span>{isStudentConnected ? "Telegram Botni ochish" : "Telegram Botga ulanish (O'quvchi)"}</span>
+              </a>
+
+              <a
+                href={`https://t.me/crm_olimjonbot?start=parent_${student?.id || ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.tgConnectParentBtn}
+              >
+                <MessageCircle size={15} />
+                <span>Ota-ona uchun ulanish havolasi</span>
+              </a>
+
+              {isStudentConnected && (
+                <button
+                  type="button"
+                  onClick={handleSendTestMessage}
+                  disabled={sendingTest}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    background: testSent ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid ' + (testSent ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.1)'),
+                    color: testSent ? '#10b981' : 'var(--text-muted)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Send size={13} />
+                  <span>{testSent ? "Sinov xabari yuborildi!" : sendingTest ? "Yuborilmoqda..." : "Telegramga sinov xabari yuborish"}</span>
+                </button>
+              )}
+            </div>
+
+            <div className={styles.tgInfoNote}>
+              <span>💡</span>
+              <span>
+                Botga kirib <b>START</b> tugmasini bosishingiz yoki <b>«Telefon raqamni yuborish»</b> tugmasini bosishingiz kifoya. Tizim sizni avtomatik taniydi.
+              </span>
+            </div>
+          </div>
+
           <div className={styles.card}>
             <div className={styles.cardHeader}>
               <Lock size={18} className={styles.cardIconPurple} />

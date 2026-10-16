@@ -6,6 +6,8 @@ import {
   getTashkentDateString,
   checkAttendanceTimeEligibility,
 } from '@/utils/attendanceTime';
+import { parseStudentCreds } from '@/lib/credentials';
+import { sendAttendanceAlert } from '@/lib/telegram';
 
 export async function POST(req: NextRequest) {
   try {
@@ -102,6 +104,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      // Asynchronous Telegram notification dispatch (non-blocking)
+      dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);
+
       return NextResponse.json({ success: true, count: inserts.length, locked: true });
     }
 
@@ -154,6 +159,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (updatedCount > 0) {
+      dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);
+    }
+
     return NextResponse.json({
       success: true,
       count: updatedCount,
@@ -167,3 +176,51 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
+
+async function dispatchTelegramAttendanceAlerts(
+  supabase: any,
+  records: any[],
+  group: any,
+  cleanDate: string,
+  centerName?: string
+) {
+  try {
+    const studentIds = records.map((r) => r.studentId).filter(Boolean);
+    if (studentIds.length === 0) return;
+
+    const { data: students } = await supabase
+      .from('students')
+      .select('id, firstName, lastName, phone, passportSeries')
+      .in('id', studentIds);
+
+    if (!students || students.length === 0) return;
+
+    const studentMap = new Map(students.map((s: any) => [s.id, s]));
+
+    for (const rec of records) {
+      const student: any = studentMap.get(rec.studentId);
+      if (!student) continue;
+
+      const creds = parseStudentCreds(student.passportSeries, student.phone);
+      const studentChatId = creds.tgChatId;
+      const parentChatId = creds.parentTgChatId;
+
+      if (!studentChatId && !parentChatId) continue;
+
+      const studentName = `${student.firstName} ${student.lastName}`.trim();
+
+      sendAttendanceAlert({
+        studentName,
+        status: rec.status,
+        date: cleanDate,
+        groupName: group?.name || 'Guruh',
+        chatId: studentChatId,
+        parentChatId,
+        centerName,
+      }).catch((err) => console.error('Error sending attendance telegram alert:', err));
+    }
+  } catch (err) {
+    console.error('Failed to dispatch telegram attendance alerts:', err);
+  }
+}
+

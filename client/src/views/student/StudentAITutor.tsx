@@ -333,9 +333,10 @@ export const StudentAITutor: React.FC = () => {
             type="submit"
             disabled={!inputText.trim() || isTyping}
             className={styles.sendBtn}
+            title="Yuborish"
           >
             <Send size={16} />
-            <span>Yuborish</span>
+            <span className={styles.sendText}>Yuborish</span>
           </button>
         </form>
       </div>

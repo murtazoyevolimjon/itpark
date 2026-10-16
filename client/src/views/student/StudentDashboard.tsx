@@ -25,7 +25,9 @@ import {
   ChevronRight,
   ExternalLink,
   Bot,
+  Send,
 } from 'lucide-react';
+import { parseStudentCreds } from '../../lib/credentials';
 import styles from './StudentDashboard.module.css';
 
 export const StudentDashboard: React.FC = () => {
@@ -45,6 +47,9 @@ export const StudentDashboard: React.FC = () => {
   const studentName = student?.firstName
     ? `${student.firstName} ${student.lastName}`
     : 'Sardor Aliyev';
+
+  const creds = parseStudentCreds(student?.passportSeries, student?.phone);
+  const isTgConnected = !!creds.tgChatId;
 
   const pendingHwCount = homeworks.filter((hw) => !submissions[hw.id]).length;
   const recentVideos = videos.slice(0, 2);
@@ -186,77 +191,85 @@ export const StudentDashboard: React.FC = () => {
       </section>
 
       {/* AI TAHLIL BANNER */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
-          border: '1px solid rgba(99, 102, 241, 0.35)',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-          flexWrap: 'wrap',
-          boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.3)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
+      <div className={styles.aiBanner}>
+        <div className={styles.aiBannerLeft}>
+          <div className={styles.aiBannerIcon}>
             <Bot size={22} color="#ffffff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>O&apos;quvchi AI Yordamchisi (AI Repetitor)</span>
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  padding: '2px 6px',
-                  borderRadius: '6px',
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  color: '#ffffff',
-                }}
-              >
-                YANGI
-              </span>
+            <div className={styles.aiBannerTitleWrap}>
+              <span className={styles.aiBannerTitle}>O&apos;quvchi AI Yordamchisi (AI Repetitor)</span>
+              <span className={styles.aiBadgeNew}>YANGI</span>
             </div>
-            <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
+            <p className={styles.aiBannerDesc}>
               Dars mavzulari, uyga vazifa yordami va kod xatoliklarini tushuntiruvchi sun&apos;iy intellekt
             </p>
           </div>
         </div>
 
-        <Link
-          href="/student/ai"
-          style={{
-            padding: '8px 16px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-            color: '#ffffff',
-            fontSize: '13px',
-            fontWeight: 700,
-            textDecoration: 'none',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <Sparkles size={15} /> AI Tahlilini Ko&apos;rish
+        <Link href="/student/ai" className={styles.aiBannerBtn}>
+          <Sparkles size={15} /> <span>AI Tahlilini Ko&apos;rish</span>
         </Link>
       </div>
+
+      {/* Telegram Notification Alert */}
+      {!isTgConnected ? (
+        <div className={styles.tgBanner}>
+          <div className={styles.tgBannerLeft}>
+            <div className={styles.tgBannerIcon}>
+              <Send size={22} color="#ffffff" />
+            </div>
+            <div>
+              <div className={styles.tgBannerTitleWrap}>
+                <span className={styles.tgBannerTitle}>Telegram Xabarnomalar Boti</span>
+                <span className={styles.tgBadgeFree}>BEPUL</span>
+              </div>
+              <p className={styles.tgBannerDesc}>
+                Dars eslatmalari, dars qoldirish/kelish xabarlari va to&apos;lov kvitansiyalarini Telegram orqali tezkor oling.
+              </p>
+            </div>
+          </div>
+
+          <a
+            href={`https://t.me/crm_olimjonbot?start=stu_${student?.id || ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.tgBannerBtn}
+          >
+            <Send size={15} /> <span>Botni ulash (@crm_olimjonbot)</span>
+          </a>
+        </div>
+      ) : (
+        <div className={styles.tgBannerConnected}>
+          <div className={styles.tgBannerLeft}>
+            <CheckCircle2 size={20} color="#10b981" />
+            <div>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#10b981', display: 'block' }}>
+                Telegram botga ulangansiz (@crm_olimjonbot)
+              </span>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Barcha davomat, dars eslatmalari va to&apos;lovlar avtomatik yuborilmoqda
+              </span>
+            </div>
+          </div>
+          <a
+            href="https://t.me/crm_olimjonbot"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#0ea5e9',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            Botni ochish <ChevronRight size={14} />
+          </a>
+        </div>
+      )}
 
       {/* 3. Quick Metrics Overview (4 Cards) */}
       <section className={styles.statsGrid}>

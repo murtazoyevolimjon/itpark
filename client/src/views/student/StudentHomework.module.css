@@ -662,3 +662,88 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 640px) {
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .controlsBar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filterPills {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filterPill {
+    white-space: nowrap;
+    font-size: 11.5px;
+    padding: 7px 12px;
+    flex-shrink: 0;
+  }
+
+  .hwCard {
+    padding: 16px 14px;
+    gap: 12px;
+    border-radius: 14px;
+  }
+
+  .hwTitle {
+    font-size: 16px;
+  }
+
+  .hwDesc {
+    font-size: 12.5px;
+  }
+
+  .hwFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .hwActions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .btnSubmit,
+  .btnSubmitted {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+    padding: 9px 12px;
+    font-size: 12.5px;
+  }
+
+  .modalBackdrop {
+    padding: 10px;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    padding: 18px 14px;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 16px;
+  }
+}

@@ -126,6 +126,8 @@
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
 .chipBtn {
@@ -398,10 +400,102 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .chatWindow {
-    height: 500px;
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
-  .messageRowAi, .messageRowUser {
-    max-width: 95%;
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .btnClearChat {
+    align-self: flex-start;
+    padding: 6px 12px;
+    font-size: 11.5px;
+  }
+
+  .contextCard {
+    padding: 8px 12px;
+    gap: 8px;
+    font-size: 11.5px;
+  }
+
+  .contextDivider {
+    display: none;
+  }
+
+  .chipBtn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .chatWindow {
+    height: calc(100vh - 280px);
+    min-height: 380px;
+    max-height: 580px;
+    border-radius: 14px;
+  }
+
+  .messagesList {
+    padding: 12px 10px;
+    gap: 12px;
+  }
+
+  .messageRowAi,
+  .messageRowUser {
+    max-width: 96%;
+    gap: 8px;
+  }
+
+  .avatarAi,
+  .avatarUser {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .bubbleAi,
+  .bubbleUser {
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .messageContent {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .inputArea {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .chatInput {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .sendBtn {
+    padding: 10px 14px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sendText {
+    display: none;
+  }
+
+  .sendBtn {
+    padding: 10px 12px;
+    min-width: 40px;
+    justify-content: center;
   }
 }

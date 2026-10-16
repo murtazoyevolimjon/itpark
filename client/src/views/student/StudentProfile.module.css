@@ -329,5 +329,197 @@
 @media (max-width: 992px) {
   .profileGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
+}
+
+@media (max-width: 640px) {
+  .headerSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .profileGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .card {
+    padding: 16px 14px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .avatarBig {
+    width: 52px;
+    height: 52px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+
+  .profileName {
+    font-size: 17px;
+  }
+
+  .infoItem {
+    font-size: 12px;
+  }
+
+  .btnSave {
+    width: 100%;
+    padding: 11px;
+    font-size: 13px;
+  }
+}
+
+/* Telegram Card Styles */
+.cardIconTelegram {
+  color: #0ea5e9;
+}
+
+.telegramCard {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.22);
+}
+
+.tgAccountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+[data-theme='light'] .tgAccountRow {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.tgAccountInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tgAccountTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme='light'] .tgAccountTitle {
+  color: #0f172a;
+}
+
+.tgAccountSub {
+  font-size: 11.5px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.tgStatusBadgeConnected {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.tgStatusBadgeDisconnected {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.tgActionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.tgConnectBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
+.tgConnectBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
+}
+
+.tgConnectParentBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.28);
+  color: #38bdf8;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.tgConnectParentBtn:hover {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.tgInfoNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(14, 165, 233, 0.06);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.5;
+}
+
+[data-theme='light'] .tgInfoNote {
+  color: #475569;
 }

@@ -4,6 +4,9 @@ export interface StudentCredentials {
   login: string;
   password: string;
   subject: string;
+  tgChatId?: string;
+  tgUser?: string;
+  parentTgChatId?: string;
 }
 
 export interface TeacherCredentials {
@@ -38,6 +41,9 @@ export function parseStudentCreds(
     let login = '';
     let password = '';
     let subject = '';
+    let tgChatId = '';
+    let tgUser = '';
+    let parentTgChatId = '';
 
     for (const part of parts) {
       if (part.startsWith('login=')) {
@@ -46,6 +52,12 @@ export function parseStudentCreds(
         password = part.substring(5).trim();
       } else if (part.startsWith('subj=')) {
         subject = part.substring(5).trim();
+      } else if (part.startsWith('tgChatId=')) {
+        tgChatId = part.substring(9).trim();
+      } else if (part.startsWith('tgUser=')) {
+        tgUser = part.substring(7).trim();
+      } else if (part.startsWith('parentTg=')) {
+        parentTgChatId = part.substring(9).trim();
       }
     }
 
@@ -53,6 +65,9 @@ export function parseStudentCreds(
       login: login || fallbackLogin,
       password: password || fallbackPassword,
       subject: subject || '',
+      tgChatId: tgChatId || undefined,
+      tgUser: tgUser || undefined,
+      parentTgChatId: parentTgChatId || undefined,
     };
   }
 
@@ -70,13 +85,20 @@ export function parseStudentCreds(
 export function serializeStudentCreds(
   login: string,
   pass: string,
-  subject: string
+  subject: string,
+  tgChatId?: string,
+  tgUser?: string,
+  parentTgChatId?: string
 ): string {
   const cleanLogin = (login || '').trim();
   const cleanPass = (pass || '123456').trim();
   const cleanSubj = (subject || '').trim();
 
-  return `CRED:login=${cleanLogin}|pass=${cleanPass}|subj=${cleanSubj}`;
+  let res = `CRED:login=${cleanLogin}|pass=${cleanPass}|subj=${cleanSubj}`;
+  if (tgChatId) res += `|tgChatId=${tgChatId.trim()}`;
+  if (tgUser) res += `|tgUser=${tgUser.trim()}`;
+  if (parentTgChatId) res += `|parentTg=${parentTgChatId.trim()}`;
+  return res;
 }
 
 /**

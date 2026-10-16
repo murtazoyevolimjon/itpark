@@ -380,6 +380,16 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
                       <span className={styles.menuPhone}>{student?.phone || user?.email}</span>
                     </div>
                     <div className={styles.menuDivider} />
+                    {user?.role && user.role !== 'STUDENT' && (
+                      <Link
+                        href={user.role === 'TEACHER' ? '/teacher' : '/dashboard'}
+                        className={styles.dropdownItem}
+                        onClick={() => setShowUserMenu(false)}
+                      >
+                        <ArrowRight size={16} />
+                        <span>{user.role === 'TEACHER' ? "O'qituvchi paneliga" : "Admin panelga qaytish"}</span>
+                      </Link>
+                    )}
                     <Link
                       href="/student/profile"
                       className={styles.dropdownItem}
@@ -400,6 +410,23 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
               </div>
             </div>
           </header>
+
+          {/* Admin / Teacher Preview Notice Banner */}
+          {user?.role && user.role !== 'STUDENT' && (
+            <div className={styles.adminPreviewBar}>
+              <div className={styles.adminPreviewText}>
+                <span className={styles.previewDot} />
+                <span>O&apos;quvchi ko&apos;rinishi rejimi</span>
+              </div>
+              <Link
+                href={user.role === 'TEACHER' ? '/teacher' : '/dashboard'}
+                className={styles.adminReturnBtn}
+              >
+                <ArrowRight size={13} />
+                <span>{user.role === 'TEACHER' ? "O'qituvchi paneliga" : "Admin panelga qaytish"}</span>
+              </Link>
+            </div>
+          )}
 
           {/* Main Body */}
           <main className={styles.contentArea}>{children}</main>
@@ -485,6 +512,16 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
                     <UserIcon size={24} className={styles.moreIconBlue} />
                     <span>Profilim</span>
                   </Link>
+                  {user?.role && user.role !== 'STUDENT' && (
+                    <Link
+                      href={user.role === 'TEACHER' ? '/teacher' : '/dashboard'}
+                      onClick={() => setShowMoreMenu(false)}
+                      className={styles.moreCard}
+                    >
+                      <ArrowRight size={24} className={styles.moreIconPurple} />
+                      <span>{user.role === 'TEACHER' ? "O'qituvchi paneli" : "Admin paneli"}</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Key, Eye, EyeOff, Copy, Check, Send } from 'lucide-react';
+import { parseStudentCreds } from '../lib/credentials';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -437,6 +438,48 @@ export const Students: React.FC = () => {
             : "TO'LANMAGAN"}
         </Badge>
       ),
+    },
+    {
+      key: 'telegram' as any,
+      header: 'TELEGRAM BOT',
+      render: (row) => {
+        const creds = parseStudentCreds(row.passportSeries, row.phone);
+        const isStuConnected = !!creds.tgChatId;
+        const isParentConnected = !!creds.parentTgChatId;
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                color: isStuConnected ? '#10b981' : 'var(--text-muted)',
+                fontWeight: 600,
+              }}
+              title={isStuConnected ? `O'quvchi ulangan (${creds.tgChatId})` : "O'quvchi ulanmagan"}
+            >
+              <Send size={11} color={isStuConnected ? '#10b981' : '#94a3b8'} />
+              O'quvchi: {isStuConnected ? 'Ulangan' : 'Yo\'q'}
+            </span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '11px',
+                color: isParentConnected ? '#38bdf8' : 'var(--text-muted)',
+                fontWeight: 600,
+              }}
+              title={isParentConnected ? `Ota-ona ulangan (${creds.parentTgChatId})` : "Ota-ona ulanmagan"}
+            >
+              <Send size={11} color={isParentConnected ? '#38bdf8' : '#94a3b8'} />
+              Ota-ona: {isParentConnected ? 'Ulangan' : 'Yo\'q'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'action',

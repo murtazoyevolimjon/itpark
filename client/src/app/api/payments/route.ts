@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { parseStudentCreds } from '@/lib/credentials';
+import { sendPaymentAlert } from '@/lib/telegram';
 
 export async function GET(req: NextRequest) {
   try {
@@ -151,6 +153,33 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+
+    // Dispatch Telegram payment receipt alert asynchronously
+    if (data && data.student) {
+      const student = data.student;
+      const creds = parseStudentCreds(student.passportSeries, student.phone);
+      const studentChatId = creds.tgChatId;
+      const parentChatId = creds.parentTgChatId;
+
+      if (studentChatId || parentChatId) {
+        const studentFullName = `${student.firstName} ${student.lastName}`.trim();
+        const courseTitle = data.course?.name || data.group?.name || 'Kurs';
+        const receiptCode = `ITP-REC-${data.id.slice(0, 8).toUpperCase()}`;
+        const payDateStr = new Date(data.paymentDate).toLocaleDateString('uz-UZ');
+
+        sendPaymentAlert({
+          studentName: studentFullName,
+          amount: data.amount,
+          courseName: courseTitle,
+          receiptNumber: receiptCode,
+          date: payDateStr,
+          chatId: studentChatId,
+          parentChatId,
+          centerName: authUser.centerName,
+          method: data.method === 'NAQD' ? 'Naqd pul' : data.method === 'KARTA' ? 'Karta' : "O'tkazma",
+        }).catch((err) => console.error('Error sending telegram payment alert:', err));
+      }
     }
 
     return NextResponse.json(data);
