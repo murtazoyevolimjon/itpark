@@ -19,10 +19,12 @@ import {
   CheckCircle2,
   MessageCircle,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './StudentProfile.module.css';
 
 export const StudentProfile: React.FC = () => {
   const { student, group } = useStudentPortal();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang } = useLanguage();
 
@@ -33,6 +35,7 @@ export const StudentProfile: React.FC = () => {
     ? `${student.firstName} ${student.lastName}`
     : 'Sardor Aliyev';
 
+  const centerName = user?.centerName || 'Ziyo';
   const creds = parseStudentCreds(student?.passportSeries, student?.phone);
   const isStudentConnected = !!creds.tgChatId;
   const isParentConnected = !!creds.parentTgChatId;
@@ -88,7 +91,7 @@ export const StudentProfile: React.FC = () => {
               </div>
               <div className={styles.avatarInfo}>
                 <h2 className={styles.profileName}>{studentName}</h2>
-                <span className={styles.roleTag}>IT Park O'quvchisi</span>
+                <span className={styles.roleTag}>{centerName} O'quvchisi</span>
               </div>
             </div>
 
@@ -116,7 +119,7 @@ export const StudentProfile: React.FC = () => {
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Markaz</span>
                 <span className={styles.infoValue}>
-                  IT Park Academy
+                  {centerName}
                 </span>
               </div>
             </div>

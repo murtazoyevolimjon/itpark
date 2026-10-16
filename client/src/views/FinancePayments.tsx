@@ -33,6 +33,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuth } from '../hooks/useAuth';
 import { paymentsApi } from '../api/payments.api';
 import { studentsApi } from '../api/students.api';
 import { groupsApi } from '../api/groups.api';
@@ -41,6 +42,7 @@ import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
 import { formatPhone } from '../utils/phoneMask';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
+import { ReceiptModal, ReceiptModalData } from '../components/ui/ReceiptModal/ReceiptModal';
 
 const MONTH_NAMES = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -48,6 +50,7 @@ const MONTH_NAMES = [
 ];
 
 export const FinancePayments: React.FC = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
   const pagination = usePagination();
@@ -64,6 +67,7 @@ export const FinancePayments: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingPayment, setDeletingPayment] = useState<Payment | null>(null);
+  const [receiptModalData, setReceiptModalData] = useState<ReceiptModalData | null>(null);
 
   // New Payment Form State
   const [formData, setFormData] = useState({
@@ -516,6 +520,29 @@ export const FinancePayments: React.FC = () => {
     success('PDF fayl yuklab olindi!');
   };
 
+  const handleOpenReceipt = (payment: Payment) => {
+    const studentName = payment.student
+      ? `${payment.student.firstName} ${payment.student.lastName}`
+      : 'Talaba';
+    const centerName = user?.centerName || 'Ziyo';
+    const centerPrefix = centerName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'REC';
+    const dateStr = payment.paymentDate ? formatDate(payment.paymentDate) : formatDate(new Date().toISOString());
+    const courseName = payment.course?.name || payment.group?.name || 'O\'quv kursi';
+    const receiptNumber = `${centerPrefix}-${new Date(payment.paymentDate || new Date()).getFullYear()}-${payment.id ? payment.id.slice(0, 5).toUpperCase() : '1001'}`;
+
+    setReceiptModalData({
+      receiptNumber,
+      studentName,
+      courseName,
+      amount: payment.amount,
+      date: dateStr,
+      method: payment.method === 'NAQD' ? 'Naqd pul' : payment.method === 'KARTA' ? 'Bank kartasi' : "O'tkazma",
+      receivedBy: payment.receivedBy?.fullName || user?.fullName || 'Administrator',
+      centerName,
+      status: payment.status || "TO'LANGAN",
+    });
+  };
+
   // Table Columns with Actions
   const columns: Column<Payment>[] = [
     {
@@ -588,6 +615,28 @@ export const FinancePayments: React.FC = () => {
       header: 'AMALLAR',
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid rgba(14, 165, 233, 0.3)',
+              background: 'rgba(14, 165, 233, 0.08)',
+              color: '#0284c7',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600,
+              transition: 'all 0.15s ease',
+            }}
+            onClick={() => handleOpenReceipt(row)}
+            title="Rasmiy to'lov kvitansiyasini chiqarish"
+          >
+            <FileText size={13} />
+            <span>Chek</span>
+          </button>
           <button
             type="button"
             style={{
@@ -1036,6 +1085,13 @@ export const FinancePayments: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Official Receipt Modal */}
+      <ReceiptModal
+        isOpen={!!receiptModalData}
+        onClose={() => setReceiptModalData(null)}
+        data={receiptModalData}
+      />
     </div>
   );
 };

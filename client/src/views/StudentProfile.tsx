@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, User, Phone, Calendar, Users, CalendarCheck, DollarSign, Award, Send, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Phone, Calendar, Users, CalendarCheck, DollarSign, Award, Send, CheckCircle2, FileText } from 'lucide-react';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
@@ -13,16 +13,20 @@ import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone } from '../utils/phoneMask';
 import { parseStudentCreds } from '../lib/credentials';
+import { useAuth } from '../hooks/useAuth';
+import { ReceiptModal, ReceiptModalData } from '../components/ui/ReceiptModal/ReceiptModal';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import styles from './StudentProfile.module.css';
 
 export const StudentProfile: React.FC = () => {
+  const { user } = useAuth();
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'groups' | 'attendance' | 'payments'>('groups');
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [receiptModalData, setReceiptModalData] = useState<ReceiptModalData | null>(null);
 
   const { data: student, isLoading } = useQuery({
     queryKey: ['studentProfile', id],
@@ -161,6 +165,36 @@ export const StudentProfile: React.FC = () => {
         <Badge variant={row.status === 'TOLANGAN' ? 'success' : 'danger'}>
           {row.status}
         </Badge>
+      ),
+    },
+    {
+      key: 'receipt',
+      header: 'KVITANSIYA',
+      render: (row) => (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            const studentName = `${student.firstName} ${student.lastName}`;
+            const centerName = user?.centerName || 'Ziyo';
+            const centerPrefix = centerName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'REC';
+            const courseName = row.course?.name || row.group?.name || student.studentGroups?.[0]?.group?.name || 'O\'quv kursi';
+            setReceiptModalData({
+              receiptNumber: `${centerPrefix}-${new Date(row.paymentDate || new Date()).getFullYear()}-${row.id ? row.id.slice(0, 5).toUpperCase() : '1001'}`,
+              studentName,
+              courseName,
+              amount: row.amount,
+              date: formatDate(row.paymentDate),
+              method: row.method === 'NAQD' ? 'Naqd pul' : row.method === 'KARTA' ? 'Bank kartasi' : "O'tkazma",
+              receivedBy: user?.fullName || 'Administrator',
+              centerName,
+              status: row.status || "TO'LANGAN",
+            });
+          }}
+          style={{ fontSize: '11.5px', padding: '3px 8px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+        >
+          <FileText size={12} /> Chek
+        </Button>
       ),
     },
   ];
@@ -329,6 +363,13 @@ export const StudentProfile: React.FC = () => {
           <Table columns={paymentColumns} data={student.payments || []} />
         )}
       </Card>
+
+      {/* Official Receipt Modal */}
+      <ReceiptModal
+        isOpen={!!receiptModalData}
+        onClose={() => setReceiptModalData(null)}
+        data={receiptModalData}
+      />
     </div>
   );
 };

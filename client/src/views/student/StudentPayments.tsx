@@ -2,74 +2,68 @@
 
 import React, { useState } from 'react';
 import { useStudentPortal } from '../../hooks/useStudentPortal';
+import { useAuth } from '../../hooks/useAuth';
 import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
   FileText,
-  Printer,
-  Download,
-  QrCode,
   Calendar,
   DollarSign,
   ShieldCheck,
   Building,
   User,
-  X,
 } from 'lucide-react';
+import { ReceiptModal, ReceiptModalData } from '../../components/ui/ReceiptModal/ReceiptModal';
 import styles from './StudentPayments.module.css';
-
-interface ReceiptData {
-  id: string;
-  date: string;
-  amount: number;
-  method: string;
-  status: string;
-  courseName: string;
-  studentName: string;
-  receiptNumber: string;
-}
 
 export const StudentPayments: React.FC = () => {
   const { student, group, payments, paymentStats } = useStudentPortal();
-  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
+  const { user } = useAuth();
+  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptModalData | null>(null);
 
   const studentName = student
     ? `${student.firstName} ${student.lastName}`
     : 'Sardor Aliyev';
 
+  const centerName = user?.centerName || 'Ziyo';
+  const centerPrefix = centerName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'REC';
+
   // Merge real payments with sample history
-  const paymentList: ReceiptData[] = payments.length > 0
+  const paymentList: ReceiptModalData[] = payments.length > 0
     ? payments.map((p, idx) => ({
-        id: p.id,
-        date: new Date(p.paymentDate).toLocaleDateString('uz-UZ'),
-        amount: p.amount,
-        method: p.method === 'NAQD' ? 'Naqd pul' : p.method === 'KARTA' ? 'Bank kartasi' : "O'tkazma",
-        status: p.status || "To'langan",
-        courseName: group?.course?.name || 'Frontend Dasturlash',
+        receiptNumber: `${centerPrefix}-${new Date(p.paymentDate).getFullYear()}-${1000 + idx}`,
         studentName,
-        receiptNumber: `ITP-REC-2026-${1000 + idx}`,
+        courseName: group?.course?.name || 'Frontend Dasturlash',
+        amount: p.amount,
+        date: new Date(p.paymentDate).toLocaleDateString('uz-UZ'),
+        method: p.method === 'NAQD' ? 'Naqd pul' : p.method === 'KARTA' ? 'Bank kartasi' : "O'tkazma",
+        receivedBy: p.receivedBy?.fullName || 'Administrator',
+        centerName,
+        status: p.status || "To'langan",
       }))
     : [
         {
-          id: 'pay-2',
-          date: '05.10.2026',
-          amount: 600000,
-          method: 'Payme / Karta',
-          status: "To'langan",
-          courseName: group?.course?.name || 'Frontend Web Dasturlash',
+          receiptNumber: `${centerPrefix}-2026-1042`,
           studentName,
-          receiptNumber: 'ITP-REC-2026-1042',
+          courseName: group?.course?.name || 'Frontend Web Dasturlash',
+          amount: 600000,
+          date: '05.10.2026',
+          method: 'Payme / Karta',
+          receivedBy: 'Administrator',
+          centerName,
+          status: "To'langan",
         },
         {
-          id: 'pay-1',
-          date: '05.09.2026',
-          amount: 600000,
-          method: 'Click / Karta',
-          status: "To'langan",
-          courseName: group?.course?.name || 'Frontend Web Dasturlash',
+          receiptNumber: `${centerPrefix}-2026-0918`,
           studentName,
-          receiptNumber: 'ITP-REC-2026-0918',
+          courseName: group?.course?.name || 'Frontend Web Dasturlash',
+          amount: 600000,
+          date: '05.09.2026',
+          method: 'Click / Karta',
+          receivedBy: 'Administrator',
+          centerName,
+          status: "To'langan",
         },
       ];
 
@@ -229,115 +223,12 @@ export const StudentPayments: React.FC = () => {
       </section>
 
       {/* 4. Interactive Official Payment Receipt Modal */}
-      {selectedReceipt && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setSelectedReceipt(null)}
-        >
-          <div
-            className={styles.receiptModal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.receiptTopHeader}>
-              <div className={styles.receiptBadge}>
-                Rasmiy to'lov kvitansiyasi
-              </div>
-              <button
-                className={styles.closeBtn}
-                onClick={() => setSelectedReceipt(null)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Printable Receipt Paper */}
-            <div className={styles.receiptPaper} id="printable-receipt">
-              <div className={styles.paperBrandHeader}>
-                <div className={styles.brandTitleWrap}>
-                  <Building size={20} className={styles.brandIcon} />
-                  <div>
-                    <h3>IT PARK ACADEMY</h3>
-                    <p>Zamonaviy axborot texnologiyalari ta'lim markazi</p>
-                  </div>
-                </div>
-                <div className={styles.receiptIdBox}>
-                  <span>Kvitansiya:</span>
-                  <strong>{selectedReceipt.receiptNumber}</strong>
-                </div>
-              </div>
-
-              <div className={styles.paperDivider} />
-
-              <div className={styles.paperDetailsGrid}>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>O'quvchi F.I.SH:</span>
-                  <strong className={styles.detailValue}>
-                    {selectedReceipt.studentName}
-                  </strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>Kurs yo'nalishi:</span>
-                  <strong className={styles.detailValue}>
-                    {selectedReceipt.courseName}
-                  </strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>To'lov sanasi:</span>
-                  <strong className={styles.detailValue}>
-                    {selectedReceipt.date}
-                  </strong>
-                </div>
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>To'lov usuli:</span>
-                  <strong className={styles.detailValue}>
-                    {selectedReceipt.method}
-                  </strong>
-                </div>
-              </div>
-
-              <div className={styles.paperDivider} />
-
-              <div className={styles.paperTotalRow}>
-                <span>To'langan summa:</span>
-                <span className={styles.totalSum}>
-                  {selectedReceipt.amount.toLocaleString()} UZS
-                </span>
-              </div>
-
-              <div className={styles.paperStampFooter}>
-                <div className={styles.qrCodeBox}>
-                  <QrCode size={56} className={styles.qrIcon} />
-                  <span>QR tekshiruv kodi</span>
-                </div>
-                <div className={styles.stampSeal}>
-                  <div className={styles.stampCircle}>
-                    <span>IT PARK</span>
-                    <strong>TO'LANGAN</strong>
-                    <span>TASDIQLANDI</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className={styles.receiptActionsRow}>
-              <button
-                onClick={handlePrintReceipt}
-                className={styles.btnPrint}
-              >
-                <Printer size={16} />
-                <span>Chop etish (Print)</span>
-              </button>
-              <button
-                onClick={() => setSelectedReceipt(null)}
-                className={styles.btnCloseReceipt}
-              >
-                Yopish
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReceiptModal
+        isOpen={!!selectedReceipt}
+        onClose={() => setSelectedReceipt(null)}
+        data={selectedReceipt}
+      />
     </div>
   );
 };
+

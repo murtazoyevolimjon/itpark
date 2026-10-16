@@ -295,7 +295,7 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
                   Salom, <strong>{studentFirstName}</strong> 👋
                 </span>
                 <span className={styles.headerGroupName}>
-                  {group ? group.name : 'IT Park Academy'}
+                  {group ? group.name : (centerName || "O'quv markazi")}
                 </span>
               </div>
             </div>
