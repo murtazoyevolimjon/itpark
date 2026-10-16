@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from './useAuth';
 import { Student, Group, Attendance, Payment } from '../types';
 import { getVideoBlob } from '../utils/videoStorage';
+import { homeworkApi } from '../api/homework.api';
 
 export interface StudentVideoItem {
   id: string;
@@ -381,19 +382,36 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch {}
   }, [group]);
 
-  // Sync homeworks from teacher
-  const syncHomeworks = useCallback(() => {
+  // Sync homeworks from server and teacher
+  const syncHomeworks = useCallback(async () => {
     if (!group) return;
+    try {
+      // 1. Fetch from server API
+      const res = await homeworkApi.getAll({ groupId: group.id, centerId: student?.centerId });
+      if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setHomeworks(res.data);
+        try {
+          localStorage.setItem('all_teacher_homeworks', JSON.stringify(res.data));
+        } catch {}
+        return;
+      }
+    } catch (err) {
+      console.warn('Could not load homeworks from server, falling back to local storage:', err);
+    }
+
+    // 2. Fallback to localStorage
     try {
       const saved = localStorage.getItem('all_teacher_homeworks');
       if (saved) {
         const parsed: StudentHomeworkItem[] = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const matching = parsed.filter(
             (hw) => !hw.groupId || hw.groupId === 'all' || hw.groupId === group.id
           );
-          setHomeworks(matching);
-          return;
+          if (matching.length > 0) {
+            setHomeworks(matching);
+            return;
+          }
         }
       }
 
@@ -412,10 +430,46 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
       ];
       setHomeworks(sampleHw);
     } catch {}
-  }, [group]);
+  }, [group, student]);
 
-  // Load homework submissions
-  const syncSubmissions = useCallback(() => {
+  // Load homework submissions from server API
+  const syncSubmissions = useCallback(async () => {
+    if (!student) return;
+    try {
+      const res = await homeworkApi.getSubmissions({
+        groupId: group?.id,
+        studentId: student.id,
+        centerId: student.centerId,
+      });
+
+      if (res && res.data && Array.isArray(res.data)) {
+        const subMap: Record<string, StudentHomeworkSubmission> = {};
+        res.data.forEach((sub: any) => {
+          if (sub.hwId) {
+            subMap[sub.hwId] = {
+              hwId: sub.hwId,
+              studentId: sub.studentId,
+              studentName: sub.studentName,
+              submissionLink: sub.submissionLink,
+              comment: sub.comment,
+              submittedAt: sub.submittedAt,
+              status: sub.status || 'KUTILMOQDA',
+              grade: sub.grade,
+              teacherFeedback: sub.teacherFeedback,
+            };
+          }
+        });
+
+        setSubmissions(subMap);
+        try {
+          localStorage.setItem('student_hw_submissions', JSON.stringify(subMap));
+        } catch {}
+        return;
+      }
+    } catch (err) {
+      console.warn('Could not load submissions from server, using local cache:', err);
+    }
+
     try {
       const saved = localStorage.getItem('student_hw_submissions');
       if (saved) {
@@ -425,10 +479,10 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     } catch {}
-  }, []);
+  }, [student, group]);
 
   // Submit Homework action
-  const submitHomework = (hwId: string, link: string, comment?: string) => {
+  const submitHomework = async (hwId: string, link: string, comment?: string) => {
     if (!student) return;
     const submission: StudentHomeworkSubmission = {
       hwId,
@@ -442,9 +496,27 @@ export const StudentPortalProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const updated = { ...submissions, [hwId]: submission };
     setSubmissions(updated);
+
     try {
       localStorage.setItem('student_hw_submissions', JSON.stringify(updated));
     } catch {}
+
+    try {
+      await homeworkApi.submit({
+        hwId,
+        groupId: group?.id || 'all',
+        studentId: student.id,
+        studentName: `${student.firstName} ${student.lastName}`.trim(),
+        studentPhone: student.phone || '',
+        submissionLink: link,
+        comment,
+        centerId: student.centerId,
+      });
+      // Re-sync
+      syncSubmissions();
+    } catch (err) {
+      console.warn('Error saving submission to server:', err);
+    }
   };
 
   // Initial load

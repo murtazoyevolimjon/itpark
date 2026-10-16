@@ -155,20 +155,30 @@ const StudentLayoutInner: React.FC<StudentLayoutProps> = ({ children }) => {
       <div className={styles.orbCyan} />
       <div className={styles.orbPurple} />
 
-      {/* Mobile Drawer Overlay */}
-      <div
-        className={`${styles.mobileOverlay} ${isMobileOpen ? styles.mobileOverlayOpen : ''}`}
-        onClick={() => setIsMobileOpen(false)}
-      />
-
       <div className={styles.shell}>
+        {/* Mobile Drawer Overlay - inside shell so it shares stacking context with sidebar */}
+        <div
+          className={`${styles.mobileOverlay} ${isMobileOpen ? styles.mobileOverlayOpen : ''}`}
+          onClick={() => setIsMobileOpen(false)}
+        />
+
         {/* Desktop & Drawer Sidebar */}
         <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ''}`}>
           <div className={styles.sidebarInner}>
             <div className={styles.sidebarHeader}>
-              <div className={styles.panelBadge}>
-                <span className={styles.pulseDot} />
-                {dict.student?.portalBadge || "O'quvchi portali"}
+              <div className={styles.sidebarHeaderTop}>
+                <div className={styles.panelBadge}>
+                  <span className={styles.pulseDot} />
+                  {dict.student?.portalBadge || "O'quvchi portali"}
+                </div>
+                <button
+                  type="button"
+                  className={styles.sidebarCloseBtn}
+                  onClick={() => setIsMobileOpen(false)}
+                  aria-label="Menyuni yopish"
+                >
+                  <X size={18} />
+                </button>
               </div>
               <h1 className={styles.centerBrandTitle}>{centerName}</h1>
 

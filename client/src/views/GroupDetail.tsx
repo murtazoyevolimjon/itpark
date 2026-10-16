@@ -55,6 +55,7 @@ import { attendanceApi } from '../api/attendance.api';
 import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
 import { dashboardApi } from '../api/dashboard.api';
+import { homeworkApi } from '../api/homework.api';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
@@ -82,6 +83,8 @@ export const GroupDetail: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(getTashkentDateString());
   const [historyDate, setHistoryDate] = useState<string>(getTashkentDateString());
   const [groupHomeworks, setGroupHomeworks] = useState<any[]>([]);
+  const [groupSubmissions, setGroupSubmissions] = useState<any[]>([]);
+  const [expandedHwSubmissions, setExpandedHwSubmissions] = useState<Record<string, boolean>>({});
   const [groupVideos, setGroupVideos] = useState<any[]>([]);
   const [groupLessons, setGroupLessons] = useState<any[]>([]);
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
@@ -262,23 +265,52 @@ export const GroupDetail: React.FC = () => {
     return null;
   }, [dayHistoryAttendances, groupLessons, historyDate]);
 
-  // Load teacher homeworks, videos, and lessons for this group
+  // Load teacher homeworks, submissions, videos, and lessons for this group
   useEffect(() => {
     if (!id) return;
 
-    // Load homeworks
-    try {
-      const savedHw = localStorage.getItem('all_teacher_homeworks');
-      if (savedHw) {
-        const parsed = JSON.parse(savedHw);
-        if (Array.isArray(parsed)) {
-          const filtered = parsed.filter(
-            (hw: any) => hw.groupId === id || (group?.name && hw.groupName === group.name)
-          );
-          setGroupHomeworks(filtered);
+    // Load homeworks and student submissions from server API
+    const loadHomeworksAndSubmissions = async () => {
+      try {
+        const [hwRes, subRes] = await Promise.all([
+          homeworkApi.getAll({ groupId: id }),
+          homeworkApi.getSubmissions({ groupId: id }),
+        ]);
+
+        if (hwRes?.data && Array.isArray(hwRes.data) && hwRes.data.length > 0) {
+          setGroupHomeworks(hwRes.data);
+        } else {
+          // Fallback to local
+          const savedHw = localStorage.getItem('all_teacher_homeworks');
+          if (savedHw) {
+            const parsed = JSON.parse(savedHw);
+            if (Array.isArray(parsed)) {
+              const filtered = parsed.filter(
+                (hw: any) => hw.groupId === id || (group?.name && hw.groupName === group.name)
+              );
+              setGroupHomeworks(filtered);
+            }
+          }
         }
+
+        if (subRes?.data && Array.isArray(subRes.data)) {
+          setGroupSubmissions(subRes.data);
+        } else {
+          // Fallback to local
+          const savedSubs = localStorage.getItem('student_hw_submissions');
+          if (savedSubs) {
+            const parsed = JSON.parse(savedSubs);
+            if (parsed && typeof parsed === 'object') {
+              setGroupSubmissions(Object.values(parsed));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading homeworks/submissions:', err);
       }
-    } catch (_) {}
+    };
+
+    loadHomeworksAndSubmissions();
 
     // Load videos
     const loadVideos = async () => {
@@ -2266,6 +2298,174 @@ export const GroupDetail: React.FC = () => {
                         )}
                       </div>
                     )}
+
+                    {/* Submissions breakdown for this homework (Admin visibility) */}
+                    {(() => {
+                      const hwSubs = (groupSubmissions || []).filter((s: any) => s.hwId === hw.id);
+                      const enrolledList = (group?.studentGroups || []).map((sg: any) => sg.student).filter(Boolean);
+                      const subMap = new Map();
+                      hwSubs.forEach((s: any) => subMap.set(s.studentId, s));
+                      const submittedCount = enrolledList.filter((st: any) => subMap.has(st.id)).length;
+                      const notSubmittedCount = Math.max(0, enrolledList.length - submittedCount);
+                      const isExpanded = !!expandedHwSubmissions[hw.id];
+
+                      return (
+                        <div
+                          style={{
+                            marginTop: '12px',
+                            padding: '12px',
+                            borderRadius: '10px',
+                            background: 'var(--card-subtle)',
+                            border: '1px solid var(--border)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              flexWrap: 'wrap',
+                              gap: '8px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <Badge variant="success">
+                                <CheckCircle2 size={12} style={{ marginRight: '4px' }} />
+                                {submittedCount} ta topshirdi
+                              </Badge>
+                              <Badge variant={notSubmittedCount > 0 ? 'danger' : 'secondary'}>
+                                <AlertCircle size={12} style={{ marginRight: '4px' }} />
+                                {notSubmittedCount} ta topshirmadi
+                              </Badge>
+                            </div>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setExpandedHwSubmissions((prev) => ({
+                                  ...prev,
+                                  [hw.id]: !prev[hw.id],
+                                }))
+                              }
+                            >
+                              <Users size={13} />
+                              {isExpanded ? "Ro'yxatni yashirish" : "O'quvchilar natijalari"}
+                            </Button>
+                          </div>
+
+                          {/* Expanded Full Students Homework Status Table */}
+                          {isExpanded && (
+                            <div style={{ marginTop: '8px', overflowX: 'auto' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+                                <thead>
+                                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left', color: 'var(--text-muted)' }}>
+                                    <th style={{ padding: '8px 6px' }}>#</th>
+                                    <th style={{ padding: '8px 10px' }}>Talaba (F.I.Sh)</th>
+                                    <th style={{ padding: '8px 10px' }}>Telefon</th>
+                                    <th style={{ padding: '8px 10px' }}>Vazifa holati</th>
+                                    <th style={{ padding: '8px 10px' }}>Yechim / Havola</th>
+                                    <th style={{ padding: '8px 10px' }}>Baho & Ustoz fikri</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {enrolledList.length === 0 ? (
+                                    <tr>
+                                      <td colSpan={6} style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        Guruhda talabalar mavjud emas.
+                                      </td>
+                                    </tr>
+                                  ) : (
+                                    enrolledList.map((st: any, sIdx: number) => {
+                                      const sub = subMap.get(st.id);
+                                      return (
+                                        <tr
+                                          key={st.id || sIdx}
+                                          style={{
+                                            borderBottom: '1px solid var(--border)',
+                                            backgroundColor: sub ? 'rgba(16, 185, 129, 0.03)' : 'rgba(239, 68, 68, 0.03)',
+                                          }}
+                                        >
+                                          <td style={{ padding: '8px 6px', color: 'var(--text-muted)' }}>{sIdx + 1}</td>
+                                          <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text)' }}>
+                                            {st.firstName} {st.lastName}
+                                          </td>
+                                          <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                                            {formatPhone(st.phone) || st.phone || '—'}
+                                          </td>
+                                          <td style={{ padding: '8px 10px' }}>
+                                            {sub ? (
+                                              <div>
+                                                <Badge variant="success">✓ Bajargan</Badge>
+                                                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                  {sub.submittedAt}
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <Badge variant="danger">✕ Topshirmagan</Badge>
+                                            )}
+                                          </td>
+                                          <td style={{ padding: '8px 10px' }}>
+                                            {sub?.submissionLink ? (
+                                              <a
+                                                href={sub.submissionLink.startsWith('http') ? sub.submissionLink : `https://${sub.submissionLink}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: '4px',
+                                                  fontSize: '11.5px',
+                                                  color: 'var(--primary)',
+                                                  fontWeight: 600,
+                                                  textDecoration: 'none',
+                                                }}
+                                              >
+                                                <ExternalLink size={12} /> Yechimni ko'rish
+                                              </a>
+                                            ) : (
+                                              <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                            )}
+                                            {sub?.comment && (
+                                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>
+                                                &quot;{sub.comment}&quot;
+                                              </div>
+                                            )}
+                                          </td>
+                                          <td style={{ padding: '8px 10px' }}>
+                                            {sub ? (
+                                              sub.status === 'BAHOLANDI' && sub.grade !== undefined ? (
+                                                <div>
+                                                  <span style={{ fontWeight: 700, color: '#10b981' }}>{sub.grade} ball</span>
+                                                  {sub.teacherFeedback && (
+                                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                      {sub.teacherFeedback}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <span style={{ fontSize: '11.5px', color: '#f59e0b', fontWeight: 600 }}>
+                                                  ⏱ Tekshirilmoqda
+                                                </span>
+                                              )
+                                            ) : (
+                                              <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>

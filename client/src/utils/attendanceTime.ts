@@ -47,10 +47,11 @@ export const formatMinutesToTimeString = (totalMinutes: number): string => {
 };
 
 /**
- * Extracts start time from group.startTime (e.g. "10:00") or group.name (e.g. "Frontend 10:00 Dush-Chor-Juma").
+/**
+ * Extracts start time from group.startTime (e.g. "13:00") or group.name (e.g. "Frontend 13:00 Dush-Chor-Juma" or "13:00 - 14:30").
  */
 export const extractGroupStartTime = (
-  group?: { startTime?: string; name?: string } | null
+  group?: { startTime?: string; endTime?: string; name?: string } | null
 ): string | null => {
   if (!group) return null;
   if (group.startTime && /^\d{1,2}:\d{2}/.test(group.startTime)) {
@@ -67,25 +68,55 @@ export const extractGroupStartTime = (
   return null;
 };
 
+/**
+ * Extracts end time from group.endTime (e.g. "14:30") or group.name (e.g. "13:00 - 14:30"),
+ * or computes fallback (startTime + 90 minutes).
+ */
+export const extractGroupEndTime = (
+  group?: { startTime?: string; endTime?: string; name?: string } | null,
+  fallbackStartMinutes?: number
+): string | null => {
+  if (!group) return null;
+  if (group.endTime && /^\d{1,2}:\d{2}/.test(group.endTime)) {
+    const [h, m] = group.endTime.slice(0, 5).split(':');
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+  if (group.name) {
+    // Match "13:00 - 14:30" or "13:00-14:30"
+    const rangeMatch = group.name.match(/\b\d{1,2}:\d{2}\s*[-–—]\s*(\d{1,2}:\d{2})\b/);
+    if (rangeMatch) {
+      const [h, m] = rangeMatch[1].split(':');
+      return `${h.padStart(2, '0')}:${m}`;
+    }
+  }
+  if (fallbackStartMinutes !== undefined) {
+    return formatMinutesToTimeString(fallbackStartMinutes + 90);
+  }
+  return null;
+};
+
 export interface AttendanceEligibility {
   canTakeAttendance: boolean;
   status: 'ALLOWED' | 'PAST_DATE' | 'FUTURE_DATE' | 'TIME_EXPIRED' | 'TOO_EARLY';
   message: string;
   startTime?: string;
+  endTime?: string;
   deadlineTime?: string;
   currentTashkentTime?: string;
 }
 
 /**
- * Checks whether initial attendance can be taken for a specific group and date.
- * Rule:
- * 1. Must be today (Asia/Tashkent). Past dates cannot take attendance ("bir kun oldingilarga saqlay olmasligi kerak").
- * 2. If group has a start time (e.g. 10:00), deadline is startTime + 30 minutes (e.g. 10:30).
- *    Attendance can be taken between (startTime - 15m) and (startTime + 30m).
+ * Checks whether attendance can be taken for a specific group and date.
+ * Rule (O'quv markazlari uchun dars vaqti talabi):
+ * 1. Must be today (Asia/Tashkent). Past or future dates cannot take attendance.
+ * 2. Dars nechchidan nechchigacha qo'yilgan bo'lsa (masalan 13:00 dan 14:30 gacha),
+ *    davomat ayni o'sha dars vaqti oralig'ida olinishi shart!
+ *    Darsdan oldin: "Dars hali boshlanmagan (13:00 dan 14:30 gacha)"
+ *    Darsdan keyin: "Davomat olish vaqti tugagan (dars 13:00 - 14:30 edi)"
  */
 export const checkAttendanceTimeEligibility = (
   attendanceDate: string,
-  group?: { startTime?: string; name?: string } | null
+  group?: { startTime?: string; endTime?: string; name?: string } | null
 ): AttendanceEligibility => {
   const todayTashkent = getTashkentDateString();
   const cleanDate = (attendanceDate || '').split('T')[0];
@@ -97,7 +128,7 @@ export const checkAttendanceTimeEligibility = (
       canTakeAttendance: false,
       status: 'PAST_DATE',
       message:
-        "O'tgan sana uchun yangi davomat saqlash taqiqlangan! Qoidaga ko'ra, davomat faqat dars kunida olinishi shart.",
+        "O'tgan sana uchun yangi davomat saqlash taqiqlangan! Qoidaga ko'ra, davomat faqat bugungi dars kunida olinishi shart.",
       currentTashkentTime,
     };
   }
@@ -123,32 +154,49 @@ export const checkAttendanceTimeEligibility = (
     };
   }
 
-  const [h, m] = startTime.split(':').map(Number);
-  const startMinutes = h * 60 + m;
-  const deadlineMinutes = startMinutes + 30; // 30 minutes after lesson start
-  const deadlineTime = formatMinutesToTimeString(deadlineMinutes);
+  const [hStart, mStart] = startTime.split(':').map(Number);
+  const startMinutes = hStart * 60 + mStart;
+
+  // Extract or compute end time (e.g. 14:30)
+  const rawEndTime = extractGroupEndTime(group, startMinutes);
+  let endMinutes = startMinutes + 90; // default 1.5 hours
+  let endTime = rawEndTime || formatMinutesToTimeString(endMinutes);
+
+  if (rawEndTime) {
+    const [hEnd, mEnd] = rawEndTime.split(':').map(Number);
+    const parsedEnd = hEnd * 60 + mEnd;
+    if (parsedEnd > startMinutes) {
+      endMinutes = parsedEnd;
+      endTime = rawEndTime;
+    }
+  }
+
   const currentMinutes = getTashkentTimeMinutes();
 
-  // Allow taking attendance starting 15 minutes before the lesson begins
-  if (currentMinutes < startMinutes - 15) {
+  // Allow taking attendance starting 5 minutes before lesson starts
+  const startToleranceMinutes = startMinutes - 5;
+
+  if (currentMinutes < startToleranceMinutes) {
     return {
       canTakeAttendance: false,
       status: 'TOO_EARLY',
-      message: `Dars hali boshlanmagan. Guruh darsi soat ${startTime} da boshlanadi. Davomatni soat ${startTime} dan ${deadlineTime} gacha olishingiz mumkin.`,
+      message: `Dars hali boshlanmagan. Guruh darsi soat ${startTime} dan ${endTime} gacha bo'ladi. Davomatni faqat dars vaqtida (${startTime} - ${endTime}) olishingiz mumkin.`,
       startTime,
-      deadlineTime,
+      endTime,
+      deadlineTime: endTime,
       currentTashkentTime,
     };
   }
 
-  // If past deadline (startTime + 30m)
-  if (currentMinutes > deadlineMinutes) {
+  // If past lesson end time
+  if (currentMinutes > endMinutes) {
     return {
       canTakeAttendance: false,
       status: 'TIME_EXPIRED',
-      message: `Davomat olish vaqti tugagan! Guruh darsi soat ${startTime} da boshlangan. Qoidaga ko'ra, davomat dars boshlanganidan so'ng 30 daqiqa ichida (${deadlineTime} gacha) olinishi shart edi.`,
+      message: `Davomat olish vaqti tugagan! Guruh darsi soat ${startTime} dan ${endTime} gacha bo'lgan. Qoidaga ko'ra, davomat faqat dars vaqti oralig'ida (${startTime} - ${endTime}) olinishi shart.`,
       startTime,
-      deadlineTime,
+      endTime,
+      deadlineTime: endTime,
       currentTashkentTime,
     };
   }
@@ -156,9 +204,10 @@ export const checkAttendanceTimeEligibility = (
   return {
     canTakeAttendance: true,
     status: 'ALLOWED',
-    message: `Davomat olish vaqti: Soat ${deadlineTime} gacha davomatni saqlashingiz kerak.`,
+    message: `Davomat olish vaqti faol: Dars tugashiga (${endTime}) qadar davomatni saqlashingiz mumkin.`,
     startTime,
-    deadlineTime,
+    endTime,
+    deadlineTime: endTime,
     currentTashkentTime,
   };
 };

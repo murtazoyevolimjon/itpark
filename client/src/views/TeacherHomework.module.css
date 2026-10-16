@@ -868,3 +868,289 @@
 :global([data-theme="dark"]) .emptyIcon {
   color: #475569;
 }
+
+/* Submissions Section for Homework Cards */
+.submissionsSummaryBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(241, 245, 249, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+:global([data-theme="dark"]) .submissionsSummaryBar {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.summaryBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badgeDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+:global([data-theme="dark"]) .badgeDone {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.badgePending {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+:global([data-theme="dark"]) .badgePending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.submissionsToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submissionsToggleBtn:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .submissionsToggleBtn {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+:global([data-theme="dark"]) .submissionsToggleBtn:hover {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.submissionsSection {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+:global([data-theme="dark"]) .submissionsSection {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.subSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:global([data-theme="dark"]) .subSectionTitle {
+  color: #f1f5f9;
+}
+
+.submissionCard {
+  padding: 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:global([data-theme="dark"]) .submissionCard {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.subCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.subStudentName {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+:global([data-theme="dark"]) .subStudentName {
+  color: #f8fafc;
+}
+
+.subDate {
+  font-size: 11px;
+  color: #64748b;
+}
+
+:global([data-theme="dark"]) .subDate {
+  color: #94a3b8;
+}
+
+.subLinkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.subLinkBtn:hover {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .subLinkBtn {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.subCommentText {
+  font-size: 12px;
+  color: #475569;
+  font-style: italic;
+  margin: 0;
+}
+
+:global([data-theme="dark"]) .subCommentText {
+  color: #cbd5e1;
+}
+
+.gradingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(226, 232, 240, 0.8);
+}
+
+:global([data-theme="dark"]) .gradingRow {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.gradeInput {
+  width: 90px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:global([data-theme="dark"]) .gradeInput {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.feedbackInput {
+  flex: 1;
+  min-width: 140px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+:global([data-theme="dark"]) .feedbackInput {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.saveGradeBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saveGradeBtn:hover {
+  background: #059669;
+}
+
+.notSubmittedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notSubmittedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:global([data-theme="dark"]) .notSubmittedBadge {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
