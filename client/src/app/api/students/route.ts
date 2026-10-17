@@ -5,7 +5,6 @@ import { getAuthUser } from '@/lib/auth';
 import {
   parseStudentCreds,
   serializeStudentCreds,
-  checkLoginUniqueness,
 } from '@/lib/credentials';
 
 export async function GET(req: NextRequest) {
@@ -61,8 +60,6 @@ export async function GET(req: NextRequest) {
 
       return {
         ...student,
-        login: creds.login,
-        password: creds.password,
         subject: creds.subject || null,
         studentGroups: sgList,
         paymentStatus,
@@ -97,8 +94,6 @@ export async function POST(req: NextRequest) {
       motherPhone,
       passportSeries,
       subject,
-      login,
-      password,
       gender,
       isSchoolStudent,
       groupId,
@@ -117,23 +112,6 @@ export async function POST(req: NextRequest) {
     const supabase = createServerSupabaseClient();
     const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
-
-    // Determine student login and password
-    let studentLogin = (login || '').trim().toLowerCase();
-    if (!studentLogin) {
-      studentLogin = cleanPhone || `talaba_${Math.floor(1000 + Math.random() * 9000)}`;
-    }
-
-    const studentPass = (password || '').trim() || (cleanPhone && cleanPhone.length >= 6 ? cleanPhone.slice(-6) : '123456');
-
-    // 1. Verify global login uniqueness
-    const uniquenessCheck = await checkLoginUniqueness(supabase, studentLogin);
-    if (!uniquenessCheck.available) {
-      return NextResponse.json(
-        { message: uniquenessCheck.conflictMessage || 'Bu login allaqachon band qilingan' },
-        { status: 400 }
-      );
-    }
 
     // 2. Check duplicate student for the same subject
     if (cleanPhone) {
@@ -166,7 +144,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const serializedCreds = serializeStudentCreds(studentLogin, studentPass, subjectToSave);
+    const serializedCreds = serializeStudentCreds('', '', subjectToSave);
     const studentId = crypto.randomUUID();
 
     const { data: student, error } = await supabase

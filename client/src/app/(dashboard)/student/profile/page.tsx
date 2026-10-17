@@ -1,5 +1,5 @@
-import { StudentProfile } from '@/views/student/StudentProfile';
+import { redirect } from 'next/navigation';
 
 export default function StudentProfilePage() {
-  return <StudentProfile />;
+  redirect('/dashboard');
 }

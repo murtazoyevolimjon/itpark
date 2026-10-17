@@ -5,7 +5,6 @@ import { getAuthUser } from '@/lib/auth';
 import {
   parseStudentCreds,
   serializeStudentCreds,
-  checkLoginUniqueness,
 } from '@/lib/credentials';
 
 export async function GET(
@@ -51,8 +50,6 @@ export async function GET(
 
     return NextResponse.json({
       ...student,
-      login: creds.login,
-      password: creds.password,
       subject: creds.subject || null,
       studentGroups: sgList,
       totalAttendances,
@@ -91,27 +88,11 @@ export async function PATCH(
 
     const existingCreds = parseStudentCreds(currentStudent.passportSeries, currentStudent.phone);
 
-    const targetLogin = body.login !== undefined ? (body.login || '').trim().toLowerCase() : existingCreds.login;
-    const targetPass = body.password !== undefined ? (body.password || '').trim() : existingCreds.password;
     const targetSubject = body.subject !== undefined
       ? (body.subject || '').trim()
       : (body.passportSeries !== undefined ? (body.passportSeries || '').trim() : existingCreds.subject);
 
-    // If login is changed, check uniqueness
-    if (body.login !== undefined && targetLogin !== existingCreds.login) {
-      const uniquenessCheck = await checkLoginUniqueness(supabase, targetLogin, {
-        type: 'student',
-        id: params.id,
-      });
-      if (!uniquenessCheck.available) {
-        return NextResponse.json(
-          { message: uniquenessCheck.conflictMessage || 'Bu login band qilingan' },
-          { status: 400 }
-        );
-      }
-    }
-
-    const serializedCreds = serializeStudentCreds(targetLogin, targetPass, targetSubject);
+    const serializedCreds = serializeStudentCreds('', '', targetSubject, existingCreds.tgChatId, existingCreds.tgUser, existingCreds.parentTgChatId);
 
     const updatePayload: any = {
       passportSeries: serializedCreds,

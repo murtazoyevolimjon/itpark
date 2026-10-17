@@ -353,8 +353,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ initialLoginOpen = fal
       setIsLoginModalOpen(false);
       if (loggedUser?.role === 'TEACHER') {
         router.push('/teacher');
-      } else if (loggedUser?.role === 'STUDENT') {
-        router.push('/student');
       } else {
         router.push('/dashboard');
       }

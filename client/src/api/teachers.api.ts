@@ -22,4 +22,8 @@ export const teachersApi = {
     const res = await api.delete(`/teachers/${id}`);
     return res.data;
   },
+  getSalary: async (id: string, month?: string): Promise<any> => {
+    const res = await api.get(`/teachers/${id}/salary`, { params: { month } });
+    return res.data;
+  },
 };

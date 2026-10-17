@@ -178,6 +178,7 @@ export const uz = {
     attendance: 'Akademik davomat',
     homework: 'Uyga vazifa',
     videos: 'Videolar',
+    salary: 'Mening maoshim',
     todayPlan: 'Bugungi reja: dars mavzularini yakunlab chiqing.',
     notifications: 'Bildirishnomalar',
     theme: 'Mavzu (Tun / Kun)',

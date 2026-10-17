@@ -1,5 +1,5 @@
-import { StudentVideos } from '@/views/student/StudentVideos';
+import { redirect } from 'next/navigation';
 
 export default function StudentVideosPage() {
-  return <StudentVideos />;
+  redirect('/dashboard');
 }

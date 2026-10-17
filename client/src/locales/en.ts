@@ -178,6 +178,7 @@ export const en = {
     attendance: 'Academic Attendance',
     homework: 'Homework',
     videos: 'Videos',
+    salary: 'My Salary',
     todayPlan: 'Today\'s plan: complete lesson topics and reviews.',
     notifications: 'Notifications',
     theme: 'Theme (Night / Day)',

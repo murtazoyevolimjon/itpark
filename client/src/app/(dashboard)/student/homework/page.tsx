@@ -1,5 +1,5 @@
-import { StudentHomework } from '@/views/student/StudentHomework';
+import { redirect } from 'next/navigation';
 
 export default function StudentHomeworkPage() {
-  return <StudentHomework />;
+  redirect('/dashboard');
 }

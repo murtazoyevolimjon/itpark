@@ -1,5 +1,5 @@
-import { StudentLeaderboard } from '@/views/student/StudentLeaderboard';
+import { redirect } from 'next/navigation';
 
 export default function StudentLeaderboardPage() {
-  return <StudentLeaderboard />;
+  redirect('/dashboard');
 }

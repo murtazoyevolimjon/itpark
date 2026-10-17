@@ -9,7 +9,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '../ui/Skeleton/Skeleton';
 import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 import { TeacherLayout } from './TeacherLayout';
-import { StudentLayout } from './StudentLayout';
 import styles from './MainLayout.module.css';
 
 interface MainLayoutProps {
@@ -27,7 +26,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Must NOT match '/teachers' (which is the admin page for managing teachers)!
   const isTeacherRoute = pathname === '/teacher' || pathname.startsWith('/teacher/');
 
-  // Specific check for student routes:
+  // If user navigates to /student, redirect to dashboard or teacher
   const isStudentRoute = pathname === '/student' || pathname.startsWith('/student/');
 
   React.useEffect(() => {
@@ -43,10 +42,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         if (!isTeacherRoute && pathname !== '/profile' && !isAiRoute) {
           router.replace('/teacher');
         }
-      } else if (user.role === 'STUDENT') {
-        // Student is restricted to /student routes, /profile, and /ai-assistant
-        if (!isStudentRoute && pathname !== '/profile' && !isAiRoute) {
-          router.replace('/student');
+      } else {
+        if (isStudentRoute) {
+          router.replace('/dashboard');
         }
       }
     }
@@ -66,10 +64,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   if (user?.role === 'TEACHER' || isTeacherRoute) {
     return <TeacherLayout>{children}</TeacherLayout>;
-  }
-
-  if (user?.role === 'STUDENT' || isStudentRoute) {
-    return <StudentLayout>{children}</StudentLayout>;
   }
 
   return (

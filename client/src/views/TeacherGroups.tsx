@@ -17,9 +17,16 @@ import {
   ArrowRight,
   Layers,
   Sparkles,
+  Wallet,
+  ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../hooks/useAuth';
 import { groupsApi } from '../api/groups.api';
+import { teachersApi } from '../api/teachers.api';
+import { formatMoney } from '../utils/formatMoney';
+import { TeacherSalaryModal } from '../components/ui/TeacherSalaryModal/TeacherSalaryModal';
 import { Group } from '../types';
 import styles from './TeacherGroups.module.css';
 
@@ -35,10 +42,18 @@ const DAY_NAMES_MAP: Record<string, string> = {
 
 export const TeacherGroups: React.FC = () => {
   const router = useRouter();
+  const { user } = useAuth();
   const { dict } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'main' | 'archive'>('main');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
+
+  // Teacher monthly salary and payments query
+  const { data: salaryData, isLoading: isSalaryLoading } = useQuery({
+    queryKey: ['teacherSalary', 'me'],
+    queryFn: () => teachersApi.getSalary('me'),
+  });
 
   // Auto-select clean card view on mobile screens
   React.useEffect(() => {
@@ -153,6 +168,151 @@ export const TeacherGroups: React.FC = () => {
                 <X size={14} />
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Teacher Monthly Earnings & Collected Payments Banner */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.6) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: '20px',
+          padding: '20px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          boxShadow: '0 8px 30px -10px rgba(16, 185, 129, 0.18)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+                flexShrink: 0,
+              }}
+            >
+              <Wallet size={24} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                  Mening Oylik Maoshim & To'lovlar
+                </h3>
+                {salaryData?.teacher && (
+                  <span
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      background: 'rgba(16, 185, 129, 0.2)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                    }}
+                  >
+                    {salaryData.teacher.salaryType === 'PERCENT'
+                      ? `Stavka: ${salaryData.teacher.salaryValue}% (Foiz)`
+                      : `Stavka: ${salaryData.teacher.salaryValue >= 1000000 ? formatMoney(salaryData.teacher.salaryValue) : `${formatMoney(salaryData.teacher.salaryValue)}/o'quvchi`}`}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                O'quvchilaringiz qilgan to'lovlari va sizga hisoblangan oylik maosh summasi
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsSalaryModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '12px',
+              background: '#10b981',
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '13.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>Batafsil hisob-kitobni ko'rish</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* 3 mini KPI cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '14px',
+              padding: '14px 18px',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+              Yig'ilgan to'lovlar (Jami tushum)
+            </div>
+            <div style={{ fontSize: '20px', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
+              {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.totalCollected || 0)}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {salaryData?.summary?.paidStudentsCount || 0} ta to'lov qabul qilingan
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '14px',
+              padding: '14px 18px',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+              To'lov qilgan o'quvchilar
+            </div>
+            <div style={{ fontSize: '20px', fontWeight: 800, color: '#fbbf24', marginTop: '4px' }}>
+              {isSalaryLoading ? '...' : `${salaryData?.summary?.paidStudentsCount || 0} / ${salaryData?.summary?.totalStudents || 0} ta`}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {salaryData?.summary?.unpaidStudentsCount || 0} ta o'quvchi to'lamagan
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '14px',
+              padding: '14px 18px',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: 700 }}>
+              💰 Mening Hisoblangan Maoshim
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
+              {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.calculatedSalary || 0)}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6ee7b7', marginTop: '2px' }}>
+              Hozirgi to'lovlar va stavka asosida
+            </div>
           </div>
         </div>
       </div>
@@ -487,6 +647,14 @@ export const TeacherGroups: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Teacher Salary Breakdown Modal */}
+      <TeacherSalaryModal
+        isOpen={isSalaryModalOpen}
+        onClose={() => setIsSalaryModalOpen(false)}
+        teacherId="me"
+        teacherName={user?.fullName || "O'qituvchi"}
+      />
     </div>
   );
 };

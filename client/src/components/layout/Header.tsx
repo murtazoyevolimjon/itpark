@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Sun, Moon, LogOut, User, ChevronDown, Compass } from 'lucide-react';
+import { Menu, Sun, Moon, LogOut, User, ChevronDown } from 'lucide-react';
 import { Breadcrumb } from './Breadcrumb';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
@@ -98,17 +98,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               >
                 <User size={16} />
                 <span>{t('profile')}</span>
-              </button>
-
-              <button
-                className={styles.dropdownItem}
-                onClick={() => {
-                  setIsDropdownOpen(false);
-                  router.push('/student');
-                }}
-              >
-                <Compass size={16} />
-                <span>O'quvchi portali</span>
               </button>
 
               <button

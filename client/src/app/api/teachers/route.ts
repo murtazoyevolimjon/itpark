@@ -43,16 +43,91 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: error.message }, { status: 500 });
     }
 
+    const teacherIds = (data || []).map((t: any) => t.id);
+
+    let groupsList: any[] = [];
+    let studentGroupsList: any[] = [];
+    let paymentsList: any[] = [];
+
+    if (teacherIds.length > 0) {
+      const [grpRes, payRes] = await Promise.all([
+        supabase
+          .from('groups')
+          .select('id, name, teacherId, courseId')
+          .in('teacherId', teacherIds)
+          .eq('centerId', authUser.centerId),
+        supabase
+          .from('payments')
+          .select('id, studentId, groupId, amount, status, paymentDate')
+          .eq('centerId', authUser.centerId)
+          .neq('status', 'BEKOR_QILINGAN'),
+      ]);
+
+      groupsList = grpRes.data || [];
+      const grpIds = groupsList.map((g: any) => g.id);
+
+      if (grpIds.length > 0) {
+        const { data: sgData } = await supabase
+          .from('student_groups')
+          .select('id, groupId, studentId')
+          .in('groupId', grpIds);
+        studentGroupsList = sgData || [];
+      }
+
+      paymentsList = payRes.data || [];
+    }
+
     const formattedData = (data || []).map((item: any) => {
       const { password: plainPassword, passportSeries: cleanPassport } = parseTeacherCreds(item.passportSeries);
       const sanitized = { ...item };
       sanitized.password = plainPassword || (item.password ? '******' : '');
       sanitized.passportSeries = cleanPassport || null;
 
+      const myGroups = groupsList.filter((g: any) => g.teacherId === item.id);
+      const myGroupIds = myGroups.map((g: any) => g.id);
+      const mySg = studentGroupsList.filter((sg: any) => myGroupIds.includes(sg.groupId));
+      const myStudentIds = Array.from(new Set(mySg.map((sg: any) => sg.studentId)));
+
+      const myPayments = paymentsList.filter((p: any) =>
+        (p.groupId && myGroupIds.includes(p.groupId)) ||
+        (!p.groupId && p.studentId && myStudentIds.includes(p.studentId))
+      );
+
+      const totalCollected = myPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+      const paidStudentsSet = new Set(
+        myPayments.filter((p: any) => (Number(p.amount) || 0) > 0).map((p: any) => p.studentId)
+      );
+      const paidStudentsCount = paidStudentsSet.size;
+
+      const sType = item.salaryType || 'PERCENT';
+      const sVal = Number(item.salaryValue) || 0;
+      let calculatedSalary = 0;
+      let salaryFormula = '';
+
+      if (sType === 'PERCENT') {
+        calculatedSalary = Math.round(totalCollected * (sVal / 100));
+        salaryFormula = `${sVal}% × ${totalCollected.toLocaleString('uz-UZ')} so'm`;
+      } else {
+        if (sVal < 1000000) {
+          calculatedSalary = paidStudentsCount * sVal;
+          salaryFormula = `${paidStudentsCount} ta to'lovchi × ${sVal.toLocaleString('uz-UZ')} so'm`;
+        } else {
+          calculatedSalary = sVal;
+          salaryFormula = `Fikslangan: ${sVal.toLocaleString('uz-UZ')} so'm`;
+        }
+      }
+
       return {
         ...sanitized,
         _count: {
-          groups: item.groups ? item.groups[0]?.count || 0 : 0,
+          groups: item.groups ? item.groups[0]?.count || 0 : myGroups.length,
+        },
+        salaryStats: {
+          totalStudents: myStudentIds.length,
+          paidStudents: paidStudentsCount,
+          totalCollected,
+          calculatedSalary,
+          salaryFormula,
         },
       };
     });

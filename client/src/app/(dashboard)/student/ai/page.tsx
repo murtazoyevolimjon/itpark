@@ -1,5 +1,5 @@
-import { StudentAITutor } from '@/views/student/StudentAITutor';
+import { redirect } from 'next/navigation';
 
-export default function StudentAITutorPage() {
-  return <StudentAITutor />;
+export default function StudentAIPage() {
+  redirect('/dashboard');
 }

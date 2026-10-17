@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users, Copy, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users, Copy, Check, DollarSign, Coins } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -12,6 +12,7 @@ import { Input } from '../components/ui/Input/Input';
 import { Select } from '../components/ui/Select/Select';
 import { Badge } from '../components/ui/Badge/Badge';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
+import { TeacherSalaryModal } from '../components/ui/TeacherSalaryModal/TeacherSalaryModal';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
@@ -32,6 +33,9 @@ export const Teachers: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [deleteTeacherId, setDeleteTeacherId] = useState<string | null>(null);
+
+  // Salary modal state
+  const [salaryTeacher, setSalaryTeacher] = useState<Teacher | null>(null);
 
   // Credentials visibility and copy states
   const [showTeacherPassMap, setShowTeacherPassMap] = useState<Record<string, boolean>>({});
@@ -199,9 +203,21 @@ export const Teachers: React.FC = () => {
       header: 'ISM FAMILIYA',
       sortable: true,
       render: (row) => (
-        <span style={{ fontWeight: 600 }}>
-          {row.firstName} {row.lastName}
-        </span>
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setSalaryTeacher(row);
+          }}
+          title="Oylik maosh hisob-kitobini ko'rish"
+          style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+        >
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+            {row.firstName} {row.lastName}
+          </span>
+          <span style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 500 }}>
+            Oylik hisob-kitob &rarr;
+          </span>
+        </div>
       ),
     },
     {
@@ -303,10 +319,74 @@ export const Teachers: React.FC = () => {
     {
       key: 'salary',
       header: 'MAOSH',
-      render: (row) =>
-        row.salaryType === 'FIXED'
-          ? formatMoney(row.salaryValue)
-          : `${row.salaryValue}% (Foiz)`,
+      render: (row) => {
+        const rateText =
+          row.salaryType === 'FIXED'
+            ? row.salaryValue >= 1000000
+              ? formatMoney(row.salaryValue)
+              : `${formatMoney(row.salaryValue)} / o'quvchi`
+            : `${row.salaryValue}% (Foiz)`;
+        const stats = row.salaryStats;
+
+        return (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              setSalaryTeacher(row);
+            }}
+            title="Oylik to'lov hisob-kitobini ko'rish uchun bosing"
+            style={{
+              cursor: 'pointer',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              gap: '3px',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.16)';
+              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.45)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: '#10b981' }}>
+                {stats?.calculatedSalary !== undefined ? formatMoney(stats.calculatedSalary) : rateText}
+              </span>
+            </div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>{rateText}</span>
+              {stats && (
+                <>
+                  <span>•</span>
+                  <span
+                    style={{
+                      color: stats.paidStudents > 0 ? '#34d399' : '#94a3b8',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {stats.paidStudents} ta to'lagan
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'groupsCount',
@@ -356,8 +436,20 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            title="Guruhlar va davomat"
+            title="Oylik maosh hisob-kitobi"
             style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSalaryTeacher(row);
+            }}
+          >
+            <DollarSign size={14} />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            title="Guruhlar va davomat"
+            style={{ color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.4)' }}
             onClick={(e) => {
               e.stopPropagation();
               setAttendanceTeacher(row);
@@ -415,8 +507,9 @@ export const Teachers: React.FC = () => {
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
       { header: 'Pasport seriyasi', key: 'passportSeries' },
-      { header: 'Maosh turi', key: 'salaryType' },
-      { header: 'Maosh miqdori / foizi', key: 'salary' },
+      { header: 'Maosh stavkasi', key: 'salaryType' },
+      { header: 'Hisoblangan maosh', key: 'salary' },
+      { header: 'To\'lagan talabalar', key: 'paidCount' },
       { header: 'Guruhlar soni', key: 'groupsCount' },
       { header: 'Holati', key: 'status' },
     ];
@@ -425,8 +518,9 @@ export const Teachers: React.FC = () => {
       name: `${t.firstName} ${t.lastName}`,
       phone: formatPhone(t.phone),
       passportSeries: t.passportSeries || '-',
-      salaryType: t.salaryType === 'FIXED' ? 'Fikslangan' : 'Foiz',
-      salary: t.salaryType === 'FIXED' ? formatMoney(t.salaryValue) : `${t.salaryValue}%`,
+      salaryType: t.salaryType === 'FIXED' ? (t.salaryValue >= 1000000 ? formatMoney(t.salaryValue) : `${formatMoney(t.salaryValue)}/o'quvchi`) : `${t.salaryValue}% (Foiz)`,
+      salary: t.salaryStats ? formatMoney(t.salaryStats.calculatedSalary) : '-',
+      paidCount: t.salaryStats ? `${t.salaryStats.paidStudents} ta` : '-',
       groupsCount: `${t._count?.groups || 0} ta`,
       status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
     }));
@@ -449,17 +543,17 @@ export const Teachers: React.FC = () => {
     const exportColumns = [
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
-      { header: 'Maosh turi', key: 'salaryType' },
-      { header: 'Maosh / Foiz', key: 'salary' },
-      { header: 'Guruhlar', key: 'groupsCount' },
-      { header: 'Holat', key: 'status' },
+      { header: 'Maosh stavkasi', key: 'salaryType' },
+      { header: 'Hisoblangan maosh', key: 'salary' },
+      { header: 'Guruhlar soni', key: 'groupsCount' },
+      { header: 'Holati', key: 'status' },
     ];
 
     const exportRows = data.data.map((t) => ({
       name: `${t.firstName} ${t.lastName}`,
       phone: formatPhone(t.phone),
-      salaryType: t.salaryType === 'FIXED' ? 'Fikslangan' : 'Foiz',
-      salary: t.salaryType === 'FIXED' ? formatMoney(t.salaryValue) : `${t.salaryValue}%`,
+      salaryType: t.salaryType === 'FIXED' ? (t.salaryValue >= 1000000 ? formatMoney(t.salaryValue) : `${formatMoney(t.salaryValue)}/o'quvchi`) : `${t.salaryValue}%`,
+      salary: t.salaryStats ? formatMoney(t.salaryStats.calculatedSalary) : '-',
       groupsCount: `${t._count?.groups || 0} ta`,
       status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
     }));
@@ -507,6 +601,7 @@ export const Teachers: React.FC = () => {
         onLimitChange={pagination.setLimit}
         onSearchChange={pagination.setSearch}
         onSortChange={pagination.handleSortChange}
+        onRowClick={(teacher) => setSalaryTeacher(teacher)}
       />
 
       {/* Modal */}
@@ -877,6 +972,14 @@ export const Teachers: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Teacher Monthly Salary Breakdown Modal */}
+      <TeacherSalaryModal
+        isOpen={!!salaryTeacher}
+        onClose={() => setSalaryTeacher(null)}
+        teacherId={salaryTeacher?.id || ''}
+        teacherName={salaryTeacher ? `${salaryTeacher.firstName} ${salaryTeacher.lastName}` : ''}
+      />
     </div>
   );
 };

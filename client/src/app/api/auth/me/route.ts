@@ -38,33 +38,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    if (authUser.role === 'STUDENT') {
-      const { data: studentRecord, error: sErr } = await supabase
-        .from('students')
-        .select('id, firstName, lastName, phone, centerId, status')
-        .eq('id', authUser.sub)
-        .maybeSingle();
-
-      if (sErr || !studentRecord) {
-        return NextResponse.json({ message: "O'quvchi topilmadi" }, { status: 404 });
-      }
-
-      const { data: centerRecord } = await supabase
-        .from('centers')
-        .select('id, name, phone')
-        .eq('id', studentRecord.centerId)
-        .maybeSingle();
-
-      return NextResponse.json({
-        id: studentRecord.id,
-        fullName: `${studentRecord.firstName} ${studentRecord.lastName}`.trim(),
-        email: authUser.email,
-        role: 'STUDENT',
-        centerId: studentRecord.centerId,
-        center: centerRecord || { name: 'IT-Park Academy' },
-      });
-    }
-
     const { data: userRecord, error } = await supabase
       .from('users')
       .select('id, fullName, email, role, centerId')

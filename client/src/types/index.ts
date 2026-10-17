@@ -65,6 +65,13 @@ export interface Teacher {
     groups: number;
   };
   groups?: Group[];
+  salaryStats?: {
+    totalStudents: number;
+    paidStudents: number;
+    totalCollected: number;
+    calculatedSalary: number;
+    salaryFormula: string;
+  };
 }
 
 export type GroupDay = 'DUSH' | 'SESH' | 'CHOR' | 'PAY' | 'JU' | 'SHAN' | 'YAK';

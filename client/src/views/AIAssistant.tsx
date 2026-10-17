@@ -51,7 +51,7 @@ export const AIAssistant: React.FC = () => {
   const [copiedText, setCopiedText] = useState(false);
 
   // Determine user role and title
-  const [role, setRole] = useState<'ADMIN' | 'TEACHER' | 'STUDENT' | 'SUPERADMIN'>('ADMIN');
+  const [role, setRole] = useState<'ADMIN' | 'TEACHER' | 'SUPERADMIN'>('ADMIN');
   const [roleTitle, setRoleTitle] = useState<string>('Markaz');
 
   useEffect(() => {
@@ -74,9 +74,6 @@ export const AIAssistant: React.FC = () => {
       if (r === 'TEACHER') {
         setRole('TEACHER');
         setRoleTitle(user.fullName || 'Ustoz');
-      } else if (r === 'STUDENT') {
-        setRole('STUDENT');
-        setRoleTitle(user.fullName || "O'quvchi");
       } else if (r === 'SUPERADMIN') {
         setRole('SUPERADMIN');
         setRoleTitle('Bosh Dasturchi');

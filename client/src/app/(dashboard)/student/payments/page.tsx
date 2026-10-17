@@ -1,5 +1,5 @@
-import { StudentPayments } from '@/views/student/StudentPayments';
+import { redirect } from 'next/navigation';
 
 export default function StudentPaymentsPage() {
-  return <StudentPayments />;
+  redirect('/dashboard');
 }

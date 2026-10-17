@@ -22,8 +22,8 @@ import {
   Menu,
   X,
   Check,
-  Compass,
   Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { FloatingAIWidget } from '../ai/FloatingAIWidget';
 import styles from './TeacherLayout.module.css';
@@ -70,13 +70,15 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const isHomeworkActive = pathname.startsWith('/teacher/homework');
   const isVideosActive = pathname.startsWith('/teacher/videos');
   const isAiActive = pathname.startsWith('/teacher/ai') || pathname === '/ai-assistant';
+  const isSalaryActive = pathname.startsWith('/teacher/salary');
   const isGroupsActive =
     (pathname.startsWith('/teacher/groups') || pathname === '/teacher') &&
     !isAttendanceActive &&
     !isHomeworkActive &&
     !isVideosActive &&
     !isProfileActive &&
-    !isAiActive;
+    !isAiActive &&
+    !isSalaryActive;
 
   const handleLogout = async () => {
     try {
@@ -129,6 +131,13 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
       icon: Sparkles,
       number: '06',
       isActive: isAiActive,
+    },
+    {
+      label: dict.teacher?.salary || 'Mening maoshim',
+      href: '/teacher/salary',
+      icon: Wallet,
+      number: '07',
+      isActive: isSalaryActive,
     },
   ];
 
@@ -207,16 +216,6 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                 <span className={styles.sidebarUserRole}>{centerName}</span>
               </div>
             </div>
-
-            {/* Quick Switch to Student Portal */}
-            <Link
-              href="/student"
-              onClick={() => setIsMobileOpen(false)}
-              className={styles.sidebarStudentLink}
-            >
-              <Compass size={16} />
-              <span>O'quvchi portali</span>
-            </Link>
 
             <div className={styles.planCard}>
               {dict.teacher?.todayPlan || 'Bugungi reja: dars mavzularini yakunlab chiqing.'}
@@ -334,16 +333,6 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
                   </div>
                 )}
               </div>
-
-              <Link
-                href="/student"
-                className={`${styles.userChip} ${styles.desktopOnlyChip}`}
-                style={{ textDecoration: 'none', background: 'rgba(6, 182, 212, 0.12)', borderColor: 'rgba(6, 182, 212, 0.3)', color: '#06b6d4' }}
-                title="O'quvchi portali"
-              >
-                <Compass size={15} strokeWidth={2.2} />
-                <span>O'quvchi portali</span>
-              </Link>
 
               <div className={`${styles.userChip} ${styles.desktopOnlyChip}`}>
                 <UserIcon size={16} strokeWidth={2.2} />
