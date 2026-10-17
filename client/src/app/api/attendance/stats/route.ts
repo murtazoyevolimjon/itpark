@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +15,10 @@ export async function GET(req: NextRequest) {
     const daysParam = searchParams.get('days');
 
     const supabase = createServerSupabaseClient();
+
+    // 2-month retention policy: clean up attendance older than previous month
+    await purgeExpiredAttendances(supabase, authUser.centerId);
+    const retentionCutoff = getAttendanceRetentionCutoff();
 
     let attendanceQuery = supabase
       .from('attendances')
@@ -35,7 +40,8 @@ export async function GET(req: NextRequest) {
           name
         )
       `)
-      .eq('centerId', authUser.centerId);
+      .eq('centerId', authUser.centerId)
+      .gte('date', retentionCutoff);
 
     if (dateParam) {
       const startOfDay = `${dateParam}T00:00:00.000Z`;

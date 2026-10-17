@@ -50,6 +50,13 @@ export const Attendance: React.FC = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const minAllowedDate = React.useMemo(() => {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}-01`;
+  }, []);
 
   const [filterType, setFilterType] = useState<'custom_date' | 'days'>('days');
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -251,6 +258,8 @@ export const Attendance: React.FC = () => {
             <input
               type="date"
               value={selectedDate}
+              min={minAllowedDate}
+              max={todayStr}
               onChange={(e) => {
                 if (e.target.value) {
                   setSelectedDate(e.target.value);

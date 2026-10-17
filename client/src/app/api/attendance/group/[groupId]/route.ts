@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 
 export async function GET(
   req: NextRequest,
@@ -18,11 +19,17 @@ export async function GET(
     const toParam = searchParams.get('to');
 
     const supabase = createServerSupabaseClient();
+
+    // 2-month retention policy: purge attendance older than previous month
+    await purgeExpiredAttendances(supabase, authUser.centerId);
+    const retentionCutoff = getAttendanceRetentionCutoff();
+
     let query = supabase
       .from('attendances')
       .select('*, student:students(*)')
       .eq('groupId', params.groupId)
-      .eq('centerId', authUser.centerId);
+      .eq('centerId', authUser.centerId)
+      .gte('date', retentionCutoff);
 
     const targetDate = dateParam || (fromParam && !toParam ? fromParam : null);
     if (targetDate) {

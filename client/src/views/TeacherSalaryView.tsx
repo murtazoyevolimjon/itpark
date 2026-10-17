@@ -28,7 +28,8 @@ import { useAuth } from '../hooks/useAuth';
 
 export const TeacherSalaryView: React.FC = () => {
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const currentYm = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentYm);
   const [activeTab, setActiveTab] = useState<'groups' | 'students'>('groups');
   const [studentSearch, setStudentSearch] = useState('');
 

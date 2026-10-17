@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,14 +14,18 @@ export async function GET(req: NextRequest) {
     const days = parseInt(searchParams.get('days') || '7', 10);
 
     const supabase = createServerSupabaseClient();
+    await purgeExpiredAttendances(supabase, authUser.centerId);
+    const retentionCutoff = getAttendanceRetentionCutoff();
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
+    const effectiveStart = startDate.toISOString() > retentionCutoff ? startDate.toISOString() : retentionCutoff;
 
     const { data: records, error } = await supabase
       .from('attendances')
       .select('date, status')
       .eq('centerId', authUser.centerId)
-      .gte('date', startDate.toISOString())
+      .gte('date', effectiveStart)
       .order('date', { ascending: true });
 
     if (error) {

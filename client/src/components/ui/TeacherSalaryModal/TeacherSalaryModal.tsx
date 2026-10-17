@@ -42,9 +42,17 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
   teacherId,
   teacherName,
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const currentYm = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentYm);
   const [activeTab, setActiveTab] = useState<'groups' | 'students'>('groups');
   const [studentSearch, setStudentSearch] = useState('');
+
+  // Reset to current month whenever modal is opened for a teacher
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedMonth(new Date().toISOString().slice(0, 7));
+    }
+  }, [isOpen, teacherId]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['teacherSalary', teacherId, selectedMonth],

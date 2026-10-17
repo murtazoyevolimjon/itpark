@@ -77,6 +77,13 @@ export const TeacherAttendance: React.FC = () => {
   const queryGroupId = searchParams.get('groupId') || '';
 
   const todayStr = useMemo(() => getTashkentDateString(), []);
+  const minAllowedDate = useMemo(() => {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}-01`;
+  }, []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(queryGroupId);
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
@@ -497,11 +504,20 @@ export const TeacherAttendance: React.FC = () => {
                   size="sm"
                   variant="outline"
                   title="Oldingi kun"
-                  style={{ padding: '3px 8px', height: '28px', fontSize: '12px' }}
+                  disabled={attendanceDate <= minAllowedDate}
+                  style={{
+                    padding: '3px 8px',
+                    height: '28px',
+                    fontSize: '12px',
+                    opacity: attendanceDate <= minAllowedDate ? 0.4 : 1,
+                  }}
                   onClick={() => {
                     const d = new Date(attendanceDate);
                     d.setDate(d.getDate() - 1);
-                    setAttendanceDate(d.toISOString().split('T')[0]);
+                    const newD = d.toISOString().split('T')[0];
+                    if (newD >= minAllowedDate) {
+                      setAttendanceDate(newD);
+                    }
                   }}
                 >
                   <ChevronLeft size={13} /> Oldingi kun
@@ -518,11 +534,20 @@ export const TeacherAttendance: React.FC = () => {
                   size="sm"
                   variant="outline"
                   title="Keyingi kun"
-                  style={{ padding: '3px 8px', height: '28px', fontSize: '12px' }}
+                  disabled={attendanceDate >= todayStr}
+                  style={{
+                    padding: '3px 8px',
+                    height: '28px',
+                    fontSize: '12px',
+                    opacity: attendanceDate >= todayStr ? 0.4 : 1,
+                  }}
                   onClick={() => {
                     const d = new Date(attendanceDate);
                     d.setDate(d.getDate() + 1);
-                    setAttendanceDate(d.toISOString().split('T')[0]);
+                    const newD = d.toISOString().split('T')[0];
+                    if (newD <= todayStr) {
+                      setAttendanceDate(newD);
+                    }
                   }}
                 >
                   Keyingi kun <ChevronRight size={13} />
@@ -532,6 +557,8 @@ export const TeacherAttendance: React.FC = () => {
             <Input
               type="date"
               value={attendanceDate}
+              min={minAllowedDate}
+              max={todayStr}
               onChange={(e) => setAttendanceDate(e.target.value)}
             />
           </div>

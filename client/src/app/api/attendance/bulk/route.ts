@@ -8,6 +8,7 @@ import {
 } from '@/utils/attendanceTime';
 import { parseStudentCreds } from '@/lib/credentials';
 import { sendAttendanceAlert } from '@/lib/telegram';
+import { purgeExpiredAttendances } from '@/lib/attendanceRetention';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createServerSupabaseClient();
+
+    // 2-month retention policy: clean up attendance older than previous month
+    await purgeExpiredAttendances(supabase, authUser.centerId);
+
     const cleanDate = date.split('T')[0];
     const todayTashkent = getTashkentDateString();
 

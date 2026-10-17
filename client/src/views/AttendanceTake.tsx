@@ -38,6 +38,13 @@ export const AttendanceTake: React.FC = () => {
   const { success, error } = useToast();
 
   const todayStr = useMemo(() => getTashkentDateString(), []);
+  const minAllowedDate = useMemo(() => {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${y}-${m}-01`;
+  }, []);
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [attendanceDate, setAttendanceDate] = useState<string>(todayStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
@@ -402,6 +409,8 @@ export const AttendanceTake: React.FC = () => {
             label="Dars sanasi"
             type="date"
             value={attendanceDate}
+            min={minAllowedDate}
+            max={todayStr}
             onChange={(e) => setAttendanceDate(e.target.value)}
           />
           {selectedGroupId && (

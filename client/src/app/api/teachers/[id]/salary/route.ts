@@ -106,8 +106,18 @@ export async function GET(
       }
     }
 
-    // Extract available months from payment dates
+    // Generate past 24 months + any payment months
     const monthSet = new Set<string>();
+    const now = new Date();
+
+    // Add past 24 months dynamically so user can view 2-3 months ago or any past month
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthSet.add(ym);
+    }
+
+    // Also include any other payment dates found
     paymentsList.forEach((p: any) => {
       if (p.paymentDate) {
         const ym = p.paymentDate.slice(0, 7);
@@ -117,16 +127,14 @@ export async function GET(
       }
     });
 
-    const currentYm = new Date().toISOString().slice(0, 7);
-    monthSet.add(currentYm);
-
+    const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const sortedMonths = Array.from(monthSet).sort().reverse();
     const availableMonths = [
-      { value: 'all', label: 'Barcha vaqt (Umumiy hisob)' },
       ...sortedMonths.map((ym) => ({
         value: ym,
-        label: formatMonthLabel(ym),
+        label: ym === currentYm ? `${formatMonthLabel(ym)} (Joriy oy)` : formatMonthLabel(ym),
       })),
+      { value: 'all', label: 'Barcha vaqt (Umumiy hisob)' },
     ];
 
     // Determine requested month filter
@@ -134,11 +142,7 @@ export async function GET(
     let requestedMonth = searchParams.get('month') || '';
 
     if (!requestedMonth) {
-      // Default: if current month has payments, use current month, else default to 'all' or latest month
-      const currentMonthHasPayments = paymentsList.some(
-        (p: any) => p.paymentDate && p.paymentDate.startsWith(currentYm)
-      );
-      requestedMonth = currentMonthHasPayments ? currentYm : 'all';
+      requestedMonth = currentYm;
     }
 
     // Filter payments by requested month
