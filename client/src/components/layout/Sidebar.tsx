@@ -21,6 +21,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useQueryClient } from '@tanstack/react-query';
+import { groupsApi } from '../../api/groups.api';
+import { teachersApi } from '../../api/teachers.api';
+import { studentsApi } from '../../api/students.api';
+import { coursesApi } from '../../api/courses.api';
+import { roomsApi } from '../../api/rooms.api';
+import { employeesApi } from '../../api/employees.api';
+import { dashboardApi } from '../../api/dashboard.api';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
@@ -32,6 +40,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const pathname = usePathname() || '/';
+  const queryClient = useQueryClient();
+
+  const handlePrefetch = (path: string) => {
+    try {
+      if (path === '/dashboard') {
+        queryClient.prefetchQuery({ queryKey: ['dashboardStats'], queryFn: dashboardApi.getStats });
+      } else if (path === '/courses') {
+        queryClient.prefetchQuery({
+          queryKey: ['courses', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => coursesApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      } else if (path === '/groups') {
+        queryClient.prefetchQuery({
+          queryKey: ['groups', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => groupsApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      } else if (path === '/teachers') {
+        queryClient.prefetchQuery({
+          queryKey: ['teachers', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => teachersApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      } else if (path === '/students') {
+        queryClient.prefetchQuery({
+          queryKey: ['students', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => studentsApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      } else if (path === '/rooms') {
+        queryClient.prefetchQuery({
+          queryKey: ['rooms', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => roomsApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      } else if (path === '/employees') {
+        queryClient.prefetchQuery({
+          queryKey: ['employees', 1, 20, '', 'createdAt', 'desc'],
+          queryFn: () => employeesApi.getAll({ page: 1, limit: 20, search: '', sortBy: 'createdAt', order: 'desc' }),
+        });
+      }
+    } catch {}
+  };
 
   const [isFinanceOpen, setIsFinanceOpen] = useState(
     pathname.startsWith('/finance'),
@@ -124,6 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   href={item.path}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   onClick={onClose}
+                  onMouseEnter={() => handlePrefetch(item.path)}
                 >
                   <div className={styles.navItemLeft}>
                     <Icon size={18} color={item.path === '/ai-assistant' ? '#6366f1' : undefined} />

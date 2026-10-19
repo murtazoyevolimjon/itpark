@@ -190,7 +190,8 @@ export async function GET(
       if (!student) return;
 
       const g = groupList.find((grp: any) => grp.id === sg.groupId);
-      const coursePrice = Number(g?.courses?.price) || 0;
+      const course = Array.isArray(g?.courses) ? g.courses[0] : g?.courses;
+      const coursePrice = Number(course?.price) || 0;
       const grpStats = groupStatsMap[sg.groupId];
 
       if (grpStats) {
@@ -247,7 +248,7 @@ export async function GET(
         studentPhone: student.phone || '',
         groupId: sg.groupId,
         groupName: g?.name || "Noma'lum guruh",
-        courseName: g?.courses?.name || '',
+        courseName: course?.name || '',
         coursePrice,
         paidAmount,
         remainingDebt,

@@ -184,8 +184,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ...student,
-      login: studentLogin,
-      password: studentPass,
+      login: '',
+      password: '',
       subject: subjectToSave,
     });
   } catch (error: any) {

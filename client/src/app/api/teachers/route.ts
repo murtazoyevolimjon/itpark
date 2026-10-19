@@ -50,20 +50,13 @@ export async function GET(req: NextRequest) {
     let paymentsList: any[] = [];
 
     if (teacherIds.length > 0) {
-      const [grpRes, payRes] = await Promise.all([
-        supabase
-          .from('groups')
-          .select('id, name, teacherId, courseId')
-          .in('teacherId', teacherIds)
-          .eq('centerId', authUser.centerId),
-        supabase
-          .from('payments')
-          .select('id, studentId, groupId, amount, status, paymentDate')
-          .eq('centerId', authUser.centerId)
-          .neq('status', 'BEKOR_QILINGAN'),
-      ]);
+      const { data: grpData } = await supabase
+        .from('groups')
+        .select('id, name, teacherId, courseId')
+        .in('teacherId', teacherIds)
+        .eq('centerId', authUser.centerId);
 
-      groupsList = grpRes.data || [];
+      groupsList = grpData || [];
       const grpIds = groupsList.map((g: any) => g.id);
 
       if (grpIds.length > 0) {
@@ -72,9 +65,27 @@ export async function GET(req: NextRequest) {
           .select('id, groupId, studentId')
           .in('groupId', grpIds);
         studentGroupsList = sgData || [];
-      }
 
-      paymentsList = payRes.data || [];
+        const allStudentIds = Array.from(new Set(studentGroupsList.map((sg: any) => sg.studentId)));
+
+        // Only query payments for these specific groups or enrolled students
+        let payQuery = supabase
+          .from('payments')
+          .select('id, studentId, groupId, amount, status, paymentDate')
+          .eq('centerId', authUser.centerId)
+          .neq('status', 'BEKOR_QILINGAN');
+
+        if (grpIds.length > 0 && allStudentIds.length > 0) {
+          payQuery = payQuery.or(`groupId.in.(${grpIds.join(',')}),studentId.in.(${allStudentIds.join(',')})`);
+        } else if (grpIds.length > 0) {
+          payQuery = payQuery.in('groupId', grpIds);
+        } else if (allStudentIds.length > 0) {
+          payQuery = payQuery.in('studentId', allStudentIds);
+        }
+
+        const { data: payData } = await payQuery;
+        paymentsList = payData || [];
+      }
     }
 
     const formattedData = (data || []).map((item: any) => {
