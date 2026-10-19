@@ -465,7 +465,7 @@ export const TeacherHomework: React.FC = () => {
           {/* Deadline */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>
-              {dict.teacher?.deadline || 'Topshirish muddati'}
+              {(dict.teacher as any)?.deadline || 'Topshirish muddati'}
             </label>
             <input
               type="datetime-local"
@@ -478,7 +478,7 @@ export const TeacherHomework: React.FC = () => {
           {/* File Attachment */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>
-              {dict.teacher?.attachedFile || 'Fayl biriktirish (ixtiyoriy)'}
+              {(dict.teacher as any)?.attachedFile || 'Fayl biriktirish (ixtiyoriy)'}
             </label>
             <input
               ref={fileInputRef}

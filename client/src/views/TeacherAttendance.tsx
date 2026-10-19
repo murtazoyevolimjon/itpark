@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Phone,
 } from 'lucide-react';
 import { formatDate } from '../utils/formatDate';
 import { Card } from '../components/ui/Card/Card';
