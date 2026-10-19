@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit2, Trash2, CalendarCheck } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
@@ -64,19 +64,23 @@ export const Groups: React.FC = () => {
         sortBy: pagination.sortBy,
         order: pagination.order,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const { data: courses } = useQuery({
     queryKey: ['coursesSelect'],
     queryFn: () => coursesApi.getAll({ limit: 100 }),
+    enabled: isModalOpen,
   });
   const { data: teachers } = useQuery({
     queryKey: ['teachersSelect'],
     queryFn: () => teachersApi.getAll({ limit: 100 }),
+    enabled: isModalOpen,
   });
   const { data: rooms } = useQuery({
     queryKey: ['roomsSelect'],
     queryFn: () => roomsApi.getAll({ limit: 100 }),
+    enabled: isModalOpen,
   });
 
   // Auto-sync select options if they arrive after modal opens

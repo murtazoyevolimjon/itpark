@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
 import { parseStudentCreds } from '../lib/credentials';
@@ -59,11 +59,13 @@ export const Students: React.FC = () => {
         sortBy: pagination.sortBy,
         order: pagination.order,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const { data: groups } = useQuery({
     queryKey: ['groupsSelect'],
     queryFn: () => groupsApi.getAll({ limit: 1000 }),
+    enabled: isModalOpen,
   });
 
   const saveMutation = useMutation({

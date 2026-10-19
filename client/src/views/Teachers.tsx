@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, Key, FileSpreadsheet, FileText, Eye, EyeOff, CalendarCheck, Users, Copy, Check, DollarSign, Coins } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
@@ -82,6 +82,7 @@ export const Teachers: React.FC = () => {
         sortBy: pagination.sortBy,
         order: pagination.order,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const saveMutation = useMutation({

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Plus, Edit2, Trash2, Briefcase } from 'lucide-react';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Card } from '../components/ui/Card/Card';
@@ -48,6 +48,7 @@ export const Employees: React.FC = () => {
         sortBy: pagination.sortBy,
         order: pagination.order,
       }),
+    placeholderData: keepPreviousData,
   });
 
   const saveMutation = useMutation({

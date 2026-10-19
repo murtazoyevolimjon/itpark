@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
   CalendarCheck,
@@ -67,6 +67,7 @@ export const Attendance: React.FC = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['attendanceStats', filterType, selectedDate, daysFilter],
     queryFn: () => attendanceApi.getStats(queryParams),
+    placeholderData: keepPreviousData,
   });
 
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
