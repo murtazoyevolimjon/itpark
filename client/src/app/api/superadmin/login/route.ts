@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { signSuperAdminToken } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { timingSafeEqual } from 'crypto';
+import { getClientIp, isRateLimited } from '@/lib/rateLimit';
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && timingSafeEqual(ab, bb);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,20 +24,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const envLogin = (process.env.SUPERADMIN_LOGIN || 'dasturchi').trim().toLowerCase();
-    const envPassword = (process.env.SUPERADMIN_PASSWORD || 'qwerty321').trim();
+    if (isRateLimited(`sa-login:${getClientIp(req)}`, 5)) {
+      return NextResponse.json(
+        { message: "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring" },
+        { status: 429 }
+      );
+    }
 
-    const isMatchLogin =
-      login.toLowerCase() === envLogin ||
-      login.toLowerCase() === 'dasturchi' ||
-      login.toLowerCase() === 'developer';
+    const envLogin =(process.env.SUPERADMIN_LOGIN || '').trim().toLowerCase();
+    const envPassword = (process.env.SUPERADMIN_PASSWORD || '').trim();
 
-    const isMatchPass =
-      password === envPassword ||
-      password === 'qwerty321' ||
-      password === 'dasturchi321';
-
-    let isAuthorized = isMatchLogin && isMatchPass;
+    // Env-based superadmin is enabled only when both values are configured.
+    let isAuthorized =
+      !!envLogin &&
+      !!envPassword &&
+      login.toLowerCase() === envLogin &&
+      safeEqual(password, envPassword);
 
     // Also check database if there's a registered SUPERADMIN role
     if (!isAuthorized) {

@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { name, price, description, isActive } = body;

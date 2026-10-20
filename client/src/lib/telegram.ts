@@ -5,11 +5,10 @@
 import { createServerSupabaseClient } from './supabase/server';
 import { parseStudentCreds, serializeStudentCreds } from './credentials';
 
-const DEFAULT_BOT_TOKEN = '8317106957:AAH5J3uc6R9NXx2g8rPy9eKbDipU8_3YuAI';
 const DEFAULT_BOT_USERNAME = 'crm_olimjonbot';
 
 export const getTelegramBotToken = (): string => {
-  return process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
+  return process.env.TELEGRAM_BOT_TOKEN || '';
 };
 
 export const getTelegramBotUsername = (): string => {

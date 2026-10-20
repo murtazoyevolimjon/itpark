@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 
-const SUPERADMIN_JWT_SECRET = process.env.SUPERADMIN_JWT_SECRET || 'superadmin-secret-jwt-key-2026';
+function getSuperAdminSecret(): string {
+  const secret = process.env.SUPERADMIN_JWT_SECRET;
+  if (secret && secret.length >= 16) return secret;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('SUPERADMIN_JWT_SECRET environment variable is not configured');
+  }
+  return 'dev-only-superadmin-secret-do-not-use-in-production';
+}
 
 export interface SuperAdminJwtPayload {
   sub: string;
@@ -11,12 +18,12 @@ export interface SuperAdminJwtPayload {
 }
 
 export function signSuperAdminToken(payload: SuperAdminJwtPayload): string {
-  return jwt.sign(payload, SUPERADMIN_JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getSuperAdminSecret(), { expiresIn: '12h' });
 }
 
 export function verifySuperAdminToken(token: string): SuperAdminJwtPayload | null {
   try {
-    const decoded = jwt.verify(token, SUPERADMIN_JWT_SECRET) as SuperAdminJwtPayload;
+    const decoded = jwt.verify(token, getSuperAdminSecret()) as SuperAdminJwtPayload;
     if (decoded && decoded.role === 'SUPERADMIN') {
       return decoded;
     }

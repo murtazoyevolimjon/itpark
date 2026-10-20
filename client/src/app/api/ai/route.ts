@@ -1690,21 +1690,14 @@ export async function POST(req: NextRequest) {
     const effectiveQuestion = (user_question || prompt || '').trim();
 
     const isSuperAdmin = !!superAdmin;
-    const reqRoleUpper = (bodyRole || bodyContext || '').toUpperCase();
-    const isStudent =
-      task_type === 'student_tutor' ||
-      reqRoleUpper === 'STUDENT' ||
-      reqRoleUpper === 'STUDENT_TUTOR' ||
-      bodyContext === 'STUDENT_TUTOR' ||
-      authUser?.role?.toUpperCase() === 'STUDENT';
+    const tokenRole = authUser?.role?.toUpperCase();
+    // Tutor / methodology modes are harmless chat helpers, so the body may request them;
+    // privileged (center data) modes are decided by the token role only.
+    const isStudent = tokenRole === 'STUDENT' || (!isSuperAdmin && tokenRole !== 'TEACHER' && task_type === 'student_tutor');
 
     const isTeacher =
       !isStudent &&
-      (task_type === 'teacher_methodology' ||
-       reqRoleUpper === 'TEACHER' ||
-       reqRoleUpper === 'TEACHER_ASSISTANT' ||
-       bodyContext === 'TEACHER_ASSISTANT' ||
-       authUser?.role?.toUpperCase() === 'TEACHER');
+      (tokenRole === 'TEACHER' || (!isSuperAdmin && task_type === 'teacher_methodology'));
 
     const effectiveRole: 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPERADMIN' =
       isStudent
@@ -1715,16 +1708,13 @@ export async function POST(req: NextRequest) {
         ? 'SUPERADMIN'
         : (authUser?.role?.toUpperCase() === 'SUPERADMIN' ? 'SUPERADMIN' : 'ADMIN');
 
-    if (!superAdmin && (!authUser || !authUser.centerId) && !isStudent && !isTeacher) {
+    // Every caller must be authenticated; the role comes from the token, never the request body.
+    if (!superAdmin && (!authUser || !authUser.centerId)) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
     }
 
     const supabase = createServerSupabaseClient();
-    let effectiveCenterId = authUser?.centerId;
-    if (!effectiveCenterId && isTeacher) {
-      const { data: firstCenter } = await supabase.from('centers').select('id').limit(1).maybeSingle();
-      effectiveCenterId = firstCenter?.id;
-    }
+    const effectiveCenterId = authUser?.centerId;
 
     // ====================================================
     // PATH 1: STUDENT AI REPETITOR (100% ISOLATED & SAFE)

@@ -47,9 +47,12 @@ export async function GET(
     const attendancePercentage = totalAttendances > 0 ? Math.round((presentCount / totalAttendances) * 100) : 100;
 
     const creds = parseStudentCreds(student.passportSeries, student.phone);
+    const canSeeCreds = authUser.role !== 'TEACHER';
 
     return NextResponse.json({
       ...student,
+      // Teachers must not receive student login/password data.
+      passportSeries: canSeeCreds ? student.passportSeries : creds.subject || null,
       subject: creds.subject || null,
       studentGroups: sgList,
       totalAttendances,
@@ -69,6 +72,9 @@ export async function PATCH(
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -92,7 +98,8 @@ export async function PATCH(
       ? (body.subject || '').trim()
       : (body.passportSeries !== undefined ? (body.passportSeries || '').trim() : existingCreds.subject);
 
-    const serializedCreds = serializeStudentCreds('', '', targetSubject, existingCreds.tgChatId, existingCreds.tgUser, existingCreds.parentTgChatId);
+    // Keep the student's existing login/password; only the subject may change here.
+    const serializedCreds = serializeStudentCreds(existingCreds.login, existingCreds.password, targetSubject, existingCreds.tgChatId, existingCreds.tgUser, existingCreds.parentTgChatId);
 
     const updatePayload: any = {
       passportSeries: serializedCreds,
@@ -177,6 +184,9 @@ export async function DELETE(
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const supabase = createServerSupabaseClient();

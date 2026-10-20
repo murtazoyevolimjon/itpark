@@ -39,6 +39,9 @@ export async function PATCH(
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+    }
 
     const body = await req.json();
     const supabase = createServerSupabaseClient();
@@ -75,6 +78,9 @@ export async function DELETE(
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const supabase = createServerSupabaseClient();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { signToken } from '@/lib/auth';
+import { getClientIp, isRateLimited } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { message: 'Login va parolni kiriting' },
         { status: 400 }
+      );
+    }
+
+    if (isRateLimited(`login:${getClientIp(req)}:${loginIdentifier.toLowerCase()}`)) {
+      return NextResponse.json(
+        { message: "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring" },
+        { status: 429 }
       );
     }
 
@@ -42,11 +50,13 @@ export async function POST(req: NextRequest) {
     if (!userRecord) {
       // 2. Check teachers table if login matches teacher login or phone
       let teacherRecord: any = null;
+      // Strip PostgREST filter syntax characters so user input cannot alter the .or() filter.
+      const safeFilterValue = loginIdentifier.replace(/[,()%*\\"']/g, '');
       try {
         const { data, error: tErr } = await supabase
           .from('teachers')
           .select('id, firstName, lastName, phone, login, password, passportSeries, centerId, status')
-          .or(`login.ilike.${loginIdentifier},phone.eq.${loginIdentifier}`)
+          .or(`login.ilike.${safeFilterValue},phone.eq.${safeFilterValue}`)
           .maybeSingle();
 
         if (!tErr && data) {

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
+    const page =parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const sortBy = searchParams.get('sortBy') || 'paymentDate';
     const order = searchParams.get('order') === 'asc' ? true : false;
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const body = await req.json();

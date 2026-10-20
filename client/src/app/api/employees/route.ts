@@ -9,6 +9,9 @@ export async function GET(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
@@ -54,6 +57,9 @@ export async function POST(req: NextRequest) {
     const authUser = getAuthUser(req);
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
+    }
+    if (authUser.role === 'TEACHER' || authUser.role === 'STUDENT') {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const body = await req.json();

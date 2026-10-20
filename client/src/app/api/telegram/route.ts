@@ -9,8 +9,18 @@ import {
   sendDebtReminder,
 } from '@/lib/telegram';
 
+const ADMIN_ROLES = ['OWNER', 'ADMIN', 'MANAGER'];
+
 export async function GET(req: NextRequest) {
   try {
+    const authUser = getAuthUser(req);
+    if (!authUser) {
+      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
+    }
+    if (!ADMIN_ROLES.includes(authUser.role)) {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+    }
+
     const token = getTelegramBotToken();
     const username = getTelegramBotUsername();
 
@@ -39,6 +49,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
     }
 
+    if (!ADMIN_ROLES.includes(authUser.role)) {
+      return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { action } = body;
     const token = getTelegramBotToken();
@@ -46,8 +60,9 @@ export async function POST(req: NextRequest) {
     // 1. Action: Set Webhook
     if (action === 'set_webhook') {
       const webhookUrl = body.url || 'https://itpark-pi.vercel.app/api/telegram/webhook';
+      const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
       const setRes = await fetch(
-        `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}&allowed_updates=${encodeURIComponent(JSON.stringify(['message', 'contact']))}`
+        `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}&allowed_updates=${encodeURIComponent(JSON.stringify(['message', 'contact']))}${secret ? `&secret_token=${encodeURIComponent(secret)}` : ''}`
       );
       const setData = await setRes.json();
       return NextResponse.json(setData);
