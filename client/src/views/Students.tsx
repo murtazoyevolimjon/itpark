@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
-import { parseStudentCreds } from '../lib/credentials';
+import { parseStudentCreds, getStudentSubject } from '../lib/credentials';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -122,7 +122,7 @@ export const Students: React.FC = () => {
         phone: student.phone || '',
         fatherPhone: student.fatherPhone || '',
         motherPhone: student.motherPhone || '',
-        subject: (student as any).subject || student.passportSeries || '',
+        subject: getStudentSubject(student as any),
         gender: student.gender || 'ERKAK',
         isSchoolStudent: !!student.isSchoolStudent,
         groupId: currentGroupId,
@@ -242,7 +242,7 @@ export const Students: React.FC = () => {
       key: 'subject' as any,
       header: 'FAN',
       render: (row: any) => (
-        row.subject || row.passportSeries ? (
+        getStudentSubject(row) ? (
           <span
             style={{
               display: 'inline-flex',
@@ -256,7 +256,7 @@ export const Students: React.FC = () => {
               border: '1px solid rgba(59, 130, 246, 0.25)',
             }}
           >
-            {row.subject || row.passportSeries}
+            {getStudentSubject(row)}
           </span>
         ) : (
           <span style={{ color: 'var(--text-muted)' }}>-</span>
@@ -433,7 +433,7 @@ export const Students: React.FC = () => {
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
       motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
-      subject: (s as any).subject || s.passportSeries || '-',
+      subject: getStudentSubject(s as any) || '-',
       gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
       paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
     }));

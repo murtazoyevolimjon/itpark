@@ -23,6 +23,28 @@
   gap: 20px;
 }
 
+.infoGrid > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tgRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tgRow .tgBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-all;
+}
+
 .tabsContainer {
   display: flex;
   align-items: center;

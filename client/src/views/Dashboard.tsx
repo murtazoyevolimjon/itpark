@@ -46,6 +46,7 @@ import { dashboardApi } from '../api/dashboard.api';
 import { groupsApi } from '../api/groups.api';
 import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
+import { getStudentSubject } from '../lib/credentials';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
@@ -173,7 +174,7 @@ export const Dashboard: React.FC = () => {
         (st.phone && st.phone.includes(q)) ||
         (st.fatherPhone && st.fatherPhone.includes(q)) ||
         (st.motherPhone && st.motherPhone.includes(q)) ||
-        ((st.subject || st.passportSeries) && (st.subject || st.passportSeries).toLowerCase().includes(q))
+        (getStudentSubject(st) && getStudentSubject(st).toLowerCase().includes(q))
     );
   }, [probaStudents, probaSearch]);
 
@@ -341,7 +342,7 @@ export const Dashboard: React.FC = () => {
     const cleanP = unmaskPhone(probaForm.phone);
     const existingDup = probaStudents.find((st: any) => {
       const stClean = (st.phone || '').replace(/\D/g, '');
-      const stSub = (st.subject || st.passportSeries || '').trim().toLowerCase();
+      const stSub = getStudentSubject(st).trim().toLowerCase();
       return stClean === cleanP && stSub === probaForm.subject.trim().toLowerCase();
     });
     if (existingDup) {
@@ -389,7 +390,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(student.phone) || '',
       fatherPhone: student.fatherPhone ? formatPhone(student.fatherPhone) : '',
       motherPhone: student.motherPhone ? formatPhone(student.motherPhone) : '',
-      subject: student.subject || student.passportSeries || '',
+      subject: getStudentSubject(student),
       gender: student.gender || 'ERKAK',
       isSchoolStudent: !!student.isSchoolStudent,
     });
@@ -513,7 +514,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(item.phone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      subject: item.subject || item.passportSeries || '-',
+      subject: getStudentSubject(item) || '-',
       birthDate: formatDate(item.birthDate),
       createdAt: formatDate(item.createdAt),
       status: "PROBA / SINOV DARSI",
@@ -549,7 +550,7 @@ export const Dashboard: React.FC = () => {
       phone: formatPhone(item.phone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      subject: item.subject || item.passportSeries || '-',
+      subject: getStudentSubject(item) || '-',
       createdAt: formatDate(item.createdAt),
       status: "PROBA",
     }));
@@ -1175,7 +1176,7 @@ export const Dashboard: React.FC = () => {
 
                       {/* Fan */}
                       <td style={{ padding: '14px' }}>
-                        {item.subject || item.passportSeries ? (
+                        {getStudentSubject(item) ? (
                           <span
                             style={{
                               display: 'inline-flex',
@@ -1189,7 +1190,7 @@ export const Dashboard: React.FC = () => {
                               border: '1px solid rgba(59, 130, 246, 0.25)',
                             }}
                           >
-                            {item.subject || item.passportSeries}
+                            {getStudentSubject(item)}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>-</span>
@@ -1400,8 +1401,8 @@ export const Dashboard: React.FC = () => {
                                 {activeStudentInfo?.gender && (
                                   <span>• Jinsi: {activeStudentInfo.gender === 'ERKAK' ? 'Erkak' : 'Ayol'}</span>
                                 )}
-                                {activeStudentInfo?.passportSeries && (
-                                  <span>• Pasport: {activeStudentInfo.passportSeries}</span>
+                                {getStudentSubject(activeStudentInfo) && (
+                                  <span>• Fan: {getStudentSubject(activeStudentInfo)}</span>
                                 )}
                               </div>
                             </div>

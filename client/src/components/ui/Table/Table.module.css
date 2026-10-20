@@ -125,7 +125,21 @@
   background-color: var(--card-subtle);
 }
 
+.tableWrapper {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
 @media (max-width: 639px) {
+  .table {
+    min-width: 520px;
+  }
+  .table th {
+    padding: 10px 12px;
+  }
+  .table td {
+    padding: 11px 12px;
+  }
   .toolbar {
     flex-direction: column;
     align-items: stretch;

@@ -72,6 +72,42 @@
   background-color: var(--card-subtle);
 }
 
+@supports (height: 100dvh) {
+  .modal {
+    max-height: 90dvh;
+  }
+}
+
+@media (max-width: 520px) {
+  .overlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 94vh;
+    border-radius: 16px 16px var(--radius) var(--radius);
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .body {
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer > * {
+    flex: 1 1 120px;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

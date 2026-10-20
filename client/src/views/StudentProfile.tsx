@@ -12,7 +12,7 @@ import { studentsApi } from '../api/students.api';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone } from '../utils/phoneMask';
-import { parseStudentCreds } from '../lib/credentials';
+import { parseStudentCreds, getStudentSubject } from '../lib/credentials';
 import { useAuth } from '../hooks/useAuth';
 import { ReceiptModal, ReceiptModalData } from '../components/ui/ReceiptModal/ReceiptModal';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
@@ -261,9 +261,9 @@ export const StudentProfile: React.FC = () => {
           <div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Qo'shimcha</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {student.passportSeries && (
+              {getStudentSubject(student) && (
                 <span style={{ fontSize: '13px', fontWeight: 500 }}>
-                  Pasport: {student.passportSeries}
+                  Fan: {getStudentSubject(student)}
                 </span>
               )}
               {student.isSchoolStudent && (
@@ -275,20 +275,20 @@ export const StudentProfile: React.FC = () => {
           <div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Telegram Xabarnomalar</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+              <div className={styles.tgRow}>
                 <span style={{ fontWeight: 600 }}>O'quvchi:</span>
                 {isStudentTgConnected ? (
-                  <Badge variant="success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Badge variant="success" className={styles.tgBadge}>
                     <CheckCircle2 size={12} /> Ulangan {creds?.tgUser ? `(@${creds.tgUser})` : ''}
                   </Badge>
                 ) : (
                   <Badge variant="secondary">Ulanmagan</Badge>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+              <div className={styles.tgRow}>
                 <span style={{ fontWeight: 600 }}>Ota-ona:</span>
                 {isParentTgConnected ? (
-                  <Badge variant="success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Badge variant="success" className={styles.tgBadge}>
                     <CheckCircle2 size={12} /> Ulangan
                   </Badge>
                 ) : (

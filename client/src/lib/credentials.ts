@@ -80,6 +80,24 @@ export function parseStudentCreds(
 }
 
 /**
+ * Human-readable subject from a student's passportSeries field.
+ * Never returns the raw "CRED:..." payload (it holds login/password/telegram data).
+ */
+export function getStudentSubject(
+  student: { subject?: string | null; passportSeries?: string | null } | null | undefined
+): string {
+  if (!student) return '';
+  if (student.subject) return student.subject;
+  const raw = (student.passportSeries || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('CRED:')) {
+    const part = raw.substring(5).split('|').find((p) => p.startsWith('subj='));
+    return part ? part.substring(5).trim() : '';
+  }
+  return raw;
+}
+
+/**
  * Serialize student credentials and subject into passportSeries
  */
 export function serializeStudentCreds(

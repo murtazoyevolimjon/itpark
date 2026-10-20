@@ -21,6 +21,19 @@
   margin: 0 auto;
 }
 
+/* Large monitors / TVs: use more of the screen */
+@media (min-width: 1920px) {
+  .content {
+    max-width: 1680px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .content {
+    max-width: 2100px;
+  }
+}
+
 @media (max-width: 1023px) {
   .mainWrapper {
     margin-left: 0; /* Remove offset on mobile/tablet */
