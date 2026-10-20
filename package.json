@@ -8,6 +8,7 @@
     "build:client": "cd client && npm install && npm run build"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "vercel": "^64.7.0"
   }
 }
