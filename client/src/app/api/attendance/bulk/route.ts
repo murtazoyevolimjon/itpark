@@ -119,12 +119,15 @@ export async function POST(req: NextRequest) {
     // Rule: "O'qituvchi yoki admin 1 marta davomat olishi kerak shundan keyin saqlangan deb qulflanib qolishi kerak"
     // Teacher AND Admin cannot overwrite saved attendance.
     // The ONLY allowed operation is: KELMAGAN -> KECHIKKAN with a non-empty note, OR inserting a newly enrolled student.
-    let updatedCount = 0;
+    const existingByStudent = new Map(
+      (existingGroupAttendances || []).map((att) => [att.studentId, att])
+    );
+    const nowIso = new Date().toISOString();
+    const lateUpdates: { id: string; note: string }[] = [];
+    const newInserts: any[] = [];
 
     for (const rec of records) {
-      const existing = (existingGroupAttendances || []).find(
-        (att) => att.studentId === rec.studentId
-      );
+      const existing = existingByStudent.get(rec.studentId);
 
       if (existing) {
         // Only allow changing KELMAGAN -> KECHIKKAN
@@ -136,21 +139,12 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          await supabase
-            .from('attendances')
-            .update({
-              status: 'KECHIKKAN',
-              note: rec.note.trim(),
-              updatedAt: new Date().toISOString(),
-            })
-            .eq('id', existing.id);
-
-          updatedCount++;
+          lateUpdates.push({ id: existing.id, note: rec.note.trim() });
         }
         // All other transitions on existing records (e.g. KELGAN -> KELMAGAN) are strictly prohibited
       } else {
         // Newly added student in the group who didn't have an attendance record yet
-        await supabase.from('attendances').insert({
+        newInserts.push({
           id: crypto.randomUUID(),
           studentId: rec.studentId,
           groupId,
@@ -158,11 +152,25 @@ export async function POST(req: NextRequest) {
           status: rec.status,
           note: rec.note || null,
           centerId: authUser.centerId,
-          updatedAt: new Date().toISOString(),
+          updatedAt: nowIso,
         });
-        updatedCount++;
       }
     }
+
+    // Apply all changes at once: one bulk insert + parallel updates
+    await Promise.all([
+      newInserts.length > 0
+        ? supabase.from('attendances').insert(newInserts)
+        : Promise.resolve(),
+      ...lateUpdates.map((u) =>
+        supabase
+          .from('attendances')
+          .update({ status: 'KECHIKKAN', note: u.note, updatedAt: nowIso })
+          .eq('id', u.id)
+      ),
+    ]);
+
+    const updatedCount = lateUpdates.length + newInserts.length;
 
     if (updatedCount > 0) {
       dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);

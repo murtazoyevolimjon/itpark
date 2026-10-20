@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
     // 1. Fetch all centers
     const { data: centers, error: centersError } = await supabase
       .from('centers')
-      .select('id, name, email, phone, password, registeredAt, createdAt')
+      .select(
+        'id, name, email, phone, password, registeredAt, createdAt, students(count), groups(count), teachers(count), payments(amount)'
+      )
       .order('createdAt', { ascending: false });
 
     if (centersError) {
@@ -28,9 +30,8 @@ export async function GET(req: NextRequest) {
       .from('users')
       .select('id, fullName, email, role, centerId');
 
-    // 3. Fetch counts for each center
-    const centersWithStats = await Promise.all(
-      (centers || []).map(async (center) => {
+    // 3. Counts and revenue come embedded with the centers query (no per-center requests)
+    const centersWithStats = (centers || []).map((center: any) => {
         const centerUsers = (allUsers || []).filter((u) => u.centerId === center.id);
         const ownerUser =
           centerUsers.find((u) => u.role === 'OWNER') ||
@@ -39,19 +40,11 @@ export async function GET(req: NextRequest) {
             email: center.email,
           };
 
-        const [
-          { count: studentsCount },
-          { count: groupsCount },
-          { count: teachersCount },
-          { data: paymentsData },
-        ] = await Promise.all([
-          supabase.from('students').select('*', { count: 'exact', head: true }).eq('centerId', center.id),
-          supabase.from('groups').select('*', { count: 'exact', head: true }).eq('centerId', center.id),
-          supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('centerId', center.id),
-          supabase.from('payments').select('amount').eq('centerId', center.id),
-        ]);
+        const studentsCount = center.students?.[0]?.count || 0;
+        const groupsCount = center.groups?.[0]?.count || 0;
+        const teachersCount = center.teachers?.[0]?.count || 0;
 
-        const totalRevenue = (paymentsData || []).reduce(
+        const totalRevenue = (center.payments || []).reduce(
           (sum: number, p: any) => sum + (Number(p.amount) || 0),
           0
         );
@@ -74,14 +67,13 @@ export async function GET(req: NextRequest) {
           adminName: ownerUser.fullName,
           adminLogin: ownerUser.email,
           adminPassword: adminPassword,
-          studentsCount: studentsCount || 0,
-          groupsCount: groupsCount || 0,
-          teachersCount: teachersCount || 0,
+          studentsCount,
+          groupsCount,
+          teachersCount,
           totalRevenue,
           isMainCenter: center.id === 'f05c31e9-58dd-481e-8f4f-eb2979982cb1' || center.email === 'ITPARK_itpark',
         };
-      })
-    );
+    });
 
     return NextResponse.json({ centers: centersWithStats });
   } catch (error: any) {
