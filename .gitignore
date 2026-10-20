@@ -19,3 +19,6 @@ scratch/
 .temp
 **/.temp
 .env*
+backup/
+backup_runner.mjs
+supabase_schema_backup.sql
