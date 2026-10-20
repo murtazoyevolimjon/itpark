@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit2, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
+import { Plus, Pencil, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
 import { parseStudentCreds, getStudentSubject } from '../lib/credentials';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
@@ -379,27 +379,55 @@ export const Students: React.FC = () => {
       key: 'action',
       header: 'ACTION',
       render: (row) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button
-            size="sm"
-            variant="outline"
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            title="Tahrirlash"
+            style={{
+              width: '32px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              padding: 0,
+            }}
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
             }}
           >
-            <Edit2 size={14} />
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
+            <Pencil size={15} />
+          </button>
+          <button
+            type="button"
+            title="O'chirish"
+            style={{
+              width: '32px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '8px',
+              backgroundColor: '#f87171',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              padding: 0,
+            }}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteStudentId(row.id);
             }}
           >
-            <Trash2 size={14} />
-          </Button>
+            <Trash2 size={15} color="#ffffff" />
+          </button>
         </div>
       ),
     },
