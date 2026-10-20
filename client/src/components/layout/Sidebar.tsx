@@ -16,6 +16,7 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   LogOut,
   Sparkles,
 } from 'lucide-react';
@@ -34,9 +35,11 @@ import styles from './Sidebar.module.css';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed = false, onToggleCollapse }) => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const pathname = usePathname() || '/';
@@ -122,38 +125,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         className={`${styles.mobileOverlay} ${isOpen ? styles.mobileOverlayOpen : ''}`}
         onClick={onClose}
       />
-      <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''} ${isCollapsed ? styles.sidebarCollapsed : ''}`}>
         <div className={styles.logoArea}>
-          {isItPark ? (
-            <img
-              src="/crm-logo.png"
-              alt="IT Park CRM"
-              className={styles.logoImg}
-              style={{ borderRadius: '50%', objectFit: 'cover' }}
-            />
-          ) : (
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                minWidth: '38px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-              }}
-            >
-              <GraduationCap size={22} />
-            </div>
-          )}
-          <div style={{ overflow: 'hidden' }}>
-            <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
-              {user?.centerName || 'IT PARK'}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1, justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
+            {isItPark ? (
+              <img
+                src="/crm-logo.png"
+                alt="IT Park CRM"
+                className={styles.logoImg}
+                style={{ borderRadius: '50%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  minWidth: '36px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                }}
+              >
+                <GraduationCap size={20} />
+              </div>
+            )}
+            {!isCollapsed && (
+              <div style={{ overflow: 'hidden' }}>
+                <div className={styles.logoTitle} title={user?.centerName || 'IT PARK'}>
+                  {user?.centerName || 'IT PARK'}
+                </div>
+              </div>
+            )}
           </div>
+          {onToggleCollapse && !isCollapsed && (
+            <button
+              type="button"
+              className={styles.collapseBtn}
+              onClick={onToggleCollapse}
+              title="Sidebar'ni yig'ish"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
         </div>
 
         <div className={styles.navContainer}>
@@ -172,12 +189,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   onClick={onClose}
                   onMouseEnter={() => handlePrefetch(item.path)}
+                  title={isCollapsed ? item.label : undefined}
                 >
                   <div className={styles.navItemLeft}>
-                    <Icon size={18} color={item.path === '/ai-assistant' ? '#6366f1' : undefined} />
-                    <span>{item.label}</span>
+                    <Icon size={19} color={item.path === '/ai-assistant' ? '#6366f1' : undefined} />
+                    {!isCollapsed && <span>{item.label}</span>}
                   </div>
-                  {item.path === '/ai-assistant' && (
+                  {!isCollapsed && item.path === '/ai-assistant' && (
                     <span
                       style={{
                         fontSize: '10px',
@@ -201,46 +219,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Personal & Finance Section (Admin/Owner only) */}
           {!isTeacher && (
             <div className={styles.sectionGroup}>
-              <div className={styles.sectionTitle}>{t('personalSection')}</div>
+              {!isCollapsed && <div className={styles.sectionTitle}>{t('personalSection')}</div>}
 
               {/* Finance Accordion */}
-              <div
-                className={`${styles.navItem} ${
-                  pathname.startsWith('/finance') ? styles.navItemActive : ''
-                }`}
-                onClick={() => setIsFinanceOpen(!isFinanceOpen)}
-              >
-                <div className={styles.navItemLeft}>
-                  <DollarSign size={18} />
-                  <span>{t('finance')}</span>
-                </div>
-                {isFinanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </div>
+              {isCollapsed ? (
+                <Link
+                  href="/finance"
+                  className={`${styles.navItem} ${pathname.startsWith('/finance') ? styles.navItemActive : ''}`}
+                  title={t('finance')}
+                  onClick={onClose}
+                >
+                  <div className={styles.navItemLeft}>
+                    <DollarSign size={19} />
+                  </div>
+                </Link>
+              ) : (
+                <>
+                  <div
+                    className={`${styles.navItem} ${
+                      pathname.startsWith('/finance') ? styles.navItemActive : ''
+                    }`}
+                    onClick={() => setIsFinanceOpen(!isFinanceOpen)}
+                  >
+                    <div className={styles.navItemLeft}>
+                      <DollarSign size={18} />
+                      <span>{t('finance')}</span>
+                    </div>
+                    {isFinanceOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </div>
 
-              {isFinanceOpen && (
-                <div className={styles.dropdownSubMenu}>
-                  <Link
-                    href="/finance"
-                    className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
-                    onClick={onClose}
-                  >
-                    • {t('financeSummary')}
-                  </Link>
-                  <Link
-                    href="/finance/expenses"
-                    className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
-                    onClick={onClose}
-                  >
-                    • {t('financeExpenses')}
-                  </Link>
-                  <Link
-                    href="/finance/payments"
-                    className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
-                    onClick={onClose}
-                  >
-                    • {t('financePayments')}
-                  </Link>
-                </div>
+                  {isFinanceOpen && (
+                    <div className={styles.dropdownSubMenu}>
+                      <Link
+                        href="/finance"
+                        className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
+                        onClick={onClose}
+                      >
+                        • {t('financeSummary')}
+                      </Link>
+                      <Link
+                        href="/finance/expenses"
+                        className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
+                        onClick={onClose}
+                      >
+                        • {t('financeExpenses')}
+                      </Link>
+                      <Link
+                        href="/finance/payments"
+                        className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
+                        onClick={onClose}
+                      >
+                        • {t('financePayments')}
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

@@ -269,45 +269,57 @@ export const Students: React.FC = () => {
       render: (row) => formatDate(row.birthDate),
     },
     {
-      key: 'phone',
-      header: "O'QUVCHI TELEFONI",
+      key: 'phones',
+      header: 'TELEFONLAR',
       render: (row) => (
-        <a
-          href={`tel:${row.phone}`}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}
-        >
-          <Phone size={14} />
-          {formatPhone(row.phone)}
-        </a>
-      ),
-    },
-    {
-      key: 'parentsPhone',
-      header: 'OTA-ONASINING TELEFONI',
-      render: (row) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {row.fatherPhone && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <a
+            href={`tel:${row.phone}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              color: 'var(--primary)',
+              fontWeight: 600,
+              fontSize: '12px',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+            title="O'quvchi telefoni"
+          >
+            <Phone size={12} />
+            {formatPhone(row.phone)}
+          </a>
+          {row.fatherPhone || row.motherPhone ? (
             <a
-              href={`tel:${row.fatherPhone}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
+              href={`tel:${row.fatherPhone || row.motherPhone}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                color: 'var(--text-muted)',
+                fontSize: '11px',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+              }}
+              title={row.fatherPhone ? "Otasi telefoni" : "Onasi telefoni"}
             >
-              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
-              <Phone size={12} color="var(--primary)" />
-              {formatPhone(row.fatherPhone)}
+              <span
+                style={{
+                  fontSize: '9px',
+                  padding: '1px 4px',
+                  borderRadius: '3px',
+                  background: row.fatherPhone ? 'rgba(43, 127, 255, 0.1)' : 'rgba(236, 72, 153, 0.1)',
+                  color: row.fatherPhone ? 'var(--primary)' : '#ec4899',
+                  fontWeight: 700,
+                }}
+              >
+                {row.fatherPhone ? 'Otasi' : 'Onasi'}
+              </span>
+              {formatPhone(row.fatherPhone || row.motherPhone)}
             </a>
-          )}
-          {row.motherPhone && (
-            <a
-              href={`tel:${row.motherPhone}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
-            >
-              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
-              <Phone size={12} color="#ec4899" />
-              {formatPhone(row.motherPhone)}
-            </a>
-          )}
-          {!row.fatherPhone && !row.motherPhone && (
-            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+          ) : (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>-</span>
           )}
         </div>
       ),

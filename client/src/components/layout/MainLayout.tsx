@@ -17,9 +17,43 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
+
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('crm_sidebar_collapsed');
+      if (saved !== null) {
+        setIsSidebarCollapsed(saved === 'true');
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsSidebarOpen(!isSidebarOpen);
+    } else {
+      setIsSidebarCollapsed((prev) => {
+        const next = !prev;
+        try {
+          localStorage.setItem('crm_sidebar_collapsed', String(next));
+        } catch {}
+        return next;
+      });
+    }
+  };
+
+  const handleToggleCollapse = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('crm_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Specific check for teacher routes:
   // Must be EXACTLY '/teacher' or start with '/teacher/' (e.g. /teacher/groups).
@@ -71,9 +105,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
       />
-      <div className={styles.mainWrapper}>
-        <Header onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className={`${styles.mainWrapper} ${isSidebarCollapsed ? styles.mainWrapperCollapsed : ''}`}>
+        <Header onToggleSidebar={handleToggleSidebar} />
         <main className={styles.content}>
           {children}
         </main>

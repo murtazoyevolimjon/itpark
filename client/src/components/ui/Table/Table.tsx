@@ -97,7 +97,7 @@ export function Table<T extends { id: string }>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={col.sortable ? styles.sortableHeader : ''}
+                  className={`${col.sortable ? styles.sortableHeader : ''} ${col.key === 'action' ? styles.stickyActionHeader : ''}`}
                   onClick={() =>
                     col.sortable &&
                     onSortChange &&
@@ -129,7 +129,10 @@ export function Table<T extends { id: string }>({
               Array.from({ length: 5 }).map((_, index) => (
                 <tr key={index}>
                   {columns.map((col) => (
-                    <td key={col.key}>
+                    <td
+                      key={col.key}
+                      className={col.key === 'action' ? styles.stickyActionCell : ''}
+                    >
                       <Skeleton height="20px" />
                     </td>
                   ))}
@@ -149,7 +152,10 @@ export function Table<T extends { id: string }>({
                   style={{ cursor: onRowClick ? 'pointer' : 'default' }}
                 >
                   {columns.map((col) => (
-                    <td key={col.key}>
+                    <td
+                      key={col.key}
+                      className={col.key === 'action' ? styles.stickyActionCell : ''}
+                    >
                       {col.render ? col.render(row) : (row as any)[col.key]}
                     </td>
                   ))}

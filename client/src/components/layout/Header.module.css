@@ -23,7 +23,8 @@
 }
 
 .hamburger {
-  display: none;
+  display: flex;
+  cursor: pointer;
   align-items: center;
   justify-content: center;
   width: 36px;
@@ -31,7 +32,8 @@
   border-radius: var(--radius-sm);
   color: var(--text);
   background-color: var(--card-subtle);
-  transition: background-color 0.2s;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
   flex-shrink: 0;
 }
 

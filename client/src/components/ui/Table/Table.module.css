@@ -78,7 +78,7 @@
 }
 
 .table th {
-  padding: 12px 16px;
+  padding: 11px 12px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -105,12 +105,32 @@
 }
 
 .table td {
-  padding: 14px 16px;
+  padding: 11px 12px;
   font-size: 13px;
   color: var(--text);
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   white-space: nowrap;
+}
+
+.stickyActionHeader {
+  position: sticky;
+  right: 0;
+  z-index: 10;
+  background-color: var(--card-subtle) !important;
+  box-shadow: -6px 0 10px -3px rgba(0, 0, 0, 0.25);
+}
+
+.stickyActionCell {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background-color: var(--card) !important;
+  box-shadow: -6px 0 10px -3px rgba(0, 0, 0, 0.25);
+}
+
+.table tbody tr:hover .stickyActionCell {
+  background-color: var(--card-subtle) !important;
 }
 
 .table tr:last-child td {
