@@ -83,6 +83,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
     } catch {}
   };
 
+  // Safety net: if the client-side route transition stalls (slow RSC fetch / busy page),
+  // fall back to a normal browser navigation so the menu never feels dead.
+  const handleNavClick = (path: string) => {
+    onClose();
+    if (typeof window === 'undefined' || window.location.pathname === path) return;
+    window.setTimeout(() => {
+      if (window.location.pathname !== path) {
+        window.location.assign(path);
+      }
+    }, 2500);
+  };
+
   const [isFinanceOpen, setIsFinanceOpen] = useState(
     pathname.startsWith('/finance'),
   );
@@ -187,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
                   key={item.path}
                   href={item.path}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                  onClick={onClose}
+                  onClick={() => handleNavClick(item.path)}
                   onMouseEnter={() => handlePrefetch(item.path)}
                   title={isCollapsed ? item.label : undefined}
                 >
@@ -227,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
                   href="/finance"
                   className={`${styles.navItem} ${pathname.startsWith('/finance') ? styles.navItemActive : ''}`}
                   title={t('finance')}
-                  onClick={onClose}
+                  onClick={() => handleNavClick('/finance')}
                 >
                   <div className={styles.navItemLeft}>
                     <DollarSign size={19} />
@@ -253,21 +265,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
                       <Link
                         href="/finance"
                         className={`${styles.subNavItem} ${pathname === '/finance' ? styles.subNavItemActive : ''}`}
-                        onClick={onClose}
+                        onClick={() => handleNavClick('/finance')}
                       >
                         • {t('financeSummary')}
                       </Link>
                       <Link
                         href="/finance/expenses"
                         className={`${styles.subNavItem} ${pathname === '/finance/expenses' ? styles.subNavItemActive : ''}`}
-                        onClick={onClose}
+                        onClick={() => handleNavClick('/finance/expenses')}
                       >
                         • {t('financeExpenses')}
                       </Link>
                       <Link
                         href="/finance/payments"
                         className={`${styles.subNavItem} ${pathname === '/finance/payments' ? styles.subNavItemActive : ''}`}
-                        onClick={onClose}
+                        onClick={() => handleNavClick('/finance/payments')}
                       >
                         • {t('financePayments')}
                       </Link>

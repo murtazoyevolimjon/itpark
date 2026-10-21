@@ -13,10 +13,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000, // 5 daqiqa ma'lumotlar yangi deb hisoblanadi (0ms da xotiradan chiqadi)
+            // Bir nechta admin bir vaqtda ishlaydi: ma'lumot tez eskirishi va oynaga qaytganda yangilanishi kerak
+            staleTime: 30 * 1000,
             gcTime: 15 * 60 * 1000, // 15 daqiqa keshda saqlanadi
-            refetchOnMount: false, // Sahifaga qaytganda qaytadan skeleton chiqarmasdan keshdagi ma'lumotni darhol ko'rsatadi
-            refetchOnWindowFocus: false,
+            refetchOnMount: true, // Keshdagi ma'lumot darhol ko'rinadi, eskirgan bo'lsa fonda yangilanadi
+            refetchOnWindowFocus: true,
             refetchOnReconnect: false,
             retry: 1,
           },
