@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
 
 export async function GET(
   req: NextRequest,
@@ -68,7 +69,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json(data);
@@ -98,7 +99,7 @@ export async function DELETE(
       .eq('centerId', authUser.centerId);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json({ success: true });

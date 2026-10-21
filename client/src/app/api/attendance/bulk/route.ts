@@ -102,17 +102,33 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date().toISOString(),
       }));
 
+      let insertedCount = 0;
       if (inserts.length > 0) {
-        const { error: insertErr } = await supabase.from('attendances').insert(inserts);
+        // Another admin may save the same lesson at the same moment: the unique
+        // (studentId, groupId, date) key makes the duplicate rows get skipped.
+        const { data: insertedRows, error: insertErr } = await supabase
+          .from('attendances')
+          .upsert(inserts, { onConflict: 'studentId,groupId,date', ignoreDuplicates: true })
+          .select('id');
         if (insertErr) {
           return NextResponse.json({ message: insertErr.message }, { status: 500 });
+        }
+        insertedCount = insertedRows?.length || 0;
+
+        if (insertedCount === 0) {
+          return NextResponse.json({
+            success: true,
+            count: 0,
+            locked: true,
+            message: 'Davomat allaqachon saqlangan (boshqa admin tomonidan).',
+          });
         }
       }
 
       // Asynchronous Telegram notification dispatch (non-blocking)
       dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);
 
-      return NextResponse.json({ success: true, count: inserts.length, locked: true });
+      return NextResponse.json({ success: true, count: insertedCount, locked: true });
     }
 
     // 5. If attendance was ALREADY TAKEN previously:
@@ -160,7 +176,9 @@ export async function POST(req: NextRequest) {
     // Apply all changes at once: one bulk insert + parallel updates
     await Promise.all([
       newInserts.length > 0
-        ? supabase.from('attendances').insert(newInserts)
+        ? supabase
+            .from('attendances')
+            .upsert(newInserts, { onConflict: 'studentId,groupId,date', ignoreDuplicates: true })
         : Promise.resolve(),
       ...lateUpdates.map((u) =>
         supabase

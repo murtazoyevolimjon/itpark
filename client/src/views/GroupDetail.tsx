@@ -150,15 +150,14 @@ export const GroupDetail: React.FC = () => {
     enabled: !!id,
   });
 
-  const { data: groupPaymentsData } = useQuery({
-    queryKey: ['groupPayments', id],
-    queryFn: () => paymentsApi.getAll({ limit: 1000 }),
-    enabled: !!id,
-  });
+  // The group endpoint already returns every payment of the enrolled students,
+  // so no separate (1000-row) payments request is needed.
 
+  // Heavy center-wide stats are only needed by the "add student" dialog (trial students list).
   const { data: dashboardStats } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: dashboardApi.getStats,
+    enabled: isAddStudentModalOpen,
   });
 
   const probaStudents = useMemo(() => {
@@ -168,6 +167,7 @@ export const GroupDetail: React.FC = () => {
   const { data: allGroupsData } = useQuery({
     queryKey: ['groupsSelect'],
     queryFn: () => groupsApi.getAll({ limit: 1000 }),
+    enabled: isTransferModalOpen,
   });
 
   const availableTransferGroups = useMemo(() => {
@@ -196,14 +196,12 @@ export const GroupDetail: React.FC = () => {
 
   // Merge group payments from query and group object
   const allGroupPayments = useMemo(() => {
-    const list1 = groupPaymentsData?.data || [];
-    const list2 = group?.payments || [];
     const map = new Map();
-    [...list1, ...list2].forEach((p: any) => {
+    (group?.payments || []).forEach((p: any) => {
       if (p && p.id) map.set(p.id, p);
     });
     return Array.from(map.values());
-  }, [groupPaymentsData, group?.payments]);
+  }, [group?.payments]);
 
   // Query attendance specifically for historyDate when on attendanceHistory tab
   const { data: historyAttendanceData } = useQuery({
@@ -586,7 +584,6 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Guruhdan chiqarishda xatolik yuz berdi');
@@ -606,13 +603,21 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
-      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
       queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "Talabani boshqa guruhga o'tkazishda xatolik yuz berdi");
     },
   });
+
+  // Groups load lazily when the transfer dialog opens: preselect the first one once they arrive.
+  useEffect(() => {
+    if (isTransferModalOpen && availableTransferGroups.length > 0) {
+      setTransferStudentData((prev) =>
+        prev && !prev.targetGroupId ? { ...prev, targetGroupId: availableTransferGroups[0].id } : prev
+      );
+    }
+  }, [isTransferModalOpen, availableTransferGroups]);
 
   const handleOpenTransferModal = (student: any) => {
     const studentId = student?.id;
@@ -645,7 +650,6 @@ export const GroupDetail: React.FC = () => {
       success("To'lov muvaffaqiyatli qabul qilindi!");
       setIsPayModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
@@ -664,7 +668,6 @@ export const GroupDetail: React.FC = () => {
       success("To'lov muvaffaqiyatli tahrirlandi!");
       setIsEditPayModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
@@ -684,7 +687,6 @@ export const GroupDetail: React.FC = () => {
       setIsDeletePayModalOpen(false);
       setDeletingPayment(null);
       queryClient.invalidateQueries({ queryKey: ['group', id] });
-      queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });

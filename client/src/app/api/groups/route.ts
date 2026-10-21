@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
 
 export async function GET(req: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
       .range(from, to);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     const formattedData = (data || []).map((item: any) => ({
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json(data);

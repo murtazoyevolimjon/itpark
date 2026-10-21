@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
 
 export async function GET(
   req: NextRequest,
@@ -21,8 +22,8 @@ export async function GET(
         teacher:teachers(*),
         room:rooms(*),
         studentGroups:student_groups(*, student:students(*)),
-        attendances:attendances(*, student:students(*)),
-        payments:payments(*, student:students(*))
+        attendances:attendances(*, student:students(id, firstName, lastName, phone)),
+        payments:payments(*)
       `)
       .eq('id', params.id)
       .eq('centerId', authUser.centerId)
@@ -47,7 +48,7 @@ export async function GET(
     if (studentIds.length > 0) {
       const { data: studentPayments } = await supabase
         .from('payments')
-        .select('*, student:students(*), group:groups(*), course:courses(*)')
+        .select('*')
         .eq('centerId', authUser.centerId)
         .in('studentId', studentIds);
 
@@ -107,7 +108,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json(data);
@@ -138,7 +139,7 @@ export async function DELETE(
       .eq('centerId', authUser.centerId);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json({ success: true });

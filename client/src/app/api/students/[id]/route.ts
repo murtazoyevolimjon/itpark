@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
 import {
   parseStudentCreds,
   serializeStudentCreds,
@@ -125,7 +126,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     if (body.groupId !== undefined) {
@@ -197,7 +198,7 @@ export async function DELETE(
       .eq('centerId', authUser.centerId);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json({ success: true });
