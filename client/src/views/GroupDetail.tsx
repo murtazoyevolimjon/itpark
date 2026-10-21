@@ -60,6 +60,7 @@ import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { getStudentSubject } from '../lib/credentials';
+import { askAddExistingStudent } from '../utils/existingStudent';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 
@@ -541,6 +542,12 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => {
+      // The same person already exists: offer to put that student into this group instead
+      const existingId = askAddExistingStudent(err, id);
+      if (existingId) {
+        addExistingStudentMutation.mutate(existingId);
+        return;
+      }
       error(err.response?.data?.message || 'Talaba qo\'shishda xatolik yuz berdi');
     },
   });

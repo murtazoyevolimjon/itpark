@@ -20,6 +20,7 @@ import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
 import { studentsApi } from '../api/students.api';
 import { groupsApi } from '../api/groups.api';
+import { askAddExistingStudent } from '../utils/existingStudent';
 import { Student } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
 import { formatDate } from '../utils/formatDate';
@@ -84,8 +85,25 @@ export const Students: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
     },
-    onError: (err: any) => {
-      error(err.response?.data?.message || 'Saqlashda xatolik');
+    onError: async (err: any, variables: any) => {
+      // The same person already exists: offer to put that student into the chosen group instead
+      const existingId = selectedStudent ? null : askAddExistingStudent(err, variables?.groupId);
+      if (!existingId) {
+        error(err.response?.data?.message || 'Saqlashda xatolik');
+        return;
+      }
+      try {
+        await groupsApi.addStudent(variables.groupId, existingId);
+        success("Mavjud talaba guruhga qo'shildi");
+        handleCloseModal();
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+        queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+        queryClient.invalidateQueries({ queryKey: ['groups'] });
+        queryClient.invalidateQueries({ queryKey: ['group'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      } catch (e: any) {
+        error(e.response?.data?.message || 'Guruhga qo\'shishda xatolik');
+      }
     },
   });
 

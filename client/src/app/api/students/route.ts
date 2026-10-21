@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
     if (samePerson) {
       return NextResponse.json(
         {
-          message: `${samePerson.firstName} ${samePerson.lastName} shu telefon raqam bilan allaqachon ro'yxatda. Yangi talaba yaratmang: mavjud talabani oching va kerakli guruhga qo'shing (bir talaba bir nechta fanga qatnashishi mumkin).`,
+          message: `${samePerson.firstName} ${samePerson.lastName} shu telefon raqam bilan allaqachon ro'yxatda. Bir talaba bir nechta fanga qatnashishi mumkin, shuning uchun yangi yozuv yaratilmaydi: mavjud talabani kerakli guruhga qo'shing.`,
           existingStudentId: samePerson.id,
         },
         { status: 409 }
