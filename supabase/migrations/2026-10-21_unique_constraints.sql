@@ -79,10 +79,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "students_center_phone_subject_uniq"
   ON "students" ("centerId", "phoneKey", "subjectKey")
   WHERE "subjectKey" <> '' AND "phoneKey" <> '';
 
--- To'lovlar: bir talaba, bir guruh, bir oyda faqat bitta to'lov
-CREATE UNIQUE INDEX IF NOT EXISTS "payments_student_group_month_uniq"
-  ON "payments" ("studentId", coalesce("groupId", ''), date_trunc('month', "paymentDate"))
-  WHERE "status" <> 'TOLANMAGAN';
+-- To'lovlar: qisman to'lov uchun bir oyda bir necha to'lov mumkin (2026-10-22_partial_payments.sql ga qarang),
+-- shuning uchun to'lovlarda unique indeks yaratilmaydi.
 
 -- Davomat va guruh a'zoligi (schema.sql da bor, jonli bazada bo'lmasligi mumkin)
 CREATE UNIQUE INDEX IF NOT EXISTS "attendances_studentId_groupId_date_key"

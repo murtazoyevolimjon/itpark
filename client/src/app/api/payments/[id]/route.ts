@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
 import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
+import { evaluateMonthlyPayment } from '@/lib/paymentRules';
 
 export async function GET(
   req: NextRequest,
@@ -77,6 +78,35 @@ export async function PATCH(
       if (!ref) return NextResponse.json({ message: `${label} topilmadi` }, { status: 404 });
     }
 
+    const { data: current } = await supabase
+      .from('payments')
+      .select('studentId, groupId, courseId, amount, paymentDate, status')
+      .eq('id', params.id)
+      .eq('centerId', authUser.centerId)
+      .maybeSingle();
+    if (!current) return NextResponse.json({ message: "To'lov topilmadi" }, { status: 404 });
+
+    // The edited payment must still fit the monthly price together with the month's other parts
+    const affectsMonth =
+      studentId !== undefined || groupId !== undefined || courseId !== undefined ||
+      amount !== undefined || paymentDate !== undefined || status !== undefined;
+    let evaluatedStatus: string | undefined;
+    if (affectsMonth) {
+      const evaluation = await evaluateMonthlyPayment(supabase, authUser.centerId, {
+        studentId: studentId !== undefined ? studentId : current.studentId,
+        groupId: groupId !== undefined ? groupId || null : current.groupId,
+        courseId: courseId !== undefined ? courseId || null : current.courseId,
+        payDate: new Date(paymentDate !== undefined ? paymentDate : current.paymentDate),
+        amount: amount !== undefined ? Number(amount) : Number(current.amount),
+        status: status !== undefined ? status : current.status,
+        excludePaymentId: params.id,
+      });
+      if (!evaluation.ok) {
+        return NextResponse.json({ message: evaluation.message }, { status: 400 });
+      }
+      evaluatedStatus = evaluation.status;
+    }
+
     const updateData: any = {
       updatedAt: new Date().toISOString(),
     };
@@ -87,7 +117,8 @@ export async function PATCH(
     if (amount !== undefined) updateData.amount = Number(amount);
     if (paymentDate !== undefined) updateData.paymentDate = new Date(paymentDate).toISOString();
     if (method !== undefined) updateData.method = method;
-    if (status !== undefined) updateData.status = status;
+    // The status follows the month's totals (QISMAN until the price is reached, then TOLANGAN)
+    if (evaluatedStatus !== undefined) updateData.status = evaluatedStatus;
 
     const { data, error } = await supabase
       .from('payments')

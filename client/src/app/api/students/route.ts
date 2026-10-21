@@ -4,6 +4,12 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
 import { clampLimit, clampPage, fetchAll, safeSearch } from '@/lib/pagedFetch';
+import { computeDebt } from '@/lib/billing';
+import { findSamePerson } from '@/lib/studentRules';
+
+// Billing starts at the first attendance (billingStartDate); before that column exists, the join date is used
+const billingStart = (sg: any): string | null =>
+  'billingStartDate' in sg ? sg.billingStartDate || null : sg.joinedAt || null;
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 import { ENUMS, date, firstError, oneOf, phone as phone_, text } from '@/lib/validation';
 import {
@@ -36,29 +42,42 @@ export async function GET(req: NextRequest) {
           supabase
             .from('students')
             .select(
-              'id, firstName, lastName, phone, fatherPhone, motherPhone, birthDate, gender, isSchoolStudent, status, createdAt, studentGroups:student_groups(id, groupId, group:groups(id, name, courseId, status, course:courses(id, name, price)))'
+              'id, firstName, lastName, phone, fatherPhone, motherPhone, birthDate, gender, isSchoolStudent, status, createdAt, studentGroups:student_groups(*, group:groups(id, name, courseId, status, course:courses(id, name, price)))'
             )
             .eq('centerId', authUser.centerId)
             .order('id')
             .range(from, to)
         ),
         fetchAll<any>((from, to) =>
-          supabase.from('payments').select('id, studentId, status').eq('centerId', authUser.centerId).order('id').range(from, to)
+          supabase
+            .from('payments')
+            .select('id, studentId, groupId, amount, status, paymentDate')
+            .eq('centerId', authUser.centerId)
+            .order('id')
+            .range(from, to)
         ),
       ]);
 
-      const paid = new Set<string>();
-      const partial = new Set<string>();
+      const paymentsByStudent = new Map<string, any[]>();
       for (const p of paymentRows) {
-        if (p.status === 'TOLANGAN') paid.add(p.studentId);
-        else if (p.status === 'QISMAN') partial.add(p.studentId);
+        const list = paymentsByStudent.get(p.studentId) || [];
+        list.push({ groupId: p.groupId, amount: Number(p.amount) || 0, status: p.status, paymentDate: p.paymentDate });
+        paymentsByStudent.set(p.studentId, list);
       }
 
       const data = students
-        .map((s: any) => ({
-          ...s,
-          paymentStatus: paid.has(s.id) ? 'TOLANGAN' : partial.has(s.id) ? 'QISMAN' : 'TOLANMAGAN',
-        }))
+        .map((s: any) => {
+          const debt = computeDebt({
+            groups: (s.studentGroups || [])
+              .filter((sg: any) => sg.group)
+              .map((sg: any) => {
+                const course = Array.isArray(sg.group.course) ? sg.group.course[0] : sg.group.course;
+                return { id: sg.group.id, name: sg.group.name, price: Number(course?.price) || 0, startedAt: billingStart(sg) };
+              }),
+            payments: paymentsByStudent.get(s.id) || [],
+          });
+          return { ...s, paymentStatus: debt.status, debtAmount: debt.debt, unpaidMonths: debt.unpaidMonths };
+        })
         .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
       return NextResponse.json({ data, total: data.length, page: 1, limit: data.length });
@@ -66,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('students')
-      .select('*, studentGroups:student_groups(*, group:groups(*)), payments(*)', { count: 'exact' })
+      .select('*, studentGroups:student_groups(*, group:groups(*, course:courses(id, name, price))), payments(*)', { count: 'exact' })
       .eq('centerId', authUser.centerId);
 
     if (search) {
@@ -86,10 +105,6 @@ export async function GET(req: NextRequest) {
 
     const formattedData = (data || []).map((student: any) => {
       const payments = student.payments || [];
-      const hasPaid = payments.some((p: any) => p.status === 'TOLANGAN');
-      const hasPartial = payments.some((p: any) => p.status === 'QISMAN');
-
-      const paymentStatus = hasPaid ? 'TOLANGAN' : hasPartial ? 'QISMAN' : 'TOLANMAGAN';
 
       const sgList = (student.studentGroups || (student as any).student_groups || []).sort((a: any, b: any) => {
         const dateA = new Date(a.updatedAt || a.createdAt || a.joinedAt || 0).getTime();
@@ -99,6 +114,23 @@ export async function GET(req: NextRequest) {
 
       const creds = parseStudentCreds(student.passportSeries, student.phone);
 
+      // Month-by-month: every group is due every month; the badge reflects what is still unpaid
+      const debt = computeDebt({
+        groups: sgList
+          .filter((sg: any) => sg.group)
+          .map((sg: any) => {
+            const course = Array.isArray(sg.group.course) ? sg.group.course[0] : sg.group.course;
+            return { id: sg.group.id, name: sg.group.name, price: Number(course?.price) || 0, startedAt: billingStart(sg) };
+          }),
+        payments: payments.map((p: any) => ({
+          groupId: p.groupId,
+          amount: Number(p.amount) || 0,
+          status: p.status,
+          paymentDate: p.paymentDate,
+        })),
+      });
+      const paymentStatus = debt.status;
+
       return {
         ...student,
         // Teachers only need the subject: the raw value holds logins and Telegram chat ids
@@ -106,6 +138,8 @@ export async function GET(req: NextRequest) {
         subject: creds.subject || null,
         studentGroups: sgList,
         paymentStatus,
+        debtAmount: debt.debt,
+        unpaidMonths: debt.unpaidMonths,
       };
     });
 
@@ -176,37 +210,21 @@ export async function POST(req: NextRequest) {
     const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
 
-    // 2. Check duplicate student for the same subject
-    if (cleanPhone) {
-      const { data: existingStudents } = await supabase
-        .from('students')
-        .select('id, firstName, lastName, phone, passportSeries')
-        .eq('centerId', authUser.centerId);
-
-      if (existingStudents && existingStudents.length > 0) {
-        const matched = existingStudents.filter((st: any) => {
-          const stClean = (st.phone || '').replace(/\D/g, '');
-          return stClean === cleanPhone || (cleanPhone.length >= 9 && stClean.endsWith(cleanPhone.slice(-9)));
-        });
-
-        if (matched.length > 0 && subjectToSave) {
-          const dup = matched.find((st: any) => {
-            const parsed = parseStudentCreds(st.passportSeries, st.phone);
-            return parsed.subject.trim().toLowerCase() === subjectToSave.toLowerCase();
-          });
-
-          if (dup) {
-            return NextResponse.json(
-              {
-                message: `Ushbu talaba (${dup.firstName} ${dup.lastName}) allaqachon "${subjectToSave}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`,
-              },
-              { status: 400 }
-            );
-          }
-        }
-      }
+    // The same person (same phone and name) is never created twice: add the existing student to another group instead
+    const samePerson = await findSamePerson(supabase, authUser.centerId, {
+      firstName: String(firstName),
+      lastName: String(lastName),
+      phone: String(phone || ''),
+    });
+    if (samePerson) {
+      return NextResponse.json(
+        {
+          message: `${samePerson.firstName} ${samePerson.lastName} shu telefon raqam bilan allaqachon ro'yxatda. Yangi talaba yaratmang: mavjud talabani oching va kerakli guruhga qo'shing (bir talaba bir nechta fanga qatnashishi mumkin).`,
+          existingStudentId: samePerson.id,
+        },
+        { status: 409 }
+      );
     }
-
     const serializedCreds = serializeStudentCreds('', '', subjectToSave);
     const studentId = crypto.randomUUID();
 

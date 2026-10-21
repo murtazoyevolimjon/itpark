@@ -198,18 +198,25 @@ export const FinancePayments: React.FC = () => {
     const payments = studentPaymentsData?.data || [];
     return monthOptions.map((m) => {
       const [y, mon] = m.value.split('-').map(Number);
-      const existing = payments.find((p) => {
-        if (!p.paymentDate || p.status === 'TOLANMAGAN') return false;
+      const monthPayments = payments.filter((p) => {
+        if (!p.paymentDate || (p.status !== 'TOLANGAN' && p.status !== 'QISMAN')) return false;
         const pDate = new Date(p.paymentDate);
         const isMonthMatch = pDate.getFullYear() === y && pDate.getMonth() + 1 === mon;
         const isGroupMatch = !formData.groupId || !p.groupId || p.groupId === formData.groupId;
         return isMonthMatch && isGroupMatch;
       });
+      const paidSum = monthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const price = currentGroup?.course?.price || 0;
+      const isFull =
+        monthPayments.length > 0 &&
+        (monthPayments.some((p) => p.status === 'TOLANGAN') || price <= 0 || paidSum >= price);
 
       let statusTag = '';
       if (formData.studentId) {
-        if (existing) {
-          statusTag = ` — [✓ TO'LANGAN: ${formatMoney(existing.amount)}]`;
+        if (isFull) {
+          statusTag = ` — [✓ TO'LANGAN: ${formatMoney(paidSum)}]`;
+        } else if (monthPayments.length > 0) {
+          statusTag = ` — [◐ QISMAN: ${formatMoney(paidSum)} / ${formatMoney(price)}]`;
         } else {
           statusTag = ` — [⚠️ TO'LANMAGAN]`;
         }
@@ -218,11 +225,11 @@ export const FinancePayments: React.FC = () => {
       return {
         value: m.value,
         label: `${m.label}${statusTag}`,
-        isPaid: !!existing,
-        paidAmount: existing?.amount,
+        isPaid: isFull,
+        paidAmount: paidSum,
       };
     });
-  }, [monthOptions, studentPaymentsData, formData.groupId, formData.studentId]);
+  }, [monthOptions, studentPaymentsData, formData.groupId, formData.studentId, currentGroup]);
 
   // When student changes, automatically set first group & default price
   const handleStudentChange = (studentId: string) => {
@@ -286,15 +293,22 @@ export const FinancePayments: React.FC = () => {
       return isMonthMatch && isGroupMatch;
     });
 
-    const isAlreadyPaid = matchingPayments.length > 0;
     const totalPaid = matchingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const coursePrice = currentGroup?.course?.price || 0;
+    // A month is closed once a payment is marked TOLANGAN or the parts reach the price; parts below that are partial
+    const isClosed = matchingPayments.some((p) => p.status === 'TOLANGAN');
+    const isAlreadyPaid =
+      matchingPayments.length > 0 && (isClosed || coursePrice <= 0 || totalPaid >= coursePrice);
+    const remaining = coursePrice > 0 ? Math.max(0, coursePrice - totalPaid) : 0;
+    const isPartial = matchingPayments.length > 0 && !isAlreadyPaid;
 
     const monthObj = monthOptions.find((m) => m.value === formData.selectedMonth);
 
     return {
       monthLabel: monthObj?.label || `${MONTH_NAMES[month - 1]} ${year}`,
       isAlreadyPaid,
+      isPartial,
+      remaining,
       matchingPayments,
       totalPaid,
       coursePrice,
@@ -831,7 +845,7 @@ export const FinancePayments: React.FC = () => {
                         <strong style={{ color: '#10b981' }}>{formatMoney(monthPaymentAnalysis.totalPaid)} so'm</strong> to'lov qilgan.
                       </p>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
-                        🔒 <strong>Qoida:</strong> Bir o'quvchi bir oyda bitta fandan faqat <strong>1 marta</strong> to'lov qilishi mumkin.
+                        🔒 <strong>Qoida:</strong> Bir oy uchun to'lov kurs narxiga yetgach yopiladi. Narxdan kam to'langan bo'lsa, qolgan qismini to'lash mumkin.
                         <br />
                         💡 Agar o'tgan oydan qarzini to'lamoqchi bo'lsangiz, yuqoridagi <strong>"To'lov oyi / Davri"</strong> menyusidan to'lanmagan o'tgan oyni tanlang.
                       </div>
@@ -854,7 +868,9 @@ export const FinancePayments: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontWeight: 600 }}>
                         <CheckCircle size={16} />
                         <span>
-                          {monthPaymentAnalysis.monthLabel}: Oylik to'lov summasi: {formatMoney(monthPaymentAnalysis.coursePrice)} so'm
+                          {monthPaymentAnalysis.isPartial
+                            ? `${monthPaymentAnalysis.monthLabel}: ${formatMoney(monthPaymentAnalysis.totalPaid)} to'langan, qoldi: ${formatMoney(monthPaymentAnalysis.remaining)} so'm`
+                            : `${monthPaymentAnalysis.monthLabel}: Oylik to'lov summasi: ${formatMoney(monthPaymentAnalysis.coursePrice)} so'm`}
                         </span>
                       </div>
                       <button
@@ -869,9 +885,16 @@ export const FinancePayments: React.FC = () => {
                           fontWeight: 700,
                           fontSize: '11px',
                         }}
-                        onClick={() => setFormData({ ...formData, amount: String(monthPaymentAnalysis.coursePrice) })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            amount: String(
+                              monthPaymentAnalysis.isPartial ? monthPaymentAnalysis.remaining : monthPaymentAnalysis.coursePrice
+                            ),
+                          })
+                        }
                       >
-                        Summani qo'yish
+                        {monthPaymentAnalysis.isPartial ? "Qoldiqni qo'yish" : "Summani qo'yish"}
                       </button>
                     </div>
                   )}

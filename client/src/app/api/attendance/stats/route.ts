@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
-import { loadStudentFinance } from '@/lib/studentFinance';
+import { loadStudentFinance, toDebtorRow } from '@/lib/studentFinance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -165,43 +165,7 @@ export async function GET(req: NextRequest) {
     const unpaidStudents: any[] = [];
 
     allStudents.forEach((st) => {
-      const payments = st.payments;
-      const totalPaid = payments
-        .filter((p) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
-        .reduce((sum, p) => sum + p.amount, 0);
-
-      let totalDue = 0;
-      const groupNames: string[] = [];
-      st.groups.forEach((g) => {
-        if (g.name) groupNames.push(g.name);
-        totalDue += g.price;
-      });
-
-      const debt = Math.max(0, totalDue - totalPaid);
-      const hasPaidFull = payments.some((p) => p.status === 'TOLANGAN');
-      const hasPartial = totalPaid > 0 && debt > 0;
-
-      const paymentStatus = (totalPaid >= totalDue && totalDue > 0) || hasPaidFull
-        ? 'TOLANGAN'
-        : hasPartial
-        ? 'QISMAN'
-        : 'TOLANMAGAN';
-
-      if (paymentStatus !== 'TOLANGAN') {
-        unpaidStudents.push({
-          id: st.id,
-          studentName: `${st.firstName || ''} ${st.lastName || ''}`.trim() || "Noma'lum talaba",
-          studentPhone: st.phone || '-',
-          fatherPhone: st.fatherPhone || null,
-          motherPhone: st.motherPhone || null,
-          groupName: groupNames.join(', ') || '-',
-          coursePrice: totalDue,
-          totalPaid,
-          debtAmount: totalDue > 0 ? debt : (totalPaid === 0 ? 0 : 0),
-          paymentStatus,
-          lastPaymentDate: payments[0]?.paymentDate ? payments[0].paymentDate.split('T')[0] : null,
-        });
-      }
+      if (st.debt.debt > 0) unpaidStudents.push(toDebtorRow(st));
     });
 
     const dailyChart = Object.values(dateMap).map((counts) => ({

@@ -147,6 +147,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      await markBillingStart(supabase, groupId, inserts.map((r) => r.studentId), startOfDay);
       await dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName, authUser.centerId);
 
       return NextResponse.json({ success: true, count: insertedCount, locked: true });
@@ -209,6 +210,8 @@ export async function POST(req: NextRequest) {
       ),
     ]);
 
+    await markBillingStart(supabase, groupId, newInserts.map((r) => r.studentId), startOfDay);
+
     const updatedCount = lateUpdates.length + newInserts.length;
 
     if (updatedCount > 0) {
@@ -226,6 +229,28 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * The monthly debt of a student in a group starts with the first attendance. The date is kept on the
+ * membership (attendance rows are deleted after two months). An earlier date replaces a later one.
+ * Never blocks saving the attendance: before the migration the column does not exist yet.
+ */
+async function markBillingStart(supabase: any, groupId: string, studentIds: string[], date: string) {
+  if (studentIds.length === 0) return;
+  try {
+    const { error } = await supabase
+      .from('student_groups')
+      .update({ billingStartDate: date })
+      .eq('groupId', groupId)
+      .in('studentId', studentIds)
+      .or(`billingStartDate.is.null,billingStartDate.gt.${date}`);
+    if (error && !/billingStartDate/i.test(error.message || '')) {
+      console.error('markBillingStart failed:', error.message);
+    }
+  } catch (err) {
+    console.error('markBillingStart failed:', err);
   }
 }
 
