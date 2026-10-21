@@ -10,9 +10,20 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // After a new deploy an open tab still points at old JS chunks: one reload fetches the new version
+  const isStaleBuild = /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Unexpected token '<'/i.test(
+    `${error?.name} ${error?.message}`,
+  );
+
   useEffect(() => {
     console.error('Dashboard Error Caught:', error);
-  }, [error]);
+    if (!isStaleBuild) return;
+    try {
+      if (sessionStorage.getItem('chunk_reloaded') === '1') return;
+      sessionStorage.setItem('chunk_reloaded', '1');
+    } catch {}
+    window.location.reload();
+  }, [error, isStaleBuild]);
 
   return (
     <div
@@ -62,6 +73,11 @@ export default function DashboardError({
           <p style={{ fontSize: '13px', color: 'var(--text-muted, #94a3b8)', margin: 0, lineHeight: 1.5 }}>
             Sahifa komponentini ko&apos;rsatishda muammo yuzaga keldi. Qayta urinib ko&apos;ring yoki boshqaruv paneliga qayting.
           </p>
+          {error?.message && (
+            <p style={{ fontSize: '11px', color: 'var(--text-muted, #94a3b8)', margin: '10px 0 0 0', wordBreak: 'break-word', opacity: 0.8 }}>
+              {error.message}
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '8px', width: '100%' }}>
