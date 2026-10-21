@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { parseStudentCreds } from '@/lib/credentials';
 import {
   getTelegramBotToken,
   getTelegramBotUsername,
@@ -10,6 +12,43 @@ import {
 } from '@/lib/telegram';
 
 const ADMIN_ROLES = ['OWNER', 'ADMIN', 'MANAGER'];
+
+const MAX_MESSAGE_LENGTH = 1500;
+
+function validateMessageText(text: unknown): string | null {
+  if (typeof text !== 'string' || !text.trim()) return 'Xabar matnini kiriting';
+  if (text.trim().length > MAX_MESSAGE_LENGTH) return `Xabar ${MAX_MESSAGE_LENGTH} belgidan oshmasligi kerak`;
+  return null;
+}
+
+// Messages are sent with parse_mode=HTML, so user text must be escaped
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function formatCenterMessage(text: string, centerName?: string): string {
+  return `🔔 <b>${escapeHtml(centerName || "O'quv markaz")}</b>\n\n${escapeHtml(text.trim())}`;
+}
+
+async function getCenterName(supabase: any, centerId: string): Promise<string | undefined> {
+  const { data } = await supabase.from('centers').select('name').eq('id', centerId).maybeSingle();
+  return data?.name;
+}
+
+/** Which Telegram chats to message: the student, the parent or both (default). */
+function pickChatIds(
+  creds: { tgChatId?: string; parentTgChatId?: string },
+  target?: string
+): string[] {
+  const ids: string[] = [];
+  if (target !== 'parent' && creds.tgChatId) ids.push(creds.tgChatId);
+  if (target !== 'student' && creds.parentTgChatId) ids.push(creds.parentTgChatId);
+  return Array.from(new Set(ids));
+}
+
+async function deliver(chatIds: string[], message: string) {
+  const results = await Promise.all(chatIds.map((id) => sendTelegramMessage(id, message)));
+  const sent = results.filter((r) => r?.ok).length;
+  return { sent, failed: results.length - sent, total: results.length };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Action: Set Webhook
     if (action === 'set_webhook') {
-      const webhookUrl = body.url || 'https://itpark-pi.vercel.app/api/telegram/webhook';
+      const webhookUrl = body.url || `${new URL(req.url).origin}/api/telegram/webhook`;
       const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
       const setRes = await fetch(
         `https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}&allowed_updates=${encodeURIComponent(JSON.stringify(['message', 'contact']))}${secret ? `&secret_token=${encodeURIComponent(secret)}` : ''}`
@@ -112,6 +151,76 @@ export async function POST(req: NextRequest) {
         centerName: authUser.centerName || 'IT Park Academy',
       });
       return NextResponse.json({ success: true, results: res });
+    }
+
+    // 6. Action: message one student and/or parent through the bot
+    if (action === 'send_student_message') {
+      const { studentId, text, target } = body;
+      const textError = validateMessageText(text);
+      if (textError) return NextResponse.json({ message: textError }, { status: 400 });
+
+      const supabase = createServerSupabaseClient();
+      const { data: student } = await supabase
+        .from('students')
+        .select('id, firstName, lastName, phone, passportSeries')
+        .eq('id', studentId)
+        .eq('centerId', authUser.centerId)
+        .maybeSingle();
+      if (!student) return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
+
+      const creds = parseStudentCreds(student.passportSeries, student.phone);
+      const chatIds = pickChatIds(creds, target);
+      if (chatIds.length === 0) {
+        return NextResponse.json(
+          { message: "Bu talaba yoki ota-onasi hali Telegram botga ulanmagan", sent: 0 },
+          { status: 409 }
+        );
+      }
+
+      const center = await getCenterName(supabase, authUser.centerId);
+      const result = await deliver(chatIds, formatCenterMessage(text, center));
+      return NextResponse.json({ success: result.sent > 0, ...result });
+    }
+
+    // 7. Action: announcement to every student (and/or parent) of one group
+    if (action === 'send_group_message') {
+      const { groupId, text, target } = body;
+      const textError = validateMessageText(text);
+      if (textError) return NextResponse.json({ message: textError }, { status: 400 });
+
+      const supabase = createServerSupabaseClient();
+      const { data: group } = await supabase
+        .from('groups')
+        .select('id, name')
+        .eq('id', groupId)
+        .eq('centerId', authUser.centerId)
+        .maybeSingle();
+      if (!group) return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
+
+      const { data: members } = await supabase
+        .from('student_groups')
+        .select('student:students(id, phone, passportSeries)')
+        .eq('groupId', groupId)
+        .eq('centerId', authUser.centerId);
+
+      const chatIds = new Set<string>();
+      let studentsWithoutTelegram = 0;
+      for (const m of (members || []) as any[]) {
+        if (!m.student) continue;
+        const ids = pickChatIds(parseStudentCreds(m.student.passportSeries, m.student.phone), target);
+        if (ids.length === 0) studentsWithoutTelegram++;
+        ids.forEach((id) => chatIds.add(id));
+      }
+      if (chatIds.size === 0) {
+        return NextResponse.json(
+          { message: "Guruhdagi hech bir talaba Telegram botga ulanmagan", sent: 0 },
+          { status: 409 }
+        );
+      }
+
+      const center = await getCenterName(supabase, authUser.centerId);
+      const result = await deliver(Array.from(chatIds), formatCenterMessage(text, center));
+      return NextResponse.json({ success: result.sent > 0, studentsWithoutTelegram, ...result });
     }
 
     return NextResponse.json({ message: "Noma'lum harakat" }, { status: 400 });

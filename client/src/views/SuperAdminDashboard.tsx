@@ -67,10 +67,11 @@ export const SuperAdminDashboard: React.FC = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCenterForEdit, setSelectedCenterForEdit] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', adminName: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', adminName: '', login: '' });
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCenterForDelete, setSelectedCenterForDelete] = useState<any>(null);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
   // Create Center Form State
   const [createForm, setCreateForm] = useState({
@@ -205,11 +206,13 @@ export const SuperAdminDashboard: React.FC = () => {
 
   // Mutation: Delete Center
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => superadminApi.deleteCenter(id),
+    mutationFn: ({ id, confirmName }: { id: string; confirmName: string }) =>
+      superadminApi.deleteCenter(id, confirmName),
     onSuccess: () => {
       success('Markaz o\'chirildi');
       setIsDeleteModalOpen(false);
       setSelectedCenterForDelete(null);
+      setDeleteConfirmInput('');
       refetch();
     },
     onError: (err: any) => {
@@ -238,6 +241,14 @@ export const SuperAdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!createForm.name || !createForm.login || !createForm.password) {
       error('Barcha majburiy maydonlarni to\'ldiring');
+      return;
+    }
+    if (createForm.password.length < 6) {
+      error('Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+      return;
+    }
+    if (/\s/.test(createForm.login.trim())) {
+      error('Login ichida bo\'sh joy bo\'lmasligi kerak');
       return;
     }
     createMutation.mutate(createForm);
@@ -888,6 +899,7 @@ export const SuperAdminDashboard: React.FC = () => {
                           name: center.name,
                           phone: center.phone || '',
                           adminName: center.adminName || '',
+                          login: center.adminLogin || '',
                         });
                         setIsEditModalOpen(true);
                       }}
@@ -900,6 +912,7 @@ export const SuperAdminDashboard: React.FC = () => {
                       className={`${styles.actionIconBtn} ${styles.deleteIconBtn}`}
                       onClick={() => {
                         setSelectedCenterForDelete(center);
+                        setDeleteConfirmInput('');
                         setIsDeleteModalOpen(true);
                       }}
                       disabled={center.isMainCenter}
@@ -1143,6 +1156,17 @@ export const SuperAdminDashboard: React.FC = () => {
                 />
               </div>
 
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kirish Logini</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={editForm.login}
+                  onChange={(e) => setEditForm({ ...editForm, login: e.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+
               <button
                 type="submit"
                 className={styles.modalSubmitBtn}
@@ -1176,8 +1200,22 @@ export const SuperAdminDashboard: React.FC = () => {
               <p style={{ fontSize: '14px', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
                 Haqiqatan ham <strong>&quot;{selectedCenterForDelete.name}&quot;</strong> o&apos;quv
                 markazini o&apos;chirmoqchimisiz? Ushbu markazga tegishli barcha talabalar, guruhlar
-                va to&apos;lovlar o&apos;chiriladi.
+                va to&apos;lovlar <strong>qaytarib bo&apos;lmaydigan tarzda</strong> o&apos;chiriladi.
               </p>
+            </div>
+
+            <div className={styles.formGroup} style={{ marginTop: '8px' }}>
+              <label className={styles.formLabel}>
+                Tasdiqlash uchun markaz nomini yozing: <strong>{selectedCenterForDelete.name}</strong>
+              </label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={deleteConfirmInput}
+                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                placeholder={selectedCenterForDelete.name}
+                autoComplete="off"
+              />
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
@@ -1198,8 +1236,17 @@ export const SuperAdminDashboard: React.FC = () => {
                   marginTop: 0,
                   boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
                 }}
-                disabled={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate(selectedCenterForDelete.id)}
+                disabled={
+                  deleteMutation.isPending ||
+                  deleteConfirmInput.trim().toLowerCase() !==
+                    String(selectedCenterForDelete.name || '').trim().toLowerCase()
+                }
+                onClick={() =>
+                  deleteMutation.mutate({
+                    id: selectedCenterForDelete.id,
+                    confirmName: deleteConfirmInput.trim(),
+                  })
+                }
               >
                 {deleteMutation.isPending ? 'O\'chirilmoqda...' : 'Ha, o\'chirilsin'}
               </button>

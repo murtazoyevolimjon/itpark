@@ -28,31 +28,29 @@ export async function POST(req: NextRequest) {
 
     // 1. Handle Contact Sharing
     if (message.contact && message.contact.phone_number) {
+      // Only the sender's OWN verified number may be used: a forwarded/foreign contact would let
+      // anyone who knows a phone number subscribe to another family's notifications.
+      if (message.contact.user_id && fromUser?.id && message.contact.user_id !== fromUser.id) {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ Iltimos, <b>o'zingizning</b> telefon raqamingizni yuboring: pastdagi "📱 Telefon raqamimni yuborish" tugmasidan foydalaning.`
+        );
+        return NextResponse.json({ ok: true });
+      }
+
       const phoneNumber = message.contact.phone_number;
       const linkRes = await linkTelegramByPhone(phoneNumber, chatId, username);
 
       if (linkRes.success) {
         await sendTelegramMessage(
           chatId,
-          `✅ <b>Muvaffaqiyatli ulandi!</b>\n\n👤 O'quvchi: <b>${linkRes.studentName}</b>\n📱 Telefon: <code>${phoneNumber}</code>\n\nEndi sizga dars davomati, to'lov kvitansiyalari va muhim dars eslatmalari avtomatik ravishda yuborib turiladi! 🎉`,
-          {
-            reply_markup: {
-              remove_keyboard: true,
-              inline_keyboard: [
-                [
-                  {
-                    text: "🌐 O'quvchi kabinetiga o'tish",
-                    url: 'https://itpark-pi.vercel.app/student',
-                  },
-                ],
-              ],
-            },
-          }
+          `✅ <b>Muvaffaqiyatli ulandi!</b>\n\n👤 O'quvchi: <b>${linkRes.studentName}</b>\n📱 Telefon: <code>${phoneNumber}</code>\n\nEndi sizga dars davomati, to'lov kvitansiyalari va markaz xabarlari shu bot orqali yuborib turiladi! 🎉`,
+          { reply_markup: { remove_keyboard: true } }
         );
       } else {
         await sendTelegramMessage(
           chatId,
-          `⚠️ <b>Topilmadi!</b>\n\nTizimda <code>${phoneNumber}</code> raqami bilan ro'yxatdan o'tgan o'quvchi topilmadi.\n\nIltimos, o'quv markaz ma'muriyatiga murojaat qiling yoki shaxsiy kabinetingizdagi <b>"Telegram botga ulanish"</b> tugmasi orqali kiring.`,
+          `⚠️ <b>Topilmadi!</b>\n\nTizimda <code>${phoneNumber}</code> raqami bilan ro'yxatdan o'tgan o'quvchi topilmadi.\n\nIltimos, o'quv markaz ma'muriyatiga murojaat qiling: raqamingiz o'quvchi yoki ota-ona telefoni sifatida kiritilgan bo'lishi kerak.`,
           {
             reply_markup: { remove_keyboard: true },
           }
@@ -74,20 +72,8 @@ export async function POST(req: NextRequest) {
         if (linkRes.success) {
           await sendTelegramMessage(
             chatId,
-            `🎉 <b>Assalomu alaykum, ${linkRes.studentName}!</b>\n\nSizning Telegram hisobingiz <b>Markaz CRM</b> platformasiga muvaffaqiyatli ulandi!\n\nEndi barcha dars davomati, oylik to'lovlar va uyga vazifalar haqidagi xabarnomalar to'g'ridan-to'g'ri shu botga yuboriladi. 🚀`,
-            {
-              reply_markup: {
-                remove_keyboard: true,
-                inline_keyboard: [
-                  [
-                    {
-                      text: "🌐 Shaxsiy kabinetga kirish",
-                      url: 'https://itpark-pi.vercel.app/student',
-                    },
-                  ],
-                ],
-              },
-            }
+            `🎉 <b>Assalomu alaykum, ${linkRes.studentName}!</b>\n\nSizning Telegram hisobingiz <b>Markaz CRM</b> platformasiga muvaffaqiyatli ulandi!\n\nEndi barcha dars davomati, oylik to'lovlar va markaz xabarlari to'g'ridan-to'g'ri shu botga yuboriladi. 🚀`,
+            { reply_markup: { remove_keyboard: true } }
           );
           return NextResponse.json({ ok: true });
         }

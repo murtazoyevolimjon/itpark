@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { findLoginConflict, validateCenterInput } from '@/lib/centerRules';
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,13 +50,10 @@ export async function GET(req: NextRequest) {
           0
         );
 
+        // Plain text is only known for passwords the developer set; a hash or an owner-changed password shows as empty
         let adminPassword = center.password || '';
-        if (adminPassword.startsWith('$2a$') || adminPassword.startsWith('$2b$')) {
-          if (center.id === 'f05c31e9-58dd-481e-8f4f-eb2979982cb1' || center.email === 'ITPARK_itpark') {
-            adminPassword = 'qwerty321';
-          } else {
-            adminPassword = '';
-          }
+        if (adminPassword.startsWith('$2a$') || adminPassword.startsWith('$2b$') || adminPassword.startsWith('$2y$')) {
+          adminPassword = '';
         }
 
         return {
@@ -102,33 +100,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createServerSupabaseClient();
-
-    // Check if login already exists in users or centers
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id, email')
-      .ilike('email', login)
-      .maybeSingle();
-
-    if (existingUser) {
-      return NextResponse.json(
-        { message: `"${login}" logini allaqachon mavjud! Boshqa login tanlang.` },
-        { status: 400 }
-      );
+    const inputError = validateCenterInput({ name, login, password, adminName, phone });
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
     }
 
-    const { data: existingCenter } = await supabase
-      .from('centers')
-      .select('id, email')
-      .ilike('email', login)
-      .maybeSingle();
+    const supabase = createServerSupabaseClient();
 
-    if (existingCenter) {
-      return NextResponse.json(
-        { message: `"${login}" logini allaqachon biriktirilgan! Boshqa login tanlang.` },
-        { status: 400 }
-      );
+    const taken = await findLoginConflict(supabase, login);
+    if (taken) {
+      return NextResponse.json({ message: taken }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -165,6 +146,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (userError) {
+      // Roll back so a half-created center (without an owner) is never left behind
+      await supabase.from('centers').delete().eq('id', centerId);
       return NextResponse.json({ message: userError.message }, { status: 500 });
     }
 

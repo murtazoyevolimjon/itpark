@@ -10,7 +10,12 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token') || localStorage.getItem('superadmin_token');
+      // On developer pages the superadmin token must win over a stale center token left in the same browser
+      const onSuperAdminArea =
+        window.location.pathname.startsWith('/superadmin') || window.location.pathname.startsWith('/ai-assistant');
+      const token = onSuperAdminArea
+        ? localStorage.getItem('superadmin_token') || localStorage.getItem('token')
+        : localStorage.getItem('token') || localStorage.getItem('superadmin_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

@@ -6,6 +6,15 @@ import { signToken } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    // Centers are created by the developer (superadmin panel). Open self-registration stays off
+    // unless ALLOW_PUBLIC_REGISTRATION=true is set explicitly.
+    if (process.env.ALLOW_PUBLIC_REGISTRATION !== 'true') {
+      return NextResponse.json(
+        { message: "Ro'yxatdan o'tish yopiq. O'quv markaz ochish uchun dasturchiga murojaat qiling." },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { name, email, phone, password } = body;
 

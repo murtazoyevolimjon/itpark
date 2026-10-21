@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Footer } from './Footer';
@@ -18,7 +19,7 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
 
@@ -60,34 +61,60 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // Must NOT match '/teachers' (which is the admin page for managing teachers)!
   const isTeacherRoute = pathname === '/teacher' || pathname.startsWith('/teacher/');
 
-  // If user navigates to /student, redirect to dashboard or teacher
-  const isStudentRoute = pathname === '/student' || pathname.startsWith('/student/');
+  const isAiRoute = pathname === '/ai-assistant' || pathname === '/dashboard/ai-assistant';
+
+  // The developer (superadmin) has no center session but may open the AI analysis page
+  const [hasSuperAdminSession, setHasSuperAdminSession] = useState(false);
+  React.useEffect(() => {
+    try {
+      setHasSuperAdminSession(!!localStorage.getItem('superadmin_token'));
+    } catch {}
+  }, [pathname]);
+  const superAdminOnAiRoute = !isAuthenticated && hasSuperAdminSession && isAiRoute;
 
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
+      // Read storage directly: the state above is not updated yet on the first render
+      let superAdminToken = false;
+      try {
+        superAdminToken = !!localStorage.getItem('superadmin_token');
+      } catch {}
+      if (!(superAdminToken && isAiRoute)) {
+        router.replace('/login');
+      }
       return;
     }
 
     if (!isLoading && isAuthenticated && user) {
-      const isAiRoute = pathname === '/ai-assistant' || pathname === '/dashboard/ai-assistant';
       if (user.role === 'TEACHER') {
         // Teacher is strictly restricted to /teacher routes, /profile, and /ai-assistant
         if (!isTeacherRoute && pathname !== '/profile' && !isAiRoute) {
           router.replace('/teacher');
         }
-      } else {
-        if (isStudentRoute) {
-          router.replace('/dashboard');
-        }
+      } else if (user.role === 'STUDENT') {
+        // The student portal no longer exists: students only receive Telegram notifications
+        logout();
       }
     }
-  }, [isLoading, isAuthenticated, user, pathname, router, isTeacherRoute, isStudentRoute]);
+  }, [isLoading, isAuthenticated, user, pathname, router, isTeacherRoute, isAiRoute, logout]);
 
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <Skeleton width="120px" height="40px" />
+      </div>
+    );
+  }
+
+  if (superAdminOnAiRoute) {
+    return (
+      <div className={styles.layout} style={{ flexDirection: 'column' }}>
+        <div style={{ padding: '12px 16px' }}>
+          <Link href="/superadmin" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '14px' }}>
+            ← Dasturchi paneliga qaytish
+          </Link>
+        </div>
+        <main className={styles.content}>{children}</main>
       </div>
     );
   }

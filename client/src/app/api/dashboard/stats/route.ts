@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { getStudentSubject } from '@/lib/credentials';
 
 export async function GET(req: NextRequest) {
   try {
@@ -83,8 +84,9 @@ export async function GET(req: NextRequest) {
           phone: st.phone || '-',
           fatherPhone: st.fatherPhone || null,
           motherPhone: st.motherPhone || null,
-          passportSeries: st.passportSeries || null,
-          subject: st.passportSeries || null,
+          // Never expose the raw "CRED:login|pass|..." payload: only the subject leaves the server
+          passportSeries: getStudentSubject(st) || null,
+          subject: getStudentSubject(st) || null,
           gender: st.gender || 'ERKAK',
           isSchoolStudent: !!st.isSchoolStudent,
           createdAt: st.createdAt,

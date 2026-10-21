@@ -59,6 +59,7 @@ import { homeworkApi } from '../api/homework.api';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
+import { getStudentSubject } from '../lib/credentials';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
 
@@ -525,6 +526,7 @@ export const GroupDetail: React.FC = () => {
         phone: '',
         fatherPhone: '',
         motherPhone: '',
+        subject: '',
         passportSeries: '',
         birthDate: '2005-01-01',
         gender: 'ERKAK',
@@ -556,6 +558,7 @@ export const GroupDetail: React.FC = () => {
         phone: '',
         fatherPhone: '',
         motherPhone: '',
+        subject: '',
         passportSeries: '',
         birthDate: '2005-01-01',
         gender: 'ERKAK',
@@ -809,6 +812,7 @@ export const GroupDetail: React.FC = () => {
         phone: '',
         fatherPhone: '',
         motherPhone: '',
+        subject: '',
         passportSeries: '',
         birthDate: '2005-01-01',
         gender: 'ERKAK',
@@ -826,7 +830,8 @@ export const GroupDetail: React.FC = () => {
         phone: st.phone ? formatPhone(st.phone) : '',
         fatherPhone: st.fatherPhone ? formatPhone(st.fatherPhone) : '',
         motherPhone: st.motherPhone ? formatPhone(st.motherPhone) : '',
-        passportSeries: st.passportSeries || '',
+        subject: getStudentSubject(st),
+        passportSeries: getStudentSubject(st),
         birthDate: st.birthDate ? st.birthDate.split('T')[0] : '2005-01-01',
         gender: st.gender || 'ERKAK',
         isSchoolStudent: !!st.isSchoolStudent,
@@ -2054,10 +2059,13 @@ export const GroupDetail: React.FC = () => {
                     </thead>
                     <tbody>
                       {dayHistoryAttendances.map((att: any, idx: number) => {
+                        const enrolledStudent = group.studentGroups?.find(
+                          (sg: any) => (sg.student?.id || sg.studentId) === att.studentId
+                        )?.student;
                         const studentName = att.student
                           ? `${att.student.firstName} ${att.student.lastName}`
-                          : group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student
-                          ? `${group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student.firstName} ${group.studentGroups?.find((sg: any) => (sg.student?.id || sg.studentId) === att.studentId)?.student.lastName}`
+                          : enrolledStudent
+                          ? `${enrolledStudent.firstName} ${enrolledStudent.lastName}`
                           : 'Noma\'lum talaba';
 
                         const studentPhone = att.student?.phone ||

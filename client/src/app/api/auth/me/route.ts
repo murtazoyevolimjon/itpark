@@ -22,6 +22,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ message: "O'qituvchi topilmadi" }, { status: 404 });
       }
 
+      // A teacher deactivated by the admin must lose access immediately, not when the token expires
+      if (teacherRecord.status === 'NOFAOL') {
+        return NextResponse.json({ message: 'Akkaunt nofaol holatda' }, { status: 403 });
+      }
+
       const { data: centerRecord } = await supabase
         .from('centers')
         .select('id, name, phone')

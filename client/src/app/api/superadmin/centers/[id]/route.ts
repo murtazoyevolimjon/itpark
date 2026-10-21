@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { findLoginConflict, validateCenterInput } from '@/lib/centerRules';
 
 export async function GET(
   req: NextRequest,
@@ -49,9 +50,25 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { name, phone, adminName, newPassword } = body;
+    const { name, phone, adminName, newPassword, login } = body;
+
+    const inputError = validateCenterInput({
+      name: typeof name === 'string' && name.trim() ? name : undefined,
+      adminName: typeof adminName === 'string' ? adminName : undefined,
+      phone: typeof phone === 'string' ? phone : undefined,
+      password: typeof newPassword === 'string' && newPassword.trim() ? newPassword.trim() : undefined,
+      login: typeof login === 'string' && login.trim() ? login : undefined,
+    });
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
 
     const supabase = createServerSupabaseClient();
+
+    const { data: existingCenter } = await supabase.from('centers').select('id, email').eq('id', id).maybeSingle();
+    if (!existingCenter) {
+      return NextResponse.json({ message: 'Markaz topilmadi' }, { status: 404 });
+    }
 
     const updateCenterData: any = {
       updatedAt: new Date().toISOString(),
@@ -59,16 +76,35 @@ export async function PATCH(
     if (name) updateCenterData.name = name.trim();
     if (phone) updateCenterData.phone = phone.trim();
 
+    // Changing the login: must stay unique and is applied to the center record AND its owner account
+    const nextLogin = typeof login === 'string' ? login.trim() : '';
+    if (nextLogin && nextLogin.toLowerCase() !== (existingCenter.email || '').toLowerCase()) {
+      const taken = await findLoginConflict(supabase, nextLogin, { centerId: id });
+      if (taken) {
+        return NextResponse.json({ message: taken }, { status: 400 });
+      }
+      updateCenterData.email = nextLogin;
+      const { error: loginErr } = await supabase
+        .from('users')
+        .update({ email: nextLogin, updatedAt: new Date().toISOString() })
+        .eq('centerId', id)
+        .eq('role', 'OWNER');
+      if (loginErr) {
+        return NextResponse.json({ message: loginErr.message }, { status: 500 });
+      }
+    }
+
     if (newPassword && newPassword.trim()) {
       const plainPass = newPassword.trim();
       const hashedPassword = await bcrypt.hash(plainPass, 10);
       updateCenterData.password = plainPass;
 
-      // Update password for user(s) in this center
+      // The owner account(s) of this center get the new password
       await supabase
         .from('users')
         .update({ password: hashedPassword, updatedAt: new Date().toISOString() })
-        .eq('centerId', id);
+        .eq('centerId', id)
+        .eq('role', 'OWNER');
     }
 
     if (Object.keys(updateCenterData).length > 1) {
@@ -126,6 +162,20 @@ export async function DELETE(
     if (center && (center.email === 'ITPARK_itpark' || center.name?.toLowerCase().includes('it-park'))) {
       return NextResponse.json(
         { message: "IT-Park Academy asosiy markazini o'chirish taqiqlangan!" },
+        { status: 400 }
+      );
+    }
+
+    if (!center) {
+      return NextResponse.json({ message: 'Markaz topilmadi' }, { status: 404 });
+    }
+
+    // Everything of the center (students, groups, payments...) is erased: require the typed name
+    const body = await req.json().catch(() => ({}));
+    const typedName = typeof body?.confirmName === 'string' ? body.confirmName.trim().toLowerCase() : '';
+    if (typedName !== (center.name || '').trim().toLowerCase()) {
+      return NextResponse.json(
+        { message: "O'chirishni tasdiqlash uchun markaz nomini aynan yozing" },
         { status: 400 }
       );
     }

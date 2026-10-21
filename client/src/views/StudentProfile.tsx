@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Table, Column } from '../components/ui/Table/Table';
 import { studentsApi } from '../api/students.api';
+import { api } from '../api/axios';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone } from '../utils/phoneMask';
@@ -26,6 +27,8 @@ export const StudentProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'groups' | 'attendance' | 'payments'>('groups');
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState('');
+  const [messageTarget, setMessageTarget] = useState<'both' | 'student' | 'parent'>('both');
   const [receiptModalData, setReceiptModalData] = useState<ReceiptModalData | null>(null);
 
   const { data: student, isLoading } = useQuery({
@@ -51,31 +54,29 @@ export const StudentProfile: React.FC = () => {
   const isStudentTgConnected = !!creds?.tgChatId;
   const isParentTgConnected = !!creds?.parentTgChatId;
 
-  const handleSendTestToStudent = async () => {
-    if (!creds?.tgChatId) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || testSending) return;
     setTestSending(true);
     setTestResult(null);
     try {
-      const res = await fetch('/api/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test_message',
-          chatId: creds.tgChatId,
-          text: `🔔 <b>IT Park Xabarnomasi</b>\n\nAssalomu alaykum <b>${student.firstName} ${student.lastName}</b>!\nBu markaz ma'muriyatidan sinov xabarnomasi. Tizim to'g'ri bog'langan.`,
-        }),
+      const res = await api.post('/telegram', {
+        action: 'send_student_message',
+        studentId: student.id,
+        target: messageTarget,
+        text: messageText,
       });
-      const data = await res.json();
-      if (data.ok) {
-        setTestResult('Xabar bot orqali yuborildi!');
-      } else {
-        setTestResult('Xatolik: ' + (data.error || 'Yuborib bo\'lmadi'));
-      }
-    } catch {
-      setTestResult('Xatolik yuz berdi');
+      const { sent, failed } = res.data || {};
+      setTestResult(
+        failed > 0
+          ? `Xabar ${sent} ta qabul qiluvchiga yuborildi, ${failed} tasiga yuborib bo'lmadi`
+          : `Xabar bot orqali yuborildi (${sent} ta qabul qiluvchi)`
+      );
+      if (sent > 0) setMessageText('');
+    } catch (err: any) {
+      setTestResult('Xatolik: ' + (err.response?.data?.message || "Yuborib bo'lmadi"));
     } finally {
       setTestSending(false);
-      setTimeout(() => setTestResult(null), 4000);
+      setTimeout(() => setTestResult(null), 6000);
     }
   };
 
@@ -295,22 +296,61 @@ export const StudentProfile: React.FC = () => {
                   <Badge variant="secondary">Ulanmagan</Badge>
                 )}
               </div>
-              {isStudentTgConnected && (
-                <div style={{ marginTop: '4px' }}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSendTestToStudent}
-                    disabled={testSending}
-                    style={{ fontSize: '11px', padding: '3px 8px', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Send size={12} /> {testSending ? 'Yuborilmoqda...' : 'Sinov xabari'}
-                  </Button>
+              {isStudentTgConnected || isParentTgConnected ? (
+                <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                  <textarea
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Telegram orqali xabar yozing..."
+                    maxLength={1500}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      resize: 'vertical',
+                      padding: '8px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border)',
+                      background: 'var(--input-bg)',
+                      color: 'var(--text)',
+                      fontSize: '13px',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select
+                      value={messageTarget}
+                      onChange={(e) => setMessageTarget(e.target.value as 'both' | 'student' | 'parent')}
+                      style={{
+                        padding: '5px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--border)',
+                        background: 'var(--input-bg)',
+                        color: 'var(--text)',
+                        fontSize: '12px',
+                      }}
+                    >
+                      <option value="both">O'quvchi va ota-ona</option>
+                      <option value="student" disabled={!isStudentTgConnected}>Faqat o'quvchi</option>
+                      <option value="parent" disabled={!isParentTgConnected}>Faqat ota-ona</option>
+                    </select>
+                    <Button
+                      size="sm"
+                      onClick={handleSendMessage}
+                      disabled={testSending || !messageText.trim()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Send size={13} /> {testSending ? 'Yuborilmoqda...' : 'Yuborish'}
+                    </Button>
+                  </div>
                   {testResult && (
-                    <div style={{ fontSize: '11px', color: testResult.includes('Xatolik') ? '#ef4444' : '#10b981', marginTop: '3px' }}>
+                    <div style={{ fontSize: '12px', color: testResult.includes('Xatolik') ? '#ef4444' : '#10b981' }}>
                       {testResult}
                     </div>
                   )}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.5 }}>
+                  Xabar yuborish uchun o'quvchi yoki ota-ona Telegram botga kirib, /start bosib telefon raqamini yuborishi kerak.
                 </div>
               )}
             </div>

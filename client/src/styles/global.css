@@ -68,6 +68,21 @@ h1, h2, h3, h4, p, span, label, td, li {
   }
 }
 
+/* Small phones: card grids whose minimum column is 200-349px would overflow a ~300px content area */
+@media (max-width: 400px) {
+  [style*="minmax(2"],
+  [style*="minmax(3"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Fixed minimum widths on flex children must not push the page sideways */
+  [style*="min-width: 200px"],
+  [style*="min-width: 240px"],
+  [style*="min-width: 160px"] {
+    min-width: 0 !important;
+  }
+}
+
 /* Touch devices: comfortable tap targets, and no iOS zoom-on-focus */
 @media (pointer: coarse) {
   button,

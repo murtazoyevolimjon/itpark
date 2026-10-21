@@ -61,8 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       setUser(fetchedUser);
       localStorage.setItem('user', JSON.stringify(fetchedUser));
-    } catch (e) {
-      logout();
+    } catch (e: any) {
+      // Only an invalid session logs out: a network blip / server error keeps the saved session
+      const status = e?.response?.status;
+      if (status === 401 || status === 403 || status === 404) logout();
     } finally {
       setIsLoading(false);
     }

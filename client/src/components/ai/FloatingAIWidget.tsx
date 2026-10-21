@@ -211,11 +211,7 @@ export const FloatingAIWidget: React.FC = () => {
   };
 
   // If on full AI assistant page, do not render floating widget
-  if (
-    pathname.startsWith('/ai-assistant') ||
-    pathname.startsWith('/teacher/ai') ||
-    pathname.startsWith('/student/ai')
-  ) {
+  if (pathname.startsWith('/ai-assistant') || pathname.startsWith('/teacher/ai')) {
     return null;
   }
 

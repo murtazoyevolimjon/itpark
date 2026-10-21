@@ -44,6 +44,7 @@ export interface UpdateCenterDto {
   phone?: string;
   adminName?: string;
   newPassword?: string;
+  login?: string;
 }
 
 export const superadminApi = {
@@ -71,8 +72,8 @@ export const superadminApi = {
     const res = await superadminClient.patch(`/centers/${id}`, data);
     return res.data;
   },
-  deleteCenter: async (id: string) => {
-    const res = await superadminClient.delete(`/centers/${id}`);
+  deleteCenter: async (id: string, confirmName: string) => {
+    const res = await superadminClient.delete(`/centers/${id}`, { data: { confirmName } });
     return res.data;
   },
   impersonateCenter: async (centerId: string) => {

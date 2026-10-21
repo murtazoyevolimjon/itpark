@@ -55,8 +55,10 @@ export const SuperAdminProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const data = await superadminApi.getMe();
       setUser(data.user);
       localStorage.setItem('superadmin_user', JSON.stringify(data.user));
-    } catch (e) {
-      logout();
+    } catch (e: any) {
+      // Only an invalid session logs out: a network blip / server error must not kick the developer out
+      const status = e?.response?.status;
+      if (status === 401 || status === 403) logout();
     } finally {
       setIsLoading(false);
     }

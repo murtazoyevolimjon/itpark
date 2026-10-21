@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { signToken } from '@/lib/auth';
 import { getClientIp, isRateLimited } from '@/lib/rateLimit';
+import { escapeLike } from '@/lib/centerRules';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     const { data: userRecord, error } = await supabase
       .from('users')
       .select('id, fullName, email, password, role, centerId')
-      .ilike('email', loginIdentifier)
+      .ilike('email', escapeLike(loginIdentifier))
       .maybeSingle();
 
     if (error) {

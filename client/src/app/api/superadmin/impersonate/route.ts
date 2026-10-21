@@ -31,11 +31,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Fetch center user (OWNER)
-    const { data: user, error: userError } = await supabase
+    // A center can hold several accounts: prefer the OWNER, then the oldest account
+    const { data: centerUsers, error: userError } = await supabase
       .from('users')
-      .select('id, fullName, email, role, centerId')
+      .select('id, fullName, email, role, centerId, createdAt')
       .eq('centerId', centerId)
-      .maybeSingle();
+      .order('createdAt', { ascending: true });
+
+    const user =
+      (centerUsers || []).find((u: any) => u.role === 'OWNER') || (centerUsers || [])[0] || null;
 
     if (userError || !user) {
       return NextResponse.json({ message: 'Markaz administratori topilmadi' }, { status: 404 });

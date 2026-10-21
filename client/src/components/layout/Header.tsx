@@ -22,6 +22,14 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // The developer entered this center from the superadmin panel: offer a way back
+  const [isDeveloperSession, setIsDeveloperSession] = useState(false);
+  useEffect(() => {
+    try {
+      setIsDeveloperSession(!!localStorage.getItem('superadmin_token'));
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -52,6 +60,27 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       </div>
 
       <div className={styles.right}>
+        {isDeveloperSession && (
+          <button
+            type="button"
+            onClick={() => router.push('/superadmin')}
+            title="Dasturchi paneliga qaytish"
+            style={{
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              background: 'var(--card-subtle)',
+              color: 'var(--primary)',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ← Dasturchi
+          </button>
+        )}
+
         {/* Theme Toggle (Sun / Moon) */}
         <button
           className={styles.themeToggle}

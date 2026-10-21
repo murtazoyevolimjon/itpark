@@ -172,6 +172,7 @@ export interface Payment {
   method: 'NAQD' | 'KARTA' | 'OTKAZMA';
   status: 'TOLANGAN' | 'TOLANMAGAN' | 'QISMAN';
   receivedBy?: User;
+  createdAt?: string;
 }
 
 export interface Expense {

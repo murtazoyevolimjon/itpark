@@ -81,6 +81,12 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ message: updateErr.message }, { status: 500 });
     }
 
+    // The developer panel shows the password it handed out: it is no longer valid, so forget it
+    // (the column is NOT NULL, so store the hash instead of the readable text).
+    if (authUser.role === 'OWNER') {
+      await supabase.from('centers').update({ password: hashedPassword }).eq('id', authUser.centerId);
+    }
+
     return NextResponse.json({ message: "Parol muvaffaqiyatli o'zgartirildi" });
   } catch (error: any) {
     return NextResponse.json({ message: error.message || "Server xatosi" }, { status: 500 });

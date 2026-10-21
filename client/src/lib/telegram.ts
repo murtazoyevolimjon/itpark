@@ -136,24 +136,34 @@ export async function linkTelegramByPhone(
     const { data: students, error } = await supabase
       .from('students')
       .select('id, firstName, lastName, phone, fatherPhone, motherPhone, passportSeries')
+      .eq('status', 'FAOL')
       .or(`phone.ilike.%${last9}%,fatherPhone.ilike.%${last9}%,motherPhone.ilike.%${last9}%`)
-      .limit(5);
+      .limit(20);
 
     if (error || !students || students.length === 0) {
       return { success: false, message: "Bu raqam bo'yicha o'quvchi topilmadi" };
     }
 
-    const student = students[0];
-    const isParentMatch =
-      (student.fatherPhone && student.fatherPhone.includes(last9)) ||
-      (student.motherPhone && student.motherPhone.includes(last9));
+    // One phone can belong to several students (siblings share a parent's number): link them all
+    const linkedNames: string[] = [];
+    for (const student of students) {
+      const digits = (v?: string | null) => (v || '').replace(/\D/g, '');
+      const isParentMatch =
+        (digits(student.fatherPhone) !== '' && digits(student.fatherPhone).endsWith(last9)) ||
+        (digits(student.motherPhone) !== '' && digits(student.motherPhone).endsWith(last9));
+      const isOwnMatch = digits(student.phone) !== '' && digits(student.phone).endsWith(last9);
 
-    const linkRes = await linkStudentTelegram(student.id, chatId, username, isParentMatch);
+      const linkRes = await linkStudentTelegram(student.id, chatId, username, isParentMatch && !isOwnMatch);
+      if (linkRes.success && linkRes.studentName) linkedNames.push(linkRes.studentName);
+    }
+
+    if (linkedNames.length === 0) {
+      return { success: false, message: 'Ulashda xatolik yuz berdi' };
+    }
     return {
-      success: linkRes.success,
-      studentName: linkRes.studentName,
-      count: students.length,
-      message: linkRes.message,
+      success: true,
+      studentName: linkedNames.join(', '),
+      count: linkedNames.length,
     };
   } catch (err: any) {
     return { success: false, message: err.message };
@@ -176,7 +186,7 @@ export async function sendAttendanceAlert(params: {
   const { studentName, status, date, groupName, chatId, parentChatId, centerName, teacherName } = params;
 
   let emoji = '✅';
-  let title = 'Darsda qatnashdi (+10 XP)';
+  let title = 'Darsda qatnashdi';
   let desc = `Farzandingiz <b>${studentName}</b> bugungi darsga o'z vaqtida keldi va faol qatnashdi!`;
 
   if (status === 'KECHIKKAN') {
@@ -201,23 +211,7 @@ ${desc}
 `.trim();
 
   const targets = [chatId, parentChatId].filter(Boolean);
-  const results = await Promise.all(
-    targets.map((id) =>
-      sendTelegramMessage(id!, message, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🌐 O'quvchi kabinetiga kirish",
-                url: 'https://itpark-pi.vercel.app/student',
-              },
-            ],
-          ],
-        },
-      })
-    )
-  );
-  return results;
+  return Promise.all(targets.map((id) => sendTelegramMessage(id!, message)));
 }
 
 /**
@@ -248,26 +242,11 @@ Sizning kurs uchun to'lovingiz tizimda muvaffaqiyatli qayd etildi.
 🔢 <b>Kvitansiya raqami:</b> <code>${receiptNumber}</code>
 📅 <b>Sana:</b> ${date}
 ${method ? `💳 <b>To'lov usuli:</b> ${method}\n` : ''}${centerName ? `🏢 <b>O'quv markaz:</b> ${centerName}\n` : ''}
-<i>To'lovingiz uchun tashakkur! Elektron kvitansiyani shaxsiy kabinetingizdan yuklab olishingiz mumkin.</i>
+<i>To'lovingiz uchun tashakkur!</i>
 `.trim();
 
   const targets = [chatId, parentChatId].filter(Boolean);
-  return Promise.all(
-    targets.map((id) =>
-      sendTelegramMessage(id!, message, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "📄 Kvitansiyani ko'rish",
-                url: 'https://itpark-pi.vercel.app/student/payments',
-              },
-            ],
-          ],
-        },
-      })
-    )
-  );
+  return Promise.all(targets.map((id) => sendTelegramMessage(id!, message)));
 }
 
 /**
@@ -298,20 +277,5 @@ ${centerName ? `🏢 <b>Markaz:</b> ${centerName}\n` : ''}
 `.trim();
 
   const targets = [chatId, parentChatId].filter(Boolean);
-  return Promise.all(
-    targets.map((id) =>
-      sendTelegramMessage(id!, message, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "💳 To'lovlar bo'limi",
-                url: 'https://itpark-pi.vercel.app/student/payments',
-              },
-            ],
-          ],
-        },
-      })
-    )
-  );
+  return Promise.all(targets.map((id) => sendTelegramMessage(id!, message)));
 }
