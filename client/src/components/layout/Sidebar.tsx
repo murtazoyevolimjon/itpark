@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
       if (window.location.pathname !== path) {
         window.location.assign(path);
       }
-    }, 2500);
+    }, 6000);
   };
 
   const [isFinanceOpen, setIsFinanceOpen] = useState(

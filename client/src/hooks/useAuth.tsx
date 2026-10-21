@@ -46,6 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
+        // Render the page right away from the saved session; /auth/me re-validates in the background
+        setIsLoading(false);
       } catch (e) {}
     }
 

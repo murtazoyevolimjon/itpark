@@ -2,6 +2,8 @@ import axios from 'axios';
 
 export const api = axios.create({
   baseURL: '/api',
+  // A hung server must surface as an error instead of an endless spinner
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
