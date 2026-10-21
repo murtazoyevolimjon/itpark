@@ -5,7 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
 import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
 import { parseStudentCreds } from '@/lib/credentials';
-import { sendPaymentAlert } from '@/lib/telegram';
+import { fetchCenterName, sendPaymentAlert } from '@/lib/telegram';
 
 export async function GET(req: NextRequest) {
   try {
@@ -194,7 +194,8 @@ export async function POST(req: NextRequest) {
         const receiptCode = `ITP-REC-${data.id.slice(0, 8).toUpperCase()}`;
         const payDateStr = new Date(data.paymentDate).toLocaleDateString('uz-UZ');
 
-        sendPaymentAlert({
+        // Awaited: a serverless function may be frozen right after the response is sent
+        await sendPaymentAlert({
           studentName: studentFullName,
           amount: data.amount,
           courseName: courseTitle,
@@ -202,7 +203,7 @@ export async function POST(req: NextRequest) {
           date: payDateStr,
           chatId: studentChatId,
           parentChatId,
-          centerName: authUser.centerName,
+          centerName: await fetchCenterName(supabase, authUser.centerId),
           method: data.method === 'NAQD' ? 'Naqd pul' : data.method === 'KARTA' ? 'Karta' : "O'tkazma",
         }).catch((err) => console.error('Error sending telegram payment alert:', err));
       }

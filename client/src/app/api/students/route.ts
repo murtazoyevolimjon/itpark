@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { clampLimit, clampPage, fetchAll, safeSearch } from '@/lib/pagedFetch';
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 import { ENUMS, date, firstError, oneOf, phone as phone_, text } from '@/lib/validation';
 import {
@@ -18,14 +19,51 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const search = safeSearch(searchParams.get('search'));
+    const page = clampPage(searchParams.get('page'));
+    const limit = clampLimit(searchParams.get('limit'));
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') === 'asc' ? true : false;
     const groupId = searchParams.get('groupId');
 
     const supabase = createServerSupabaseClient();
+
+    // Light mode feeds the "pick a student" dropdowns: every student of the center, but only the few
+    // fields those lists need (no payment rows, no login blob), read page by page past the 1000-row cap.
+    if (searchParams.get('light') === '1') {
+      const [students, paymentRows] = await Promise.all([
+        fetchAll<any>((from, to) =>
+          supabase
+            .from('students')
+            .select(
+              'id, firstName, lastName, phone, fatherPhone, motherPhone, birthDate, gender, isSchoolStudent, status, createdAt, studentGroups:student_groups(id, groupId, group:groups(id, name, courseId, status, course:courses(id, name, price)))'
+            )
+            .eq('centerId', authUser.centerId)
+            .order('id')
+            .range(from, to)
+        ),
+        fetchAll<any>((from, to) =>
+          supabase.from('payments').select('id, studentId, status').eq('centerId', authUser.centerId).order('id').range(from, to)
+        ),
+      ]);
+
+      const paid = new Set<string>();
+      const partial = new Set<string>();
+      for (const p of paymentRows) {
+        if (p.status === 'TOLANGAN') paid.add(p.studentId);
+        else if (p.status === 'QISMAN') partial.add(p.studentId);
+      }
+
+      const data = students
+        .map((s: any) => ({
+          ...s,
+          paymentStatus: paid.has(s.id) ? 'TOLANGAN' : partial.has(s.id) ? 'QISMAN' : 'TOLANMAGAN',
+        }))
+        .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+      return NextResponse.json({ data, total: data.length, page: 1, limit: data.length });
+    }
+
     let query = supabase
       .from('students')
       .select('*, studentGroups:student_groups(*, group:groups(*)), payments(*)', { count: 'exact' })
@@ -63,6 +101,8 @@ export async function GET(req: NextRequest) {
 
       return {
         ...student,
+        // Teachers only need the subject: the raw value holds logins and Telegram chat ids
+        passportSeries: authUser.role === 'TEACHER' ? creds.subject || null : student.passportSeries,
         subject: creds.subject || null,
         studentGroups: sgList,
         paymentStatus,

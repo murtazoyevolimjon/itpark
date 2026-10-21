@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,11 +14,15 @@ export async function GET(req: NextRequest) {
     }
 
     const supabase = createServerSupabaseClient();
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('amount, course:courses(name)')
-      .eq('centerId', authUser.centerId)
-      .eq('status', 'TOLANGAN');
+    const payments = await fetchAll((from, to) =>
+      supabase
+        .from('payments')
+        .select('id, amount, course:courses(name)')
+        .eq('centerId', authUser.centerId)
+        .eq('status', 'TOLANGAN')
+        .order('id')
+        .range(from, to)
+    );
 
     const courseMap: Record<string, number> = {};
     (payments || []).forEach((p: any) => {

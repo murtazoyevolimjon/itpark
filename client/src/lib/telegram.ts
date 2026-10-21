@@ -15,6 +15,16 @@ export const getTelegramBotUsername = (): string => {
   return process.env.TELEGRAM_BOT_USERNAME || DEFAULT_BOT_USERNAME;
 };
 
+/** The center's display name for message footers (the session token does not carry it). */
+export async function fetchCenterName(supabase: any, centerId: string): Promise<string | undefined> {
+  try {
+    const { data } = await supabase.from('centers').select('name').eq('id', centerId).maybeSingle();
+    return data?.name || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface SendMessageOptions {
   parse_mode?: 'HTML' | 'Markdown' | 'MarkdownV2';
   reply_markup?: any;

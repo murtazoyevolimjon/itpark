@@ -8,6 +8,7 @@ import {
   checkLoginUniqueness,
 } from '@/lib/credentials';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { clampLimit, clampPage, fetchAll, safeSearch } from '@/lib/pagedFetch';
 import { ENUMS, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
@@ -18,9 +19,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const search = safeSearch(searchParams.get('search'));
+    const page = clampPage(searchParams.get('page'));
+    const limit = clampLimit(searchParams.get('limit'));
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') === 'asc' ? true : false;
 
@@ -62,31 +63,26 @@ export async function GET(req: NextRequest) {
       const grpIds = groupsList.map((g: any) => g.id);
 
       if (grpIds.length > 0) {
-        const { data: sgData } = await supabase
-          .from('student_groups')
-          .select('id, groupId, studentId')
-          .in('groupId', grpIds);
-        studentGroupsList = sgData || [];
+        studentGroupsList = await fetchAll<any>((from, to) =>
+          supabase
+            .from('student_groups')
+            .select('id, groupId, studentId')
+            .in('groupId', grpIds)
+            .order('id')
+            .range(from, to)
+        );
 
-        const allStudentIds = Array.from(new Set(studentGroupsList.map((sg: any) => sg.studentId)));
-
-        // Only query payments for these specific groups or enrolled students
-        let payQuery = supabase
-          .from('payments')
-          .select('id, studentId, groupId, amount, status, paymentDate')
-          .eq('centerId', authUser.centerId)
-          .neq('status', 'BEKOR_QILINGAN');
-
-        if (grpIds.length > 0 && allStudentIds.length > 0) {
-          payQuery = payQuery.or(`groupId.in.(${grpIds.join(',')}),studentId.in.(${allStudentIds.join(',')})`);
-        } else if (grpIds.length > 0) {
-          payQuery = payQuery.in('groupId', grpIds);
-        } else if (allStudentIds.length > 0) {
-          payQuery = payQuery.in('studentId', allStudentIds);
-        }
-
-        const { data: payData } = await payQuery;
-        paymentsList = payData || [];
+        // Read the center's payments page by page and match in memory: listing every enrolled student id
+        // in the URL breaks for big groups, and a single request is cut off at 1000 rows
+        paymentsList = await fetchAll<any>((from, to) =>
+          supabase
+            .from('payments')
+            .select('id, studentId, groupId, amount, status, paymentDate')
+            .eq('centerId', authUser.centerId)
+            .neq('status', 'BEKOR_QILINGAN')
+            .order('id')
+            .range(from, to)
+        );
       }
     }
 

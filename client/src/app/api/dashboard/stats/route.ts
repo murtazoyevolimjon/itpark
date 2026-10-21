@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getStudentSubject } from '@/lib/credentials';
+import { loadStudentFinance } from '@/lib/studentFinance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
       { count: groupsCount },
       { count: roomsCount },
       { count: employeesCount },
-      { data: allStudents },
+      allStudents,
     ] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
@@ -27,51 +28,14 @@ export async function GET(req: NextRequest) {
       supabase.from('groups').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
       supabase.from('employees').select('*', { count: 'exact', head: true }).eq('centerId', authUser.centerId),
-      supabase
-        .from('students')
-        .select(`
-          id,
-          firstName,
-          lastName,
-          birthDate,
-          phone,
-          fatherPhone,
-          motherPhone,
-          passportSeries,
-          gender,
-          isSchoolStudent,
-          status,
-          createdAt,
-          studentGroups:student_groups(
-            id,
-            groupId,
-            group:groups(
-              id,
-              name,
-              course:courses(
-                id,
-                name,
-                price
-              )
-            )
-          ),
-          payments(
-            id,
-            amount,
-            status,
-            paymentDate
-          )
-        `)
-        .eq('centerId', authUser.centerId)
-        .eq('status', 'FAOL')
-        .order('createdAt', { ascending: false }),
+      loadStudentFinance(supabase, authUser.centerId),
     ]);
 
     const probaStudents: any[] = [];
     const unpaidStudents: any[] = [];
 
-    (allStudents || []).forEach((st: any) => {
-      const activeGroups = (st.studentGroups || []).filter((sg: any) => sg.group);
+    allStudents.forEach((st) => {
+      const activeGroups = st.groups;
 
       // If student has NO active group -> Proba / Sinov darsiga keladigan talaba
       if (activeGroups.length === 0) {
@@ -96,22 +60,20 @@ export async function GET(req: NextRequest) {
       }
 
       // If student HAS active groups -> Calculate payment and debt status
-      const payments = st.payments || [];
+      const payments = st.payments;
       const totalPaid = payments
-        .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
-        .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+        .filter((p) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+        .reduce((sum, p) => sum + p.amount, 0);
 
       let totalDue = 0;
       const groupNames: string[] = [];
-      activeGroups.forEach((sg: any) => {
-        if (sg.group?.name) groupNames.push(sg.group.name);
-        if (sg.group?.course?.price) {
-          totalDue += Number(sg.group.course.price);
-        }
+      activeGroups.forEach((g) => {
+        if (g.name) groupNames.push(g.name);
+        totalDue += g.price;
       });
 
       const debt = Math.max(0, totalDue - totalPaid);
-      const hasPaidFull = payments.some((p: any) => p.status === 'TOLANGAN');
+      const hasPaidFull = payments.some((p) => p.status === 'TOLANGAN');
       const hasPartial = totalPaid > 0 && debt > 0;
 
       const paymentStatus =

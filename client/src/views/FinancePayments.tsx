@@ -109,7 +109,7 @@ export const FinancePayments: React.FC = () => {
   // Students query (with limit 1000 for full searchable select)
   const { data: students } = useQuery({
     queryKey: ['studentsSelect'],
-    queryFn: () => studentsApi.getAll({ limit: 1000 }),
+    queryFn: () => studentsApi.getAll({ light: 1 }),
   });
 
   // Groups query

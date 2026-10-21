@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,9 +15,13 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
-    const [{ data: payments }, { data: expenses }] = await Promise.all([
-      supabase.from('payments').select('amount, status').eq('centerId', authUser.centerId),
-      supabase.from('expenses').select('amount, status').eq('centerId', authUser.centerId),
+    const [payments, expenses] = await Promise.all([
+      fetchAll((from, to) =>
+        supabase.from('payments').select('id, amount, status').eq('centerId', authUser.centerId).order('id').range(from, to)
+      ),
+      fetchAll((from, to) =>
+        supabase.from('expenses').select('id, amount, status').eq('centerId', authUser.centerId).order('id').range(from, to)
+      ),
     ]);
 
     let totalIncome = 0;

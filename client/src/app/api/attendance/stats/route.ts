@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { fetchAll } from '@/lib/pagedFetch';
+import { loadStudentFinance } from '@/lib/studentFinance';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,84 +22,51 @@ export async function GET(req: NextRequest) {
     await purgeExpiredAttendances(supabase, authUser.centerId);
     const retentionCutoff = getAttendanceRetentionCutoff();
 
-    let attendanceQuery = supabase
-      .from('attendances')
-      .select(`
-        id,
-        date,
-        status,
-        note,
-        student:students (
-          id,
-          firstName,
-          lastName,
-          phone,
-          fatherPhone,
-          motherPhone
-        ),
-        group:groups (
-          id,
-          name
-        )
-      `)
-      .eq('centerId', authUser.centerId)
-      .gte('date', retentionCutoff);
-
+    let rangeStart: string;
+    let rangeEnd: string | null = null;
     if (dateParam) {
-      const startOfDay = `${dateParam}T00:00:00.000Z`;
-      const endOfDay = `${dateParam}T23:59:59.999Z`;
-      attendanceQuery = attendanceQuery.gte('date', startOfDay).lte('date', endOfDay);
+      rangeStart = `${dateParam}T00:00:00.000Z`;
+      rangeEnd = `${dateParam}T23:59:59.999Z`;
     } else {
-      const days = parseInt(daysParam || '7', 10);
+      const days = Math.min(Math.max(parseInt(daysParam || '7', 10) || 7, 1), 366);
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
       startDate.setHours(0, 0, 0, 0);
-      attendanceQuery = attendanceQuery.gte('date', startDate.toISOString());
+      rangeStart = startDate.toISOString();
     }
 
-    attendanceQuery = attendanceQuery.order('date', { ascending: true });
-
-    const [
-      { data: records, error },
-      { data: allStudents, error: studentsError },
-    ] = await Promise.all([
-      attendanceQuery,
-
-      supabase
-        .from('students')
-        .select(`
-          id,
-          firstName,
-          lastName,
-          phone,
-          fatherPhone,
-          motherPhone,
-          status,
-          studentGroups:student_groups(
-            group:groups(
-              id,
-              name,
-              course:courses(
-                id,
-                name,
-                price
-              )
-            )
-          ),
-          payments(
+    // A 1000-student center produces 1000+ rows per lesson day: read them all, page by page
+    const [records, allStudents] = await Promise.all([
+      fetchAll<any>((from, to) => {
+        let q = supabase
+          .from('attendances')
+          .select(`
             id,
-            amount,
+            date,
             status,
-            paymentDate
-          )
-        `)
-        .eq('centerId', authUser.centerId)
-        .eq('status', 'FAOL'),
+            note,
+            student:students (
+              id,
+              firstName,
+              lastName,
+              phone,
+              fatherPhone,
+              motherPhone
+            ),
+            group:groups (
+              id,
+              name
+            )
+          `)
+          .eq('centerId', authUser.centerId)
+          .gte('date', retentionCutoff)
+          .gte('date', rangeStart);
+        if (rangeEnd) q = q.lte('date', rangeEnd);
+        return q.order('id').range(from, to);
+      }),
+      loadStudentFinance(supabase, authUser.centerId),
     ]);
-
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
-    }
+    records.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // 1. Group by date for Daily Chart
     const dateMap: Record<
@@ -195,25 +164,21 @@ export async function GET(req: NextRequest) {
     // 4. Calculate Unpaid / Debtor Students
     const unpaidStudents: any[] = [];
 
-    (allStudents || []).forEach((st: any) => {
-      const payments = st.payments || [];
+    allStudents.forEach((st) => {
+      const payments = st.payments;
       const totalPaid = payments
-        .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
-        .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+        .filter((p) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
+        .reduce((sum, p) => sum + p.amount, 0);
 
       let totalDue = 0;
       const groupNames: string[] = [];
-      (st.studentGroups || []).forEach((sg: any) => {
-        if (sg.group) {
-          if (sg.group.name) groupNames.push(sg.group.name);
-          if (sg.group.course?.price) {
-            totalDue += Number(sg.group.course.price);
-          }
-        }
+      st.groups.forEach((g) => {
+        if (g.name) groupNames.push(g.name);
+        totalDue += g.price;
       });
 
       const debt = Math.max(0, totalDue - totalPaid);
-      const hasPaidFull = payments.some((p: any) => p.status === 'TOLANGAN');
+      const hasPaidFull = payments.some((p) => p.status === 'TOLANGAN');
       const hasPartial = totalPaid > 0 && debt > 0;
 
       const paymentStatus = (totalPaid >= totalDue && totalDue > 0) || hasPaidFull

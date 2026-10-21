@@ -7,7 +7,7 @@ import {
   checkAttendanceTimeEligibility,
 } from '@/utils/attendanceTime';
 import { parseStudentCreds } from '@/lib/credentials';
-import { sendAttendanceAlert } from '@/lib/telegram';
+import { fetchCenterName, sendAttendanceAlert } from '@/lib/telegram';
 import { purgeExpiredAttendances } from '@/lib/attendanceRetention';
 import { ENUMS } from '@/lib/validation';
 
@@ -147,8 +147,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Asynchronous Telegram notification dispatch (non-blocking)
-      dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);
+      await dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName, authUser.centerId);
 
       return NextResponse.json({ success: true, count: insertedCount, locked: true });
     }
@@ -213,7 +212,7 @@ export async function POST(req: NextRequest) {
     const updatedCount = lateUpdates.length + newInserts.length;
 
     if (updatedCount > 0) {
-      dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName);
+      await dispatchTelegramAttendanceAlerts(supabase, records, grp, cleanDate, authUser.centerName, authUser.centerId);
     }
 
     return NextResponse.json({
@@ -235,11 +234,13 @@ async function dispatchTelegramAttendanceAlerts(
   records: any[],
   group: any,
   cleanDate: string,
-  centerName?: string
+  centerName: string | undefined,
+  centerId: string
 ) {
   try {
     const studentIds = records.map((r) => r.studentId).filter(Boolean);
     if (studentIds.length === 0) return;
+    centerName = centerName || (await fetchCenterName(supabase, centerId));
 
     const { data: students } = await supabase
       .from('students')
@@ -250,6 +251,7 @@ async function dispatchTelegramAttendanceAlerts(
 
     const studentMap = new Map(students.map((s: any) => [s.id, s]));
 
+    const jobs: (() => Promise<unknown>)[] = [];
     for (const rec of records) {
       const student: any = studentMap.get(rec.studentId);
       if (!student) continue;
@@ -262,15 +264,23 @@ async function dispatchTelegramAttendanceAlerts(
 
       const studentName = `${student.firstName} ${student.lastName}`.trim();
 
-      sendAttendanceAlert({
-        studentName,
-        status: rec.status,
-        date: cleanDate,
-        groupName: group?.name || 'Guruh',
-        chatId: studentChatId,
-        parentChatId,
-        centerName,
-      }).catch((err) => console.error('Error sending attendance telegram alert:', err));
+      jobs.push(() =>
+        sendAttendanceAlert({
+          studentName,
+          status: rec.status,
+          date: cleanDate,
+          groupName: group?.name || 'Guruh',
+          chatId: studentChatId,
+          parentChatId,
+          centerName,
+        }).catch((err) => console.error('Error sending attendance telegram alert:', err))
+      );
+    }
+
+    // Awaited in small batches: serverless functions can be frozen right after the response,
+    // which silently dropped parents' notifications; batching also stays under Telegram's rate limit
+    for (let i = 0; i < jobs.length; i += 10) {
+      await Promise.allSettled(jobs.slice(i, i + 10).map((run) => run()));
     }
   } catch (err) {
     console.error('Failed to dispatch telegram attendance alerts:', err);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
+import { fetchAll } from '@/lib/pagedFetch';
 
 const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv markazlari (IT-markaz, til markazi, repetitorlik markazi) uchun CRM tizimida ishlaydigan aqlli, professional analitik yordamchisan.
 
@@ -1876,12 +1877,13 @@ VAZIFANG:
       ] = await Promise.all([
         supabase.from('centers').select('id, name').eq('id', effectiveCenterId).maybeSingle(),
         supabase.from('groups').select('id, name, startTime, endTime, days, teacherId, courseId, roomId, status').eq('centerId', effectiveCenterId),
-        supabase.from('students').select('id, firstName, lastName, phone, fatherPhone, motherPhone, status, createdAt').eq('centerId', effectiveCenterId),
-        supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', effectiveCenterId),
-        supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', effectiveCenterId),
-        supabase.from('attendances').select('id, status, date, studentId, groupId, note').eq('centerId', effectiveCenterId).order('date', { ascending: false }),
+        // Big tables are read page by page: a single request silently stops at 1000 rows
+        fetchAll<any>((from, to) => supabase.from('students').select('id, firstName, lastName, phone, fatherPhone, motherPhone, status, createdAt').eq('centerId', effectiveCenterId).order('id').range(from, to)).then((data) => ({ data })),
+        fetchAll<any>((from, to) => supabase.from('student_groups').select('id, studentId, groupId').eq('centerId', effectiveCenterId).order('id').range(from, to)).then((data) => ({ data })),
+        fetchAll<any>((from, to) => supabase.from('payments').select('id, amount, status, paymentDate, studentId, groupId').eq('centerId', effectiveCenterId).order('id').range(from, to)).then((data) => ({ data })),
+        fetchAll<any>((from, to) => supabase.from('attendances').select('id, status, date, studentId, groupId, note').eq('centerId', effectiveCenterId).order('id').range(from, to)).then((data) => ({ data: data.sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))) })),
         supabase.from('teachers').select('id, firstName, lastName, phone, status, salaryType, salaryValue').eq('centerId', effectiveCenterId),
-        supabase.from('expenses').select('id, amount, type, ownerName, status, note, date, createdAt').eq('centerId', effectiveCenterId).order('date', { ascending: false }),
+        fetchAll<any>((from, to) => supabase.from('expenses').select('id, amount, type, ownerName, status, note, date, createdAt').eq('centerId', effectiveCenterId).order('id').range(from, to)).then((data) => ({ data: data.sort((a: any, b: any) => String(b.date).localeCompare(String(a.date))) })),
         supabase.from('courses').select('id, name, price').eq('centerId', effectiveCenterId),
         supabase.from('rooms').select('id, name').eq('centerId', effectiveCenterId),
       ]);

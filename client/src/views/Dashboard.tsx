@@ -129,7 +129,7 @@ export const Dashboard: React.FC = () => {
 
   const { data: studentsData } = useQuery({
     queryKey: ['studentsSelect'],
-    queryFn: () => studentsApi.getAll({ limit: 1000 }),
+    queryFn: () => studentsApi.getAll({ light: 1 }),
   });
 
   // Detailed student info when selected for quick payment

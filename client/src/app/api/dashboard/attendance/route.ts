@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,16 +22,16 @@ export async function GET(req: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
     const effectiveStart = startDate.toISOString() > retentionCutoff ? startDate.toISOString() : retentionCutoff;
 
-    const { data: records, error } = await supabase
-      .from('attendances')
-      .select('date, status')
-      .eq('centerId', authUser.centerId)
-      .gte('date', effectiveStart)
-      .order('date', { ascending: true });
-
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
-    }
+    const records = await fetchAll<any>((from, to) =>
+      supabase
+        .from('attendances')
+        .select('id, date, status')
+        .eq('centerId', authUser.centerId)
+        .gte('date', effectiveStart)
+        .order('id')
+        .range(from, to)
+    );
+    records.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const dateMap: Record<string, { present: number; absent: number; late: number; total: number }> = {};
     (records || []).forEach((r: any) => {

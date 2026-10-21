@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { fetchAll } from '@/lib/pagedFetch';
 
 const UZ_MONTH_NAMES: Record<string, string> = {
   '01': 'Yanvar',
@@ -75,14 +76,14 @@ export async function GET(
     // 3. Fetch student_groups for these groups
     let studentGroupsList: any[] = [];
     if (groupIds.length > 0) {
-      const { data: sgData, error: sgErr } = await supabase
-        .from('student_groups')
-        .select('id, groupId, studentId, joinedAt, students(id, firstName, lastName, phone, status)')
-        .in('groupId', groupIds);
-
-      if (!sgErr && sgData) {
-        studentGroupsList = sgData;
-      }
+      studentGroupsList = await fetchAll<any>((from, to) =>
+        supabase
+          .from('student_groups')
+          .select('id, groupId, studentId, joinedAt, students(id, firstName, lastName, phone, status)')
+          .in('groupId', groupIds)
+          .order('id')
+          .range(from, to)
+      );
     }
 
     const allStudentIds = Array.from(new Set(studentGroupsList.map((sg: any) => sg.studentId)));
@@ -90,20 +91,25 @@ export async function GET(
     // 4. Fetch payments
     let paymentsList: any[] = [];
     if (groupIds.length > 0 || allStudentIds.length > 0) {
-      const { data: pData, error: pErr } = await supabase
-        .from('payments')
-        .select('id, studentId, groupId, courseId, amount, paymentDate, method, status')
-        .eq('centerId', authUser.centerId)
-        .neq('status', 'BEKOR_QILINGAN');
+      // Paged: one request is cut off at 1000 rows, which made big centers' salaries too low
+      const pData = await fetchAll<any>((from, to) =>
+        supabase
+          .from('payments')
+          .select('id, studentId, groupId, courseId, amount, paymentDate, method, status')
+          .eq('centerId', authUser.centerId)
+          .neq('status', 'BEKOR_QILINGAN')
+          .order('id')
+          .range(from, to)
+      );
 
-      if (!pErr && pData) {
-        // Filter payments belonging to teacher's groups or students
-        paymentsList = pData.filter((p: any) => {
-          if (p.groupId && groupIds.includes(p.groupId)) return true;
-          if (!p.groupId && p.studentId && allStudentIds.includes(p.studentId)) return true;
-          return false;
-        });
-      }
+      const groupIdSet = new Set(groupIds);
+      const studentIdSet = new Set(allStudentIds);
+      // Filter payments belonging to teacher's groups or students
+      paymentsList = pData.filter((p: any) => {
+        if (p.groupId && groupIdSet.has(p.groupId)) return true;
+        if (!p.groupId && p.studentId && studentIdSet.has(p.studentId)) return true;
+        return false;
+      });
     }
 
     // Generate past 24 months + any payment months

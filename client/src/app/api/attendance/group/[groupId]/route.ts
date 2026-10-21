@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(
   req: NextRequest,
@@ -24,31 +25,28 @@ export async function GET(
     await purgeExpiredAttendances(supabase, authUser.centerId);
     const retentionCutoff = getAttendanceRetentionCutoff();
 
-    let query = supabase
-      .from('attendances')
-      .select('*, student:students(*)')
-      .eq('groupId', params.groupId)
-      .eq('centerId', authUser.centerId)
-      .gte('date', retentionCutoff);
-
     const targetDate = dateParam || (fromParam && !toParam ? fromParam : null);
-    if (targetDate) {
-      const cleanDate = targetDate.split('T')[0];
-      const startOfDay = `${cleanDate}T00:00:00.000Z`;
-      const endOfDay = `${cleanDate}T23:59:59.999Z`;
-      query = query.gte('date', startOfDay).lte('date', endOfDay);
-    } else if (fromParam && toParam) {
-      const cleanFrom = fromParam.split('T')[0];
-      const cleanTo = toParam.split('T')[0];
-      query = query
-        .gte('date', `${cleanFrom}T00:00:00.000Z`)
-        .lte('date', `${cleanTo}T23:59:59.999Z`);
-    }
+    const data = await fetchAll<any>((from, to) => {
+      // Explicit student columns: the raw row also carries the login/password blob
+      let query = supabase
+        .from('attendances')
+        .select('*, student:students(id, firstName, lastName, phone, fatherPhone, motherPhone, status)')
+        .eq('groupId', params.groupId)
+        .eq('centerId', authUser.centerId)
+        .gte('date', retentionCutoff);
 
-    const { data, error } = await query;
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
-    }
+      if (targetDate) {
+        const cleanDate = targetDate.split('T')[0];
+        query = query.gte('date', `${cleanDate}T00:00:00.000Z`).lte('date', `${cleanDate}T23:59:59.999Z`);
+      } else if (fromParam && toParam) {
+        const cleanFrom = fromParam.split('T')[0];
+        const cleanTo = toParam.split('T')[0];
+        query = query
+          .gte('date', `${cleanFrom}T00:00:00.000Z`)
+          .lte('date', `${cleanTo}T23:59:59.999Z`);
+      }
+      return query.order('id').range(from, to);
+    });
 
     return NextResponse.json(data);
   } catch (error: any) {
