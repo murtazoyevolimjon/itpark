@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 
 export async function POST(
   req: NextRequest,
@@ -69,19 +71,20 @@ export async function POST(
       return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
     }
 
-    // 4. Remove student from source group
-    const { error: deleteError } = await supabase
+    // 4. The student must really be in the source group
+    const { data: sourceMembership } = await supabase
       .from('student_groups')
-      .delete()
+      .select('id')
       .eq('groupId', sourceGroupId)
       .eq('studentId', studentId)
-      .eq('centerId', authUser.centerId);
+      .maybeSingle();
 
-    if (deleteError) {
-      return NextResponse.json({ message: deleteError.message }, { status: 500 });
+    if (!sourceMembership) {
+      return NextResponse.json({ message: 'Talaba hozirgi guruhda topilmadi' }, { status: 404 });
     }
 
-    // 5. Add student to target group if not already there
+    // 5. Target group must accept the student (open, free seat, no timetable clash).
+    //    The source group is ignored because the student is leaving it.
     const { data: existingTarget } = await supabase
       .from('student_groups')
       .select('id')
@@ -90,6 +93,10 @@ export async function POST(
       .maybeSingle();
 
     if (!existingTarget) {
+      const violation = await checkEnrollment(supabase, authUser.centerId, targetGroupId, studentId, [sourceGroupId]);
+      if (violation) return violationResponse(violation);
+
+      // Add to the target FIRST so a failure can never leave the student without any group
       const { error: insertError } = await supabase
         .from('student_groups')
         .insert({
@@ -102,8 +109,20 @@ export async function POST(
         });
 
       if (insertError) {
-        return NextResponse.json({ message: insertError.message }, { status: 500 });
+        return dbErrorResponse(insertError);
       }
+    }
+
+    // 6. Remove the student from the source group
+    const { error: deleteError } = await supabase
+      .from('student_groups')
+      .delete()
+      .eq('groupId', sourceGroupId)
+      .eq('studentId', studentId)
+      .eq('centerId', authUser.centerId);
+
+    if (deleteError) {
+      return NextResponse.json({ message: deleteError.message }, { status: 500 });
     }
 
     return NextResponse.json({

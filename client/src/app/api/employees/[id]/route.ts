@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { ENUMS, date, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -48,6 +49,19 @@ export async function PATCH(
 
     const body = await req.json();
     const supabase = createServerSupabaseClient();
+
+    const inputError = firstError(
+      body.firstName !== undefined ? text(body.firstName, 'Ism', 60) : null,
+      body.lastName !== undefined ? text(body.lastName, 'Familiya', 60) : null,
+      body.phone !== undefined ? phoneRule(body.phone, 'Telefon raqam') : null,
+      body.position !== undefined ? text(body.position, 'Lavozim', 100) : null,
+      body.salary !== undefined ? numberValue(body.salary, 'Oylik', { min: 0, max: 1_000_000_000_000 }) : null,
+      body.status !== undefined ? oneOf(body.status, ENUMS.activeStatus, 'Holat') : null,
+      body.hiredAt !== undefined ? date(body.hiredAt, 'Ishga olingan sana') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
 
     const updatePayload: any = { updatedAt: new Date().toISOString() };
     if (body.firstName !== undefined) updatePayload.firstName = body.firstName;

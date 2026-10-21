@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkEnrollment, violationResponse } from '@/lib/groupRules';
+import { ENUMS, date, firstError, oneOf, phone as phone_, text } from '@/lib/validation';
 import {
   parseStudentCreds,
   serializeStudentCreds,
@@ -110,7 +112,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const inputError = firstError(
+      text(firstName, 'Ism', 60),
+      text(lastName, 'Familiya', 60),
+      phone_(phone, 'Telefon raqam'),
+      phone_(fatherPhone, 'Otasining telefon raqami', false),
+      phone_(motherPhone, 'Onasining telefon raqami', false),
+      date(birthDate, "Tug'ilgan sana", { notFuture: true, required: false }),
+      gender !== undefined && gender !== null && gender !== '' ? oneOf(gender, ENUMS.gender, 'Jins') : null,
+      status !== undefined && status !== null && status !== '' ? oneOf(status, ENUMS.studentStatus, 'Holat') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
+
+    // Validate the target group BEFORE creating the student, so a rejected enrollment leaves no orphan student
+    if (groupId) {
+      const violation = await checkEnrollment(supabase, authUser.centerId, groupId, null);
+      if (violation) return violationResponse(violation);
+    }
     const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
 
@@ -152,8 +174,8 @@ export async function POST(req: NextRequest) {
       .from('students')
       .insert({
         id: studentId,
-        firstName,
-        lastName,
+        firstName: String(firstName).trim(),
+        lastName: String(lastName).trim(),
         birthDate: birthDate ? new Date(birthDate).toISOString() : new Date().toISOString(),
         phone,
         fatherPhone: fatherPhone || null,

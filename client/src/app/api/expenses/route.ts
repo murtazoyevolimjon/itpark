@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { ENUMS, date as dateRule, firstError, money, oneOf, optionalText } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -62,6 +63,18 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { amount, type, ownerName, status, note, date } = body;
+
+    const checked = firstError(
+      money(amount, 'Summa'),
+      type ? oneOf(type, ENUMS.expenseType, 'Xarajat turi') : null,
+      status ? oneOf(status, ENUMS.expenseStatus, 'Holat') : null,
+      dateRule(date, 'Sana', { required: false }),
+      optionalText(note, 'Izoh', 1000),
+      optionalText(ownerName, 'Ism', 120)
+    );
+    if (checked) {
+      return NextResponse.json({ message: checked }, { status: 400 });
+    }
 
     const supabase = createServerSupabaseClient();
     const id = crypto.randomUUID();

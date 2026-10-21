@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkEnrollment, violationResponse } from '@/lib/groupRules';
+import { ENUMS, date, firstError, oneOf, phone as phone_, phoneDigits, text } from '@/lib/validation';
 import {
   parseStudentCreds,
   serializeStudentCreds,
@@ -91,6 +93,49 @@ export async function PATCH(
 
     if (fetchErr || !currentStudent) {
       return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
+    }
+
+    const inputError = firstError(
+      body.firstName !== undefined ? text(body.firstName, 'Ism', 60) : null,
+      body.lastName !== undefined ? text(body.lastName, 'Familiya', 60) : null,
+      body.phone !== undefined ? phone_(body.phone, 'Telefon raqam') : null,
+      body.fatherPhone ? phone_(body.fatherPhone, 'Otasining telefon raqami') : null,
+      body.motherPhone ? phone_(body.motherPhone, 'Onasining telefon raqami') : null,
+      body.birthDate !== undefined ? date(body.birthDate, "Tug'ilgan sana", { notFuture: true }) : null,
+      body.gender !== undefined ? oneOf(body.gender, ENUMS.gender, 'Jins') : null,
+      body.status !== undefined ? oneOf(body.status, ENUMS.studentStatus, 'Holat') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
+    // At least one parent phone must stay on the student
+    const nextFather = body.fatherPhone !== undefined ? body.fatherPhone : currentStudent.fatherPhone;
+    const nextMother = body.motherPhone !== undefined ? body.motherPhone : currentStudent.motherPhone;
+    if (!phoneDigits(nextFather) && !phoneDigits(nextMother)) {
+      return NextResponse.json(
+        { message: "Otasi yoki onasining telefon raqamini kiritish majburiy" },
+        { status: 400 }
+      );
+    }
+
+    // Moving the student into another group: same rules as enrolling (open group, free seat, no clash)
+    if (body.groupId) {
+      const { data: memberships } = await supabase
+        .from('student_groups')
+        .select('groupId')
+        .eq('studentId', params.id);
+      const currentIds = (memberships || []).map((m: any) => m.groupId);
+      if (!currentIds.includes(body.groupId)) {
+        const violation = await checkEnrollment(
+          supabase,
+          authUser.centerId,
+          body.groupId,
+          params.id,
+          currentIds
+        );
+        if (violation) return violationResponse(violation);
+      }
     }
 
     const existingCreds = parseStudentCreds(currentStudent.passportSeries, currentStudent.phone);
@@ -191,6 +236,22 @@ export async function DELETE(
     }
 
     const supabase = createServerSupabaseClient();
+
+    // Deleting a student cascades to the payment history and would corrupt financial reports.
+    const { count: paymentCount } = await supabase
+      .from('payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('studentId', params.id)
+      .eq('centerId', authUser.centerId);
+    if ((paymentCount || 0) > 0) {
+      return NextResponse.json(
+        {
+          message: `Talabada ${paymentCount} ta to'lov tarixi bor, uni o'chirib bo'lmaydi (moliya hisoboti buzilmasligi uchun). Buning o'rniga talaba holatini "CHIQIB_KETGAN" yoki "BITIRGAN" qiling.`,
+        },
+        { status: 409 }
+      );
+    }
+
     const { error } = await supabase
       .from('students')
       .delete()

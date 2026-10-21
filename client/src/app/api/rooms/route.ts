@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { firstError, numberValue, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -70,6 +71,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, floor, number, capacity } = body;
 
+    const inputError = firstError(
+      text(name, 'Xona nomi', 100),
+      text(String(number ?? ''), 'Xona raqami', 20),
+      numberValue(floor, 'Qavat', { min: 0, max: 200, integer: true }),
+      numberValue(capacity, "Xona sig'imi", { min: 1, max: 10000, integer: true })
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
     const id = crypto.randomUUID();
 
@@ -77,9 +88,9 @@ export async function POST(req: NextRequest) {
       .from('rooms')
       .insert({
         id,
-        name,
+        name: String(name).trim(),
         floor: Number(floor),
-        number: String(number),
+        number: String(number).trim(),
         capacity: Number(capacity),
         centerId: authUser.centerId,
         updatedAt: new Date().toISOString(),

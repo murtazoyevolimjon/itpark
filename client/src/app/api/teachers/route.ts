@@ -7,6 +7,8 @@ import {
   serializeTeacherCreds,
   checkLoginUniqueness,
 } from '@/lib/credentials';
+import { dbErrorResponse } from '@/lib/dbErrors';
+import { ENUMS, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -167,6 +169,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { firstName, lastName, phone, passportSeries, salaryType, salaryValue, status, login, password } = body;
 
+    const inputError = firstError(
+      text(firstName, 'Ism', 60),
+      text(lastName, 'Familiya', 60),
+      phoneRule(phone, 'Telefon raqam'),
+      numberValue(salaryValue ?? 0, 'Oylik', { min: 0, max: 1_000_000_000_000 }),
+      salaryType ? oneOf(salaryType, ENUMS.salaryType, 'Oylik turi') : null,
+      salaryType === 'PERCENT' ? numberValue(salaryValue ?? 0, 'Foiz', { min: 0, max: 100 }) : null,
+      status ? oneOf(status, ENUMS.activeStatus, 'Holat') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
     const cleanPhone = (phone || '').replace(/\D/g, '');
 
@@ -215,7 +230,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json({

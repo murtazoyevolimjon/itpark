@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { ENUMS, date, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,6 +65,19 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { firstName, lastName, phone, position, salary, status, hiredAt } = body;
+
+    const inputError = firstError(
+      text(firstName, 'Ism', 60),
+      text(lastName, 'Familiya', 60),
+      phoneRule(phone, 'Telefon raqam'),
+      text(position, 'Lavozim', 100),
+      numberValue(salary ?? 0, 'Oylik', { min: 0, max: 1_000_000_000_000 }),
+      status ? oneOf(status, ENUMS.activeStatus, 'Holat') : null,
+      hiredAt ? date(hiredAt, 'Ishga olingan sana') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
 
     const supabase = createServerSupabaseClient();
     const id = crypto.randomUUID();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -47,7 +48,35 @@ export async function PATCH(
     const body = await req.json();
     const { studentId, groupId, courseId, amount, paymentDate, method, status } = body;
 
+    const inputError = firstError(
+      amount !== undefined ? money(amount, "To'lov summasi") : null,
+      method !== undefined ? oneOf(method, ENUMS.paymentMethod, "To'lov usuli") : null,
+      status !== undefined ? oneOf(status, ENUMS.paymentStatus, "To'lov holati") : null,
+      paymentDate !== undefined ? dateRule(paymentDate, "To'lov sanasi") : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
+
+    // Re-pointing a payment must stay inside the caller's center
+    const refChecks: Array<[string, string | undefined | null, string]> = [
+      ['students', studentId, 'Talaba'],
+      ['groups', groupId, 'Guruh'],
+      ['courses', courseId, 'Kurs'],
+    ];
+    for (const [table, refId, label] of refChecks) {
+      if (!refId) continue;
+      const { data: ref } = await supabase
+        .from(table)
+        .select('id')
+        .eq('id', refId)
+        .eq('centerId', authUser.centerId)
+        .maybeSingle();
+      if (!ref) return NextResponse.json({ message: `${label} topilmadi` }, { status: 404 });
+    }
+
     const updateData: any = {
       updatedAt: new Date().toISOString(),
     };

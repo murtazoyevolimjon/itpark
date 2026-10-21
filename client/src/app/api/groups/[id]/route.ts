@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkGroupReferences, checkGroupSchedule, violationResponse } from '@/lib/groupRules';
+import { validateSlot } from '@/lib/schedule';
+import { ENUMS, date, firstError, oneOf, text } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -88,8 +91,62 @@ export async function PATCH(
     const body = await req.json();
     const supabase = createServerSupabaseClient();
 
+    const { data: current } = await supabase
+      .from('groups')
+      .select('id, name, courseId, teacherId, roomId, days, startTime, endTime, status')
+      .eq('id', params.id)
+      .eq('centerId', authUser.centerId)
+      .maybeSingle();
+
+    if (!current) {
+      return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
+    }
+
+    const inputError = firstError(
+      body.name !== undefined ? text(body.name, 'Guruh nomi', 100) : null,
+      body.status !== undefined ? oneOf(body.status, ENUMS.groupStatus, 'Guruh holati') : null,
+      body.startDate !== undefined ? date(body.startDate, 'Boshlanish sanasi') : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
+    const next = {
+      courseId: body.courseId !== undefined ? body.courseId : current.courseId,
+      teacherId: body.teacherId !== undefined ? body.teacherId : current.teacherId,
+      roomId: body.roomId !== undefined ? body.roomId : current.roomId,
+      days: body.days !== undefined ? body.days : current.days,
+      startTime: body.startTime !== undefined ? body.startTime : current.startTime,
+      endTime: body.endTime !== undefined ? body.endTime : current.endTime,
+      status: body.status !== undefined ? body.status : current.status,
+    };
+
+    const refsChanged =
+      next.courseId !== current.courseId || next.teacherId !== current.teacherId || next.roomId !== current.roomId;
+    if (refsChanged) {
+      const refViolation = await checkGroupReferences(supabase, authUser.centerId, next);
+      if (refViolation) return violationResponse(refViolation);
+    }
+
+    // Re-check the timetable only when something that affects it changed (or the group is re-activated),
+    // so renaming an already clashing legacy group is still possible.
+    const scheduleChanged =
+      refsChanged ||
+      JSON.stringify(next.days) !== JSON.stringify(current.days) ||
+      next.startTime !== current.startTime ||
+      next.endTime !== current.endTime ||
+      (next.status === 'FAOL' && current.status !== 'FAOL');
+    if (scheduleChanged) {
+      const slotError = validateSlot(next);
+      if (slotError) return NextResponse.json({ message: slotError }, { status: 400 });
+      if (next.status === 'FAOL') {
+        const scheduleViolation = await checkGroupSchedule(supabase, authUser.centerId, next, params.id);
+        if (scheduleViolation) return violationResponse(scheduleViolation);
+      }
+    }
+
     const updatePayload: any = { updatedAt: new Date().toISOString() };
-    if (body.name !== undefined) updatePayload.name = body.name;
+    if (body.name !== undefined) updatePayload.name = String(body.name).trim();
     if (body.courseId !== undefined) updatePayload.courseId = body.courseId;
     if (body.teacherId !== undefined) updatePayload.teacherId = body.teacherId;
     if (body.roomId !== undefined) updatePayload.roomId = body.roomId;
@@ -132,6 +189,27 @@ export async function DELETE(
     }
 
     const supabase = createServerSupabaseClient();
+
+    // Deleting cascades to memberships and attendance history, so only empty groups may be removed.
+    const [members, attendanceRows] = await Promise.all([
+      supabase.from('student_groups').select('id', { count: 'exact', head: true }).eq('groupId', params.id),
+      supabase.from('attendances').select('id', { count: 'exact', head: true }).eq('groupId', params.id),
+    ]);
+    if ((members.count || 0) > 0) {
+      return NextResponse.json(
+        {
+          message: `Guruhda ${members.count} ta talaba bor. Avval ularni boshqa guruhga o'tkazing yoki guruh holatini "TUGAGAN" qiling.`,
+        },
+        { status: 409 }
+      );
+    }
+    if ((attendanceRows.count || 0) > 0) {
+      return NextResponse.json(
+        { message: "Guruhda davomat tarixi bor. O'chirish o'rniga guruh holatini \"TUGAGAN\" qiling." },
+        { status: 409 }
+      );
+    }
+
     const { error } = await supabase
       .from('groups')
       .delete()

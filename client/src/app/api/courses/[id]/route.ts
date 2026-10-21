@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { firstError, numberValue, optionalText, text } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -47,8 +48,17 @@ export async function PATCH(
     const body = await req.json();
     const supabase = createServerSupabaseClient();
 
+    const inputError = firstError(
+      body.name !== undefined ? text(body.name, 'Kurs nomi', 100) : null,
+      body.price !== undefined ? numberValue(body.price, 'Kurs narxi', { min: 0, max: 1_000_000_000 }) : null,
+      optionalText(body.description, 'Izoh', 1000)
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const updatePayload: any = { updatedAt: new Date().toISOString() };
-    if (body.name !== undefined) updatePayload.name = body.name;
+    if (body.name !== undefined) updatePayload.name = String(body.name).trim();
     if (body.price !== undefined) updatePayload.price = Number(body.price);
     if (body.description !== undefined) updatePayload.description = body.description;
     if (body.isActive !== undefined) updatePayload.isActive = body.isActive;
@@ -85,6 +95,22 @@ export async function DELETE(
     }
 
     const supabase = createServerSupabaseClient();
+
+    // Deleting a course cascades to all of its groups (and their attendance), so it must be unused.
+    const { count: groupCount } = await supabase
+      .from('groups')
+      .select('id', { count: 'exact', head: true })
+      .eq('courseId', params.id)
+      .eq('centerId', authUser.centerId);
+    if ((groupCount || 0) > 0) {
+      return NextResponse.json(
+        {
+          message: `Bu kursda ${groupCount} ta guruh bor. Avval guruhlarni o'chiring yoki boshqa kursga o'tkazing. Kursni yashirish uchun uni "nofaol" qiling.`,
+        },
+        { status: 409 }
+      );
+    }
+
     const { error } = await supabase
       .from('courses')
       .delete()

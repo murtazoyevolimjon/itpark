@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 
 export async function POST(
   req: NextRequest,
@@ -20,18 +22,6 @@ export async function POST(
 
     const supabase = createServerSupabaseClient();
 
-    // Check if group belongs to center
-    const { data: group, error: groupError } = await supabase
-      .from('groups')
-      .select('id, name')
-      .eq('id', params.id)
-      .eq('centerId', authUser.centerId)
-      .maybeSingle();
-
-    if (groupError || !group) {
-      return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
-    }
-
     // Check if already in group
     const { data: existing } = await supabase
       .from('student_groups')
@@ -43,6 +33,10 @@ export async function POST(
     if (existing) {
       return NextResponse.json({ message: 'Talaba bu guruhda allaqachon mavjud' }, { status: 400 });
     }
+
+    // Group/student belong to this center, group is open, room has a free seat, no timetable clash.
+    const violation = await checkEnrollment(supabase, authUser.centerId, params.id, studentId);
+    if (violation) return violationResponse(violation);
 
     const id = crypto.randomUUID();
     const { data, error } = await supabase
@@ -59,7 +53,7 @@ export async function POST(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json(data);

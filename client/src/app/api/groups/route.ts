@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { checkGroupReferences, checkGroupSchedule, violationResponse } from '@/lib/groupRules';
+import { validateSlot } from '@/lib/schedule';
+import { ENUMS, date, firstError, oneOf, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -90,14 +93,42 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, courseId, teacherId, roomId, days, startTime, endTime, status, startDate } = body;
 
+    const inputError = firstError(
+      text(name, 'Guruh nomi', 100),
+      oneOf(status || 'FAOL', ENUMS.groupStatus, 'Guruh holati'),
+      date(startDate || new Date().toISOString(), 'Boshlanish sanasi')
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
+
+    const refViolation = await checkGroupReferences(supabase, authUser.centerId, { courseId, teacherId, roomId });
+    if (refViolation) return violationResponse(refViolation);
+
+    // A teacher or a room cannot be in two active groups at the same time.
+    if ((status || 'FAOL') === 'FAOL') {
+      const scheduleViolation = await checkGroupSchedule(supabase, authUser.centerId, {
+        days: days || [],
+        startTime,
+        endTime,
+        teacherId,
+        roomId,
+      });
+      if (scheduleViolation) return violationResponse(scheduleViolation);
+    } else {
+      const slotError = validateSlot({ days: days || [], startTime, endTime });
+      if (slotError) return NextResponse.json({ message: slotError }, { status: 400 });
+    }
+
     const id = crypto.randomUUID();
 
     const { data, error } = await supabase
       .from('groups')
       .insert({
         id,
-        name,
+        name: String(name).trim(),
         courseId,
         teacherId,
         roomId,

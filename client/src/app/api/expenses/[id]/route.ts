@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { ENUMS, date, firstError, money, oneOf, optionalText } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -48,6 +49,18 @@ export async function PATCH(
 
     const body = await req.json();
     const supabase = createServerSupabaseClient();
+
+    const inputError = firstError(
+      body.amount !== undefined ? money(body.amount, 'Summa') : null,
+      body.type !== undefined ? oneOf(body.type, ENUMS.expenseType, 'Xarajat turi') : null,
+      body.status !== undefined ? oneOf(body.status, ENUMS.expenseStatus, 'Holat') : null,
+      body.date !== undefined ? date(body.date, 'Sana') : null,
+      optionalText(body.note, 'Izoh', 1000),
+      optionalText(body.ownerName, 'Ism', 120)
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
 
     const updatePayload: any = { updatedAt: new Date().toISOString() };
     if (body.amount !== undefined) updatePayload.amount = Number(body.amount);

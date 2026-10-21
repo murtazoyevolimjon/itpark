@@ -6,6 +6,8 @@ import {
   serializeTeacherCreds,
   checkLoginUniqueness,
 } from '@/lib/credentials';
+import { dbErrorResponse } from '@/lib/dbErrors';
+import { ENUMS, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(
   req: NextRequest,
@@ -71,11 +73,44 @@ export async function PATCH(
       return NextResponse.json({ message: 'O\'qituvchi topilmadi' }, { status: 404 });
     }
 
+    const nextSalaryType = body.salaryType !== undefined ? body.salaryType : currentTeacher.salaryType;
+    const inputError = firstError(
+      body.firstName !== undefined ? text(body.firstName, 'Ism', 60) : null,
+      body.lastName !== undefined ? text(body.lastName, 'Familiya', 60) : null,
+      body.phone !== undefined ? phoneRule(body.phone, 'Telefon raqam') : null,
+      body.salaryType !== undefined ? oneOf(body.salaryType, ENUMS.salaryType, 'Oylik turi') : null,
+      body.salaryValue !== undefined ? numberValue(body.salaryValue, 'Oylik', { min: 0, max: 1_000_000_000_000 }) : null,
+      nextSalaryType === 'PERCENT' && body.salaryValue !== undefined
+        ? numberValue(body.salaryValue, 'Foiz', { min: 0, max: 100 })
+        : null,
+      body.status !== undefined ? oneOf(body.status, ENUMS.activeStatus, 'Holat') : null,
+      body.password !== undefined && typeof body.password !== 'string' ? "Parol noto'g'ri" : null
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
+    // Deactivating a teacher who still leads active groups would leave those groups without a teacher
+    if (body.status === 'NOFAOL' && currentTeacher.status !== 'NOFAOL') {
+      const { count: activeGroups } = await supabase
+        .from('groups')
+        .select('id', { count: 'exact', head: true })
+        .eq('teacherId', params.id)
+        .eq('centerId', authUser.centerId)
+        .eq('status', 'FAOL');
+      if ((activeGroups || 0) > 0) {
+        return NextResponse.json(
+          { message: `Ustozda ${activeGroups} ta faol guruh bor. Avval guruhlarni boshqa ustozga o'tkazing.` },
+          { status: 409 }
+        );
+      }
+    }
+
     const existingCreds = parseTeacherCreds(currentTeacher.passportSeries);
 
     const updatePayload: any = { updatedAt: new Date().toISOString() };
-    if (body.firstName !== undefined) updatePayload.firstName = body.firstName;
-    if (body.lastName !== undefined) updatePayload.lastName = body.lastName;
+    if (body.firstName !== undefined) updatePayload.firstName = String(body.firstName).trim();
+    if (body.lastName !== undefined) updatePayload.lastName = String(body.lastName).trim();
     if (body.phone !== undefined) updatePayload.phone = body.phone;
     if (body.salaryType !== undefined) updatePayload.salaryType = body.salaryType;
     if (body.salaryValue !== undefined) updatePayload.salaryValue = Number(body.salaryValue);
@@ -121,7 +156,7 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return dbErrorResponse(error);
     }
 
     return NextResponse.json({
@@ -148,6 +183,22 @@ export async function DELETE(
     }
 
     const supabase = createServerSupabaseClient();
+
+    // Deleting a teacher cascades to the groups they lead.
+    const { count: groupCount } = await supabase
+      .from('groups')
+      .select('id', { count: 'exact', head: true })
+      .eq('teacherId', params.id)
+      .eq('centerId', authUser.centerId);
+    if ((groupCount || 0) > 0) {
+      return NextResponse.json(
+        {
+          message: `Ustozda ${groupCount} ta guruh bor. Avval guruhlarni boshqa ustozga o'tkazing, so'ng o'chiring. Vaqtincha ishlamasa, holatini "NOFAOL" qiling.`,
+        },
+        { status: 409 }
+      );
+    }
+
     const { error } = await supabase
       .from('teachers')
       .delete()

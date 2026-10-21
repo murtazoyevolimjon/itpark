@@ -9,6 +9,7 @@ import {
 import { parseStudentCreds } from '@/lib/credentials';
 import { sendAttendanceAlert } from '@/lib/telegram';
 import { purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { ENUMS } from '@/lib/validation';
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,6 +67,27 @@ export async function POST(req: NextRequest) {
         { message: "Siz faqat o'zingizning guruhingizga davomat ola olasiz" },
         { status: 403 }
       );
+    }
+
+    // Only students enrolled in this group can be marked, with a valid status, once each
+    const { data: memberRows } = await supabase
+      .from('student_groups')
+      .select('studentId')
+      .eq('groupId', groupId)
+      .eq('centerId', authUser.centerId);
+    const memberIds = new Set((memberRows || []).map((m: any) => m.studentId));
+    const seen = new Set<string>();
+    for (const rec of records) {
+      if (!rec || typeof rec.studentId !== 'string' || !ENUMS.attendanceStatus.includes(rec.status)) {
+        return NextResponse.json({ message: "Davomat ma'lumotlari noto'g'ri" }, { status: 400 });
+      }
+      if (!memberIds.has(rec.studentId)) {
+        return NextResponse.json({ message: "Talaba bu guruhga tegishli emas" }, { status: 400 });
+      }
+      if (seen.has(rec.studentId)) {
+        return NextResponse.json({ message: 'Bitta talaba ikki marta belgilangan' }, { status: 400 });
+      }
+      seen.add(rec.studentId);
     }
 
     // 3. Check existing attendances for this group on this date

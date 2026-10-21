@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
 import { parseStudentCreds } from '@/lib/credentials';
 import { sendPaymentAlert } from '@/lib/telegram';
 
@@ -68,11 +69,32 @@ export async function POST(req: NextRequest) {
     if (!studentId) {
       return NextResponse.json({ message: 'Talaba tanlanishi shart' }, { status: 400 });
     }
-    if (!amount || Number(amount) <= 0) {
-      return NextResponse.json({ message: 'To\'g\'ri to\'lov summasini kiriting' }, { status: 400 });
+    const inputError = firstError(
+      money(amount, "To'lov summasi"),
+      method ? oneOf(method, ENUMS.paymentMethod, "To'lov usuli") : null,
+      status ? oneOf(status, ENUMS.paymentStatus, "To'lov holati") : null,
+      dateRule(paymentDate, "To'lov sanasi", { required: false })
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
     }
 
     const supabase = createServerSupabaseClient();
+
+    // Student / group / course must belong to the caller's center
+    const [studentRow, groupRow, courseRow] = await Promise.all([
+      supabase.from('students').select('id').eq('id', studentId).eq('centerId', authUser.centerId).maybeSingle(),
+      groupId
+        ? supabase.from('groups').select('id').eq('id', groupId).eq('centerId', authUser.centerId).maybeSingle()
+        : Promise.resolve({ data: true }),
+      courseId
+        ? supabase.from('courses').select('id').eq('id', courseId).eq('centerId', authUser.centerId).maybeSingle()
+        : Promise.resolve({ data: true }),
+    ]);
+    if (!studentRow.data) return NextResponse.json({ message: 'Talaba topilmadi' }, { status: 404 });
+    if (!groupRow.data) return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
+    if (!courseRow.data) return NextResponse.json({ message: 'Kurs topilmadi' }, { status: 404 });
+
     const payDate = paymentDate ? new Date(paymentDate) : new Date();
 
     // Check month boundary: 1st of month 00:00:00 to last day 23:59:59

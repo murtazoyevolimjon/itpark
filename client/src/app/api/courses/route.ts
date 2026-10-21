@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { dbErrorResponse } from '@/lib/dbErrors';
+import { firstError, numberValue, optionalText, text } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,6 +72,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, price, description, isActive } = body;
 
+    const inputError = firstError(
+      text(name, 'Kurs nomi', 100),
+      numberValue(price, 'Kurs narxi', { min: 0, max: 1_000_000_000 }),
+      optionalText(description, 'Izoh', 1000)
+    );
+    if (inputError) {
+      return NextResponse.json({ message: inputError }, { status: 400 });
+    }
+
     const supabase = createServerSupabaseClient();
     const id = crypto.randomUUID();
 
@@ -78,7 +88,7 @@ export async function POST(req: NextRequest) {
       .from('courses')
       .insert({
         id,
-        name,
+        name: String(name).trim(),
         price: Number(price),
         description: description || null,
         isActive: isActive !== undefined ? isActive : true,
