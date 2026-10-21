@@ -320,6 +320,7 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -340,6 +341,7 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
@@ -361,6 +363,7 @@ export const FinancePayments: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['studentPayments'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });

@@ -77,6 +77,7 @@ export const Students: React.FC = () => {
       success(selectedStudent ? 'Talaba tahrirlandi' : 'Yangi talaba qo\'shildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
@@ -94,6 +95,7 @@ export const Students: React.FC = () => {
       success('Talaba o\'chirildi');
       setDeleteStudentId(null);
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });

@@ -199,6 +199,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => error(err.response?.data?.message || 'Xatolik yuz berdi'),
   });
@@ -216,6 +217,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['group'] });
     },
@@ -232,6 +234,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => error(err.response?.data?.message || 'Tahrirlashda xatolik yuz berdi'),
   });
@@ -245,6 +248,7 @@ export const Dashboard: React.FC = () => {
       setSelectedProbaStudent(null);
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => error(err.response?.data?.message || "O'chirishda xatolik yuz berdi"),
@@ -265,6 +269,7 @@ export const Dashboard: React.FC = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => error(err.response?.data?.message || 'Xatolik yuz berdi'),

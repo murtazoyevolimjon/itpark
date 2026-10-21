@@ -52,6 +52,7 @@ export const Rooms: React.FC = () => {
       success(selectedRoom ? 'Xona tahrirlandi' : 'Yangi xona qo\'shildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['roomsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -64,6 +65,7 @@ export const Rooms: React.FC = () => {
       success('Xona o\'chirildi');
       setDeleteRoomId(null);
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      queryClient.invalidateQueries({ queryKey: ['roomsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');

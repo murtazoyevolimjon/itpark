@@ -536,6 +536,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
@@ -566,6 +567,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
@@ -582,6 +584,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
     },
@@ -601,6 +604,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['group', id] });
       queryClient.invalidateQueries({ queryKey: ['groups'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['groupPayments', id] });
       queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
@@ -646,6 +650,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lovni saqlashda xatolik yuz berdi");
@@ -664,6 +669,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lovni tahrirlashda xatolik yuz berdi");
@@ -683,6 +689,7 @@ export const GroupDetail: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeSummary'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || "To'lovni o'chirishda xatolik yuz berdi");

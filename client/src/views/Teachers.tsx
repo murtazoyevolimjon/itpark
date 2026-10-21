@@ -94,6 +94,7 @@ export const Teachers: React.FC = () => {
       success(selectedTeacher ? 'Ustoz tahrirlandi' : 'Yangi ustoz qo\'shildi');
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['teachersSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Saqlashda xatolik');
@@ -106,6 +107,7 @@ export const Teachers: React.FC = () => {
       success('Ustoz o\'chirildi');
       setDeleteTeacherId(null);
       queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      queryClient.invalidateQueries({ queryKey: ['teachersSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'O\'chirishda xatolik');

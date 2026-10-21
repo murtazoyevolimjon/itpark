@@ -71,16 +71,22 @@ export const Groups: React.FC = () => {
     queryKey: ['coursesSelect'],
     queryFn: () => coursesApi.getAll({ limit: 100 }),
     enabled: isModalOpen,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const { data: teachers } = useQuery({
     queryKey: ['teachersSelect'],
     queryFn: () => teachersApi.getAll({ limit: 100 }),
     enabled: isModalOpen,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const { data: rooms } = useQuery({
     queryKey: ['roomsSelect'],
     queryFn: () => roomsApi.getAll({ limit: 100 }),
     enabled: isModalOpen,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Auto-sync select options if they arrive after modal opens

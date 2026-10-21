@@ -54,6 +54,7 @@ export const Courses: React.FC = () => {
       success(selectedCourse ? t('edit') : t('add'));
       handleCloseModal();
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['coursesSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Xatolik yuz berdi');
@@ -66,6 +67,7 @@ export const Courses: React.FC = () => {
       success(t('delete'));
       setDeleteCourseId(null);
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      queryClient.invalidateQueries({ queryKey: ['coursesSelect'] });
     },
     onError: (err: any) => {
       error(err.response?.data?.message || 'Xatolik yuz berdi');
