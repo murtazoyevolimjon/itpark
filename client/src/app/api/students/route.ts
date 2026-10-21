@@ -203,19 +203,19 @@ export async function POST(req: NextRequest) {
     const supabase = createServerSupabaseClient();
 
     // Validate the target group BEFORE creating the student, so a rejected enrollment leaves no orphan student
-    if (groupId) {
-      const violation = await checkEnrollment(supabase, authUser.centerId, groupId, null);
-      if (violation) return violationResponse(violation);
-    }
-    const cleanPhone = (phone || '').replace(/\D/g, '');
     const subjectToSave = (subject !== undefined ? subject : passportSeries || '').trim();
 
+    // Both checks are independent: run them at the same time instead of one after the other.
     // The same person (same phone and name) is never created twice: add the existing student to another group instead
-    const samePerson = await findSamePerson(supabase, authUser.centerId, {
-      firstName: String(firstName),
-      lastName: String(lastName),
-      phone: String(phone || ''),
-    });
+    const [violation, samePerson] = await Promise.all([
+      groupId ? checkEnrollment(supabase, authUser.centerId, groupId, null) : Promise.resolve(null),
+      findSamePerson(supabase, authUser.centerId, {
+        firstName: String(firstName),
+        lastName: String(lastName),
+        phone: String(phone || ''),
+      }),
+    ]);
+    if (violation) return violationResponse(violation);
     if (samePerson) {
       return NextResponse.json(
         {

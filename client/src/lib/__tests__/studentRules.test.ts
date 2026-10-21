@@ -19,34 +19,37 @@ describe('samePerson', () => {
 describe('findSamePerson', () => {
   const rows = [
     { id: '1', firstName: 'Ali', lastName: 'Valiyev', phone: '+998901234567' },
-    { id: '2', firstName: 'Vali', lastName: 'Valiyev', phone: '+998901234567' },
+    { id: '2', firstName: 'Ali', lastName: 'Valiyev', phone: '+998909999999' },
   ];
-  const fakeDb = (failFast: boolean) => ({
-    from: () => {
-      const b: any = {
-        select: () => b,
-        eq: () => b,
-        order: () => b,
-        limit: () => b,
-        range: (from: number, to: number) =>
-          Promise.resolve({ data: failFast ? rows.slice(from, to + 1) : rows, error: null }),
-        then: (res: any, rej: any) =>
-          Promise.resolve(failFast ? { data: null, error: { message: 'no column phoneKey' } } : { data: rows, error: null }).then(res, rej),
-      };
-      return b;
-    },
-  });
+  // Returns whatever the name query would return: same name, different phones
+  const fakeDb = (result: { data: any[] | null; error: any }) => {
+    const calls: string[] = [];
+    const b: any = {
+      select: () => b,
+      eq: () => b,
+      ilike: (col: string, val: string) => {
+        calls.push(`${col}=${val}`);
+        return b;
+      },
+      limit: () => Promise.resolve(result),
+    };
+    return { db: { from: () => b }, calls };
+  };
 
-  it('finds the existing person through the fast path', async () => {
-    const found = await findSamePerson(fakeDb(false), 'c1', { firstName: 'Ali', lastName: 'Valiyev', phone: '901234567' });
-    expect(found?.id).toBe('1');
-  });
-  it('falls back to a full scan when the phoneKey column does not exist yet', async () => {
-    const found = await findSamePerson(fakeDb(true), 'c1', { firstName: 'Vali', lastName: 'Valiyev', phone: '901234567' });
+  it('finds the person among same-named students by phone, with one name query', async () => {
+    const { db, calls } = fakeDb({ data: rows, error: null });
+    const found = await findSamePerson(db, 'c1', { firstName: 'Ali', lastName: 'Valiyev', phone: '+998 90 999 99 99' });
     expect(found?.id).toBe('2');
+    expect(calls).toEqual(['firstName=Ali', 'lastName=Valiyev']);
   });
-  it('returns null for a new person', async () => {
-    const found = await findSamePerson(fakeDb(false), 'c1', { firstName: 'Soli', lastName: 'Valiyev', phone: '901234567' });
-    expect(found).toBeNull();
+  it('escapes wildcard characters in the name', async () => {
+    const { db, calls } = fakeDb({ data: [], error: null });
+    await findSamePerson(db, 'c1', { firstName: '50%', lastName: 'a_b', phone: '901234567' });
+    expect(calls).toEqual(['firstName=50\\%', 'lastName=a\\_b']);
+  });
+  it('returns null for a new person, a short phone or a failed query', async () => {
+    expect(await findSamePerson(fakeDb({ data: rows, error: null }).db, 'c1', { firstName: 'Ali', lastName: 'Valiyev', phone: '901111111' })).toBeNull();
+    expect(await findSamePerson(fakeDb({ data: rows, error: null }).db, 'c1', { firstName: 'Ali', lastName: 'Valiyev', phone: '12' })).toBeNull();
+    expect(await findSamePerson(fakeDb({ data: null, error: { message: 'x' } }).db, 'c1', { firstName: 'Ali', lastName: 'Valiyev', phone: '901234567' })).toBeNull();
   });
 });

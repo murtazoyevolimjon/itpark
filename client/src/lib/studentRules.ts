@@ -1,4 +1,4 @@
-import { fetchAll } from './pagedFetch';
+import { escapeLike } from './centerRules';
 
 export const normalizeName = (value: string | null | undefined): string =>
   (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -33,26 +33,16 @@ export async function findSamePerson(
   const key = phoneKey(candidate.phone);
   if (key.length < 9) return null;
 
-  // Fast path: the generated `phoneKey` column (exists once the unique-constraints migration ran)
-  let rows: any[] | null = null;
-  const fast = await supabase
+  // One targeted query: the same person has the same name, so only those few rows are read and
+  // the phone is compared in memory (phones are stored with spaces/signs, so they cannot be matched in SQL)
+  const { data, error } = await supabase
     .from('students')
     .select('id, firstName, lastName, phone')
     .eq('centerId', centerId)
-    .eq('phoneKey', key)
+    .ilike('firstName', escapeLike(candidate.firstName.trim()))
+    .ilike('lastName', escapeLike(candidate.lastName.trim()))
     .limit(50);
-  if (!fast.error) rows = fast.data || [];
+  if (error) return null;
 
-  if (rows === null) {
-    rows = await fetchAll<any>((from, to) =>
-      supabase
-        .from('students')
-        .select('id, firstName, lastName, phone')
-        .eq('centerId', centerId)
-        .order('id')
-        .range(from, to)
-    );
-  }
-
-  return rows.find((r) => samePerson(candidate, r)) || null;
+  return (data || []).find((r: any) => samePerson(candidate, r)) || null;
 }

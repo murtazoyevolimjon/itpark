@@ -78,36 +78,37 @@ export async function checkEnrollment(
   studentId: string | null,
   ignoreGroupIds: string[] = []
 ): Promise<RuleViolation | null> {
-  const { data: group } = await supabase
-    .from('groups')
-    .select(`${GROUP_COLUMNS}, room:rooms(capacity, name)`)
-    .eq('id', groupId)
-    .eq('centerId', centerId)
-    .maybeSingle();
+  // The four reads do not depend on each other: fetch them at the same time (one round trip instead of four),
+  // then apply the rules in the same order as before.
+  const [groupRes, studentRes, membersRes, membershipsRes] = await Promise.all([
+    supabase
+      .from('groups')
+      .select(`${GROUP_COLUMNS}, room:rooms(capacity, name)`)
+      .eq('id', groupId)
+      .eq('centerId', centerId)
+      .maybeSingle(),
+    studentId
+      ? supabase.from('students').select('id').eq('id', studentId).eq('centerId', centerId).maybeSingle()
+      : Promise.resolve({ data: true }),
+    supabase.from('student_groups').select('studentId').eq('groupId', groupId),
+    studentId
+      ? supabase.from('student_groups').select(`groupId, group:groups(${GROUP_COLUMNS})`).eq('studentId', studentId)
+      : Promise.resolve({ data: [] }),
+  ]);
 
+  const group = groupRes.data;
   if (!group) return { status: 404, message: 'Guruh topilmadi' };
   if (group.status === 'TUGAGAN') {
     return { status: 400, message: "Bu guruh tugagan, unga yangi talaba qo'shib bo'lmaydi" };
   }
 
-  if (studentId) {
-    const { data: student } = await supabase
-      .from('students')
-      .select('id')
-      .eq('id', studentId)
-      .eq('centerId', centerId)
-      .maybeSingle();
-    if (!student) return { status: 404, message: 'Talaba topilmadi' };
-  }
+  if (studentId && !studentRes.data) return { status: 404, message: 'Talaba topilmadi' };
 
   const capacity = Number(group.room?.capacity) || 0;
   if (capacity > 0) {
-    const { data: members } = await supabase
-      .from('student_groups')
-      .select('studentId')
-      .eq('groupId', groupId);
-    const alreadyIn = studentId ? (members || []).some((m: any) => m.studentId === studentId) : false;
-    if (!alreadyIn && (members || []).length >= capacity) {
+    const members = (membersRes.data as any[]) || [];
+    const alreadyIn = studentId ? members.some((m: any) => m.studentId === studentId) : false;
+    if (!alreadyIn && members.length >= capacity) {
       return {
         status: 409,
         message: `Guruh to'lgan: "${group.room?.name || 'xona'}" sig'imi ${capacity} ta. Boshqa xona tanlang yoki xona sig'imini oshiring.`,
@@ -116,12 +117,7 @@ export async function checkEnrollment(
   }
 
   if (studentId) {
-    const { data: memberships } = await supabase
-      .from('student_groups')
-      .select(`groupId, group:groups(${GROUP_COLUMNS})`)
-      .eq('studentId', studentId);
-
-    const studentGroups: ScheduledGroup[] = (memberships || [])
+    const studentGroups: ScheduledGroup[] = ((membershipsRes.data as any[]) || [])
       .filter((m: any) => m.group && !ignoreGroupIds.includes(m.groupId))
       .map((m: any) => m.group);
 
