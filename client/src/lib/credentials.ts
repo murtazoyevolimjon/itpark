@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { escapeLike } from './centerRules';
 
 export interface StudentCredentials {
   login: string;
@@ -188,12 +189,17 @@ export async function checkLoginUniqueness(
     return { available: false, conflictMessage: 'Login kiritilishi shart' };
   }
 
-  // 1. Check in users table
-  const { data: userMatch } = await supabase
-    .from('users')
-    .select('id, fullName, email')
-    .ilike('email', cleanLogin)
-    .maybeSingle();
+  // Targeted lookups run in parallel (no table scans): users, teachers and students stored with this exact login
+  const likeLogin = escapeLike(cleanLogin);
+  const [{ data: userMatch }, { data: teacherMatch }, { data: studentMatches }] = await Promise.all([
+    supabase.from('users').select('id, fullName, email').ilike('email', likeLogin).limit(1).maybeSingle(),
+    supabase.from('teachers').select('id, firstName, lastName, login').ilike('login', likeLogin).limit(1).maybeSingle(),
+    supabase
+      .from('students')
+      .select('id, firstName, lastName, passportSeries')
+      .ilike('passportSeries', `CRED:login=${likeLogin}|%`)
+      .limit(5),
+  ]);
 
   if (userMatch && (!exclude || exclude.type !== 'user' || exclude.id !== userMatch.id)) {
     return {
@@ -202,13 +208,6 @@ export async function checkLoginUniqueness(
     };
   }
 
-  // 2. Check in teachers table
-  const { data: teacherMatch } = await supabase
-    .from('teachers')
-    .select('id, firstName, lastName, login')
-    .ilike('login', cleanLogin)
-    .maybeSingle();
-
   if (teacherMatch && (!exclude || exclude.type !== 'teacher' || exclude.id !== teacherMatch.id)) {
     return {
       available: false,
@@ -216,26 +215,14 @@ export async function checkLoginUniqueness(
     };
   }
 
-  // 3. Check in students table
-  const { data: studentsList } = await supabase
-    .from('students')
-    .select('id, firstName, lastName, phone, passportSeries')
-    .limit(1000);
-
-  if (studentsList) {
-    for (const st of studentsList) {
-      if (exclude && exclude.type === 'student' && exclude.id === st.id) {
-        continue;
-      }
-
-      const creds = parseStudentCreds(st.passportSeries, st.phone);
-      if (creds.login.toLowerCase() === cleanLogin) {
-        return {
-          available: false,
-          conflictMessage: `Ushbu login (${cleanLogin}) talaba (${st.firstName} ${st.lastName}) tomonidan band qilingan! Boshqa login tanlang.`,
-        };
-      }
+  for (const st of studentMatches || []) {
+    if (exclude && exclude.type === 'student' && exclude.id === st.id) {
+      continue;
     }
+    return {
+      available: false,
+      conflictMessage: `Ushbu login (${cleanLogin}) talaba (${st.firstName} ${st.lastName}) tomonidan band qilingan! Boshqa login tanlang.`,
+    };
   }
 
   return { available: true };
