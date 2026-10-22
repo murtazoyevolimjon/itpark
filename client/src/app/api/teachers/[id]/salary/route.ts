@@ -19,6 +19,11 @@ const UZ_MONTH_NAMES: Record<string, string> = {
   '12': 'Dekabr',
 };
 
+function monthRange_(ym: string) {
+  const [y, m] = ym.split('-').map(Number);
+  return { start: new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 10), end: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10) };
+}
+
 function formatMonthLabel(ym: string): string {
   const [year, month] = ym.split('-');
   const name = UZ_MONTH_NAMES[month] || month;
@@ -77,14 +82,16 @@ export async function GET(
     // 3. Fetch student_groups for these groups
     let studentGroupsList: any[] = [];
     if (groupIds.length > 0) {
-      studentGroupsList = await fetchAll<any>((from, to) =>
-        supabase
-          .from('student_groups')
-          .select('id, groupId, studentId, joinedAt, students(id, firstName, lastName, phone, status)')
-          .in('groupId', groupIds)
-          .order('id')
-          .range(from, to)
-      );
+      const readMembers = (cols: string) =>
+        fetchAll<any>((from, to) =>
+          supabase.from('student_groups').select(cols).in('groupId', groupIds).order('id').range(from, to)
+        );
+      try {
+        studentGroupsList = await readMembers('id, groupId, studentId, joinedAt, billingStartDate, students(id, firstName, lastName, phone, status)');
+      } catch (err: any) {
+        if (!/billingStartDate/i.test(String(err?.message || ''))) throw err;
+        studentGroupsList = await readMembers('id, groupId, studentId, joinedAt, students(id, firstName, lastName, phone, status)');
+      }
     }
 
     const allStudentIds = Array.from(new Set(studentGroupsList.map((sg: any) => sg.studentId)));
@@ -93,24 +100,24 @@ export async function GET(
     let paymentsList: any[] = [];
     if (groupIds.length > 0 || allStudentIds.length > 0) {
       // Paged: one request is cut off at 1000 rows, which made big centers' salaries too low
-      const pData = await fetchAll<any>((from, to) =>
-        supabase
-          .from('payments')
-          .select('id, studentId, groupId, courseId, amount, paymentDate, method, status')
-          .eq('centerId', authUser.centerId)
-          .neq('status', 'BEKOR_QILINGAN')
-          .order('id')
-          .range(from, to)
-      );
-
-      const groupIdSet = new Set(groupIds);
-      const studentIdSet = new Set(allStudentIds);
-      // Filter payments belonging to teacher's groups or students
-      paymentsList = pData.filter((p: any) => {
-        if (p.groupId && groupIdSet.has(p.groupId)) return true;
-        if (!p.groupId && p.studentId && studentIdSet.has(p.studentId)) return true;
-        return false;
-      });
+      const monthParam = new URL(req.url).searchParams.get('month') || '';
+      const monthRange = /^\d{4}-(0[1-9]|1[0-2])$/.test(monthParam) ? monthRange_(monthParam) : null;
+      const cols = 'id, studentId, groupId, courseId, amount, paymentDate, method, status';
+      const base = () => {
+        let q = supabase.from('payments').select(cols).eq('centerId', authUser.centerId).neq('status', 'BEKOR_QILINGAN');
+        if (monthRange) q = q.gte('paymentDate', monthRange.start).lt('paymentDate', monthRange.end);
+        return q;
+      };
+      const chunks: string[][] = [];
+      for (let i = 0; i < allStudentIds.length; i += 150) chunks.push(allStudentIds.slice(i, i + 150));
+      // Only this teacher's groups, plus old payments without a group for their students
+      const [byGroup, ...noGroup] = await Promise.all([
+        groupIds.length > 0
+          ? fetchAll<any>((from, to) => base().in('groupId', groupIds).order('id').range(from, to))
+          : Promise.resolve([] as any[]),
+        ...chunks.map((ids) => fetchAll<any>((from, to) => base().is('groupId', null).in('studentId', ids).order('id').range(from, to))),
+      ]);
+      paymentsList = [...byGroup, ...noGroup.flat()];
     }
 
     // Generate past 24 months + any payment months
@@ -192,9 +199,20 @@ export async function GET(
       };
     });
 
+    const monthEnd = requestedMonth === 'all' ? null : monthRange_(requestedMonth).end;
+    // A payment without a group counts once: for the student's oldest group of this teacher
+    const noGroupOwner = new Map<string, string>();
+    [...studentGroupsList]
+      .sort((a: any, b: any) => String(a.billingStartDate || a.joinedAt || '').localeCompare(String(b.billingStartDate || b.joinedAt || '')))
+      .forEach((sg: any) => {
+        if (!noGroupOwner.has(sg.studentId)) noGroupOwner.set(sg.studentId, sg.groupId);
+      });
+
     studentGroupsList.forEach((sg: any) => {
       const student = sg.students;
       if (!student) return;
+      const startedAt = String(sg.billingStartDate || sg.joinedAt || '').slice(0, 10);
+      if (monthEnd && startedAt && startedAt >= monthEnd) return;
 
       const g = groupList.find((grp: any) => grp.id === sg.groupId);
       const course = Array.isArray(g?.courses) ? g.courses[0] : g?.courses;
@@ -209,7 +227,7 @@ export async function GET(
       // Payments for this student
       const stPayments = (studentPaymentsMap[student.id] || []).filter((p: any) => {
         // If payment has groupId, match it, otherwise assume it's for this group
-        return !p.groupId || p.groupId === sg.groupId;
+        return p.groupId ? p.groupId === sg.groupId : noGroupOwner.get(sg.studentId) === sg.groupId;
       });
 
       const paidAmount = stPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);

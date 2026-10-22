@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   X,
   DollarSign,
@@ -54,10 +54,13 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
     }
   }, [isOpen, teacherId]);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: ['teacherSalary', teacherId, selectedMonth],
     queryFn: () => teachersApi.getSalary(teacherId, selectedMonth),
     enabled: isOpen && !!teacherId,
+    // Switching the month keeps the old numbers on screen until the new ones arrive (no blank flash)
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 
   const teacher = data?.teacher;
@@ -78,7 +81,28 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
   }, [students, studentSearch]);
 
   const handleExport = () => {
-    if (!students || students.length === 0) return;
+    const tName = teacher ? `${teacher.firstName}_${teacher.lastName}` : 'Oqituvchi';
+    const fileBase = `Oylik_Hisobot_${tName}_${filter?.selectedMonth || 'barchasi'}`;
+    // No students yet: still give the group summary instead of doing nothing
+    if (!students || students.length === 0) {
+      exportToExcel({
+        filename: fileBase,
+        sheetName: 'Maosh hisoboti',
+        columns: [
+          { header: 'Guruh', key: 'groupName' },
+          { header: 'Kurs', key: 'courseName' },
+          { header: 'Jami talaba', key: 'totalStudents' },
+          { header: "To'laganlar", key: 'paidCount' },
+          { header: 'Tushum', key: 'totalCollected' },
+          { header: 'Ustoz maoshi', key: 'calculatedSalary' },
+        ],
+        data: [
+          ...groups,
+          { groupName: 'JAMI', courseName: '', totalStudents: summary?.totalStudents ?? 0, paidCount: summary?.paidStudentsCount ?? 0, totalCollected: summary?.totalCollected ?? 0, calculatedSalary: summary?.calculatedSalary ?? 0 },
+        ],
+      });
+      return;
+    }
     const exportColumns = [
       { header: '№', key: 'index' },
       { header: 'Talaba F.I.SH', key: 'studentName' },
@@ -101,9 +125,8 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
       statusText: s.status === 'TOLANGAN' ? 'To\'langan' : s.status === 'QISMAN' ? 'Qisman' : 'To\'lanmagan',
       paymentDate: s.paymentDate ? formatDate(s.paymentDate) : '-',
     }));
-    const tName = teacher ? `${teacher.firstName}_${teacher.lastName}` : 'Oqituvchi';
     exportToExcel({
-      filename: `Oylik_Hisobot_${tName}_${filter?.selectedMonth || 'barchasi'}`,
+      filename: fileBase,
       sheetName: 'Maosh hisoboti',
       columns: exportColumns,
       data: exportRows,
@@ -170,12 +193,12 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
 
         {/* Body */}
         <div className={styles.modalBody}>
-          {isLoading ? (
+          {isLoading && !data ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <Skeleton height="110px" />
               <Skeleton height="260px" />
             </div>
-          ) : isError ? (
+          ) : isError && !data ? (
             <div className={styles.emptyState}>
               <AlertCircle size={40} color="#ef4444" style={{ margin: '0 auto 12px' }} />
               <p>Ma'lumotlarni yuklashda xatolik yuz berdi</p>

@@ -29,6 +29,16 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') === 'asc' ? true : false;
 
+    // The salary shown in the list is for one month (current by default), same as the salary window
+    const monthParam = searchParams.get('month') || '';
+    const now = new Date();
+    const ym = /^\d{4}-(0[1-9]|1[0-2])$/.test(monthParam)
+      ? monthParam
+      : `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    const [yy, mm] = ym.split('-').map(Number);
+    const monthStart = new Date(Date.UTC(yy, mm - 1, 1)).toISOString().slice(0, 10);
+    const monthEnd = new Date(Date.UTC(yy, mm, 1)).toISOString().slice(0, 10);
+
     const supabase = createServerSupabaseClient();
     let query = supabase
       .from('teachers')
@@ -59,7 +69,7 @@ export async function GET(req: NextRequest) {
     if (teacherIds.length > 0) {
       const { data: grpData } = await supabase
         .from('groups')
-        .select('id, name, teacherId, courseId')
+        .select('id, name, teacherId, courseId, course:courses(price)')
         .in('teacherId', teacherIds)
         .eq('centerId', authUser.centerId);
 
@@ -85,6 +95,8 @@ export async function GET(req: NextRequest) {
               .select('id, studentId, groupId, amount, status, paymentDate')
               .eq('centerId', authUser.centerId)
               .neq('status', 'BEKOR_QILINGAN')
+              .gte('paymentDate', monthStart)
+              .lt('paymentDate', monthEnd)
               .in('groupId', grpIds)
               .order('id')
               .range(from, to)
@@ -95,12 +107,15 @@ export async function GET(req: NextRequest) {
               .select('id, studentId, groupId, amount, status, paymentDate')
               .eq('centerId', authUser.centerId)
               .neq('status', 'BEKOR_QILINGAN')
+              .gte('paymentDate', monthStart)
+              .lt('paymentDate', monthEnd)
               .is('groupId', null)
               .order('id')
               .range(from, to)
           ),
         ]);
-        paymentsList = [...groupPayments, ...ungroupedPayments];      }
+        paymentsList = [...groupPayments, ...ungroupedPayments];
+      }
     }
 
     const formattedData = (data || []).map((item: any) => {
@@ -120,9 +135,19 @@ export async function GET(req: NextRequest) {
       );
 
       const totalCollected = myPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-      const paidStudentsSet = new Set(
-        myPayments.filter((p: any) => (Number(p.amount) || 0) > 0).map((p: any) => p.studentId)
-      );
+      // A student counts as paid when the month's payments for a group reach that group's course price
+      const paidStudentsSet = new Set<string>();
+      for (const g of myGroups) {
+        const course = Array.isArray(g.course) ? g.course[0] : g.course;
+        const price = Number(course?.price) || 0;
+        const memberIds = studentGroupsList.filter((sg: any) => sg.groupId === g.id).map((sg: any) => sg.studentId);
+        for (const sid of memberIds) {
+          const paid = myPayments
+            .filter((p: any) => p.studentId === sid && (p.groupId ? p.groupId === g.id : true))
+            .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+          if (paid > 0 && paid >= price) paidStudentsSet.add(sid);
+        }
+      }
       const paidStudentsCount = paidStudentsSet.size;
 
       const sType = item.salaryType || 'PERCENT';
@@ -154,6 +179,7 @@ export async function GET(req: NextRequest) {
           totalCollected,
           calculatedSalary,
           salaryFormula,
+          month: ym,
         },
       };
     });
