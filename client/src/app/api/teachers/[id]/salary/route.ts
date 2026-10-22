@@ -120,26 +120,15 @@ export async function GET(
       paymentsList = [...byGroup, ...noGroup.flat()];
     }
 
-    // Generate past 24 months + any payment months
-    const monthSet = new Set<string>();
+    // Months run from the month the center started using the platform up to now: nothing earlier can have data
     const now = new Date();
-
-    // Add past 24 months dynamically so user can view 2-3 months ago or any past month
-    for (let i = 0; i < 24; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthSet.add(ym);
+    const { data: centerRow } = await supabase.from('centers').select('createdAt').eq('id', authUser.centerId).maybeSingle();
+    const created = centerRow?.createdAt ? new Date(centerRow.createdAt) : now;
+    const startDate = Number.isNaN(created.getTime()) || created > now ? now : created;
+    const monthSet = new Set<string>();
+    for (let d = new Date(startDate.getFullYear(), startDate.getMonth(), 1); d <= now; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+      monthSet.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     }
-
-    // Also include any other payment dates found
-    paymentsList.forEach((p: any) => {
-      if (p.paymentDate) {
-        const ym = p.paymentDate.slice(0, 7);
-        if (/^\d{4}-\d{2}$/.test(ym)) {
-          monthSet.add(ym);
-        }
-      }
-    });
 
     const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const sortedMonths = Array.from(monthSet).sort().reverse();
