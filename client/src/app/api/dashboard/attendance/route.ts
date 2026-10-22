@@ -3,7 +3,7 @@ import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { requireStaff } from '@/lib/authz';
-import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { getAttendanceRetentionCutoff } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(req: NextRequest) {
@@ -20,7 +20,6 @@ export async function GET(req: NextRequest) {
     const days = parseInt(searchParams.get('days') || '7', 10);
 
     const supabase = createServerSupabaseClient();
-    await purgeExpiredAttendances(supabase, authUser.centerId);
     const retentionCutoff = getAttendanceRetentionCutoff();
 
     const startDate = new Date();

@@ -2,19 +2,15 @@
  * Attendance Retention Policy Utility
  *
  * Rule:
- * Keep only the current month and the previous calendar month.
- * Any attendance older than the 1st day of the previous calendar month is deleted permanently.
+ * The database keeps the current month and the previous calendar month as working data.
+ * Older months are never deleted automatically: the center downloads them as Excel and PDF
+ * (Attendance page, "Old attendance archive") and only then are they deleted from the database.
  *
  * Example:
  * In October 2026:
- * - Current month: October 2026
- * - Previous month: September 2026
+ * - Working data: September and October 2026
  * - Cutoff: 2026-09-01T00:00:00.000Z
- * - August 2026 and older are deleted!
- *
- * In November 2026:
- * - Cutoff: 2026-10-01T00:00:00.000Z
- * - September 2026 and older are deleted!
+ * - August 2026 and older wait in the archive until they are downloaded
  */
 
 /**
@@ -38,17 +34,16 @@ export function getAttendanceRetentionMinDateStr(): string {
 }
 
 /**
- * Automatically purges all attendance records older than the cutoff date.
+ * Start and end (exclusive) of a "YYYY-MM" month, or null when the month is malformed or still inside
+ * the working window (only months that ended before the cutoff may be archived and deleted).
  */
-export async function purgeExpiredAttendances(supabase: any, centerId?: string) {
-  try {
-    const cutoff = getAttendanceRetentionCutoff();
-    let query = supabase.from('attendances').delete().lt('date', cutoff);
-    if (centerId) {
-      query = query.eq('centerId', centerId);
-    }
-    await query;
-  } catch (err) {
-    console.error('Failed to purge expired attendances:', err);
-  }
+export function getArchivableMonthRange(month: string): { start: string; end: string } | null {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(month);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const monthIndex = Number(m[2]) - 1;
+  const start = new Date(Date.UTC(year, monthIndex, 1)).toISOString();
+  const end = new Date(Date.UTC(year, monthIndex + 1, 1)).toISOString();
+  if (end > getAttendanceRetentionCutoff()) return null;
+  return { start, end };
 }

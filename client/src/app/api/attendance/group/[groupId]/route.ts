@@ -3,7 +3,7 @@ import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { forbidden, isTeacher, teacherOwnsGroup } from '@/lib/authz';
-import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { getAttendanceRetentionCutoff } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
 
 export async function GET(
@@ -27,9 +27,6 @@ export async function GET(
     if (isTeacher(authUser) && !(await teacherOwnsGroup(supabase, authUser, params.groupId))) {
       return forbidden();
     }
-
-    // 2-month retention policy: purge attendance older than previous month
-    await purgeExpiredAttendances(supabase, authUser.centerId);
     const retentionCutoff = getAttendanceRetentionCutoff();
 
     const targetDate = dateParam || (fromParam && !toParam ? fromParam : null);

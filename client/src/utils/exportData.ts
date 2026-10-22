@@ -54,8 +54,10 @@ export function exportToExcel({
 
     const fullFilename = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
     XLSX.writeFile(workbook, fullFilename);
+    return true;
   } catch (error) {
     console.error('Excel export error:', error);
+    return false;
   }
 }
 
@@ -145,7 +147,9 @@ export function exportToPdf({
 
     const fullFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
     doc.save(fullFilename);
+    return true;
   } catch (error) {
     console.error('PDF export error:', error);
+    return false;
   }
 }

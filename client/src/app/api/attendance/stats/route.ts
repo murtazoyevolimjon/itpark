@@ -3,7 +3,7 @@ import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { requireStaff } from '@/lib/authz';
-import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
+import { getAttendanceRetentionCutoff } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
 import { loadStudentFinance, toDebtorRow } from '@/lib/studentFinance';
 
@@ -22,9 +22,6 @@ export async function GET(req: NextRequest) {
     const daysParam = searchParams.get('days');
 
     const supabase = createServerSupabaseClient();
-
-    // 2-month retention policy: clean up attendance older than previous month
-    await purgeExpiredAttendances(supabase, authUser.centerId);
     const retentionCutoff = getAttendanceRetentionCutoff();
 
     let rangeStart: string;

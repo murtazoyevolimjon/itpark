@@ -44,6 +44,7 @@ import { formatPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
 import { useLanguage } from '../hooks/useLanguage';
+import { AttendanceArchive } from '../components/AttendanceArchive';
 
 export const Attendance: React.FC = () => {
   const router = useRouter();
@@ -160,6 +161,7 @@ export const Attendance: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <AttendanceArchive />
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
