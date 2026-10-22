@@ -46,11 +46,24 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<string>(currentYm);
   const [activeTab, setActiveTab] = useState<'groups' | 'students'>('groups');
   const [studentSearch, setStudentSearch] = useState('');
+  // Clicking a group opens its students; "only unpaid" narrows the list to those who did not pay
+  const [groupFilter, setGroupFilter] = useState<string | null>(null);
+  const [onlyUnpaid, setOnlyUnpaid] = useState(false);
+
+  const openGroup = (groupId: string, unpaidOnly: boolean) => {
+    setGroupFilter(groupId);
+    setOnlyUnpaid(unpaidOnly);
+    setStudentSearch('');
+    setActiveTab('students');
+  };
 
   // Reset to current month whenever modal is opened for a teacher
   React.useEffect(() => {
     if (isOpen) {
       setSelectedMonth(new Date().toISOString().slice(0, 7));
+      setGroupFilter(null);
+      setOnlyUnpaid(false);
+      setActiveTab('groups');
     }
   }, [isOpen, teacherId]);
 
@@ -70,15 +83,19 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
   const students = data?.students || [];
 
   const filteredStudents = useMemo(() => {
-    if (!studentSearch.trim()) return students;
-    const q = studentSearch.toLowerCase();
-    return students.filter(
-      (s: any) =>
+    const q = studentSearch.trim().toLowerCase();
+    return students.filter((s: any) => {
+      if (groupFilter && s.groupId !== groupFilter) return false;
+      if (onlyUnpaid && s.status === 'TOLANGAN') return false;
+      if (!q) return true;
+      return (
         s.studentName.toLowerCase().includes(q) ||
         s.studentPhone.includes(q) ||
         s.groupName.toLowerCase().includes(q)
-    );
-  }, [students, studentSearch]);
+      );
+    });
+  }, [students, studentSearch, groupFilter, onlyUnpaid]);
+  const activeGroupName = groupFilter ? groups.find((g: any) => g.groupId === groupFilter)?.groupName : null;
 
   const handleExport = () => {
     const tName = teacher ? `${teacher.firstName}_${teacher.lastName}` : 'Oqituvchi';
@@ -337,7 +354,7 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                         </tr>
                       ) : (
                         groups.map((g: any) => (
-                          <tr key={g.groupId}>
+                          <tr key={g.groupId} onClick={() => openGroup(g.groupId, false)} style={{ cursor: 'pointer' }} title="O'quvchilarni ko'rish">
                             <td>
                               <span className={styles.groupBadge}>
                                 <BookOpen size={13} />
@@ -365,7 +382,12 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                                 {g.paidCount} ta to'lagan
                               </span>
                             </td>
-                            <td>
+                            <td
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openGroup(g.groupId, true);
+                              }}
+                            >
                               <span
                                 style={{
                                   padding: '3px 8px',
@@ -425,6 +447,23 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                       />
                     </div>
 
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {activeGroupName && (
+                        <button
+                          type="button"
+                          onClick={() => setGroupFilter(null)}
+                          style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(96,165,250,0.4)', background: 'rgba(59,130,246,0.12)', color: '#93c5fd', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          {activeGroupName} ✕
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setOnlyUnpaid((v) => !v)}
+                        style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(248,113,113,0.4)', background: onlyUnpaid ? 'rgba(239,68,68,0.25)' : 'transparent', color: '#f87171', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        To'lamaganlar
+                      </button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -434,6 +473,7 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                     >
                       Excelga yuklab olish
                     </Button>
+                    </div>
                   </div>
 
                   <div className={styles.tableWrap}>
