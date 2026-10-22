@@ -75,7 +75,10 @@ export async function GET(req: NextRequest) {
       filtered = filtered.filter((h) => !h.groupId || h.groupId === 'all' || h.groupId === groupId);
     }
 
-    return NextResponse.json({ success: true, data: filtered });
+    // Records saved before attachments were validated may hold an unsafe file: never hand those out
+    const clean = filtered.map((h) => ({ ...h, file: h.file ? safeAttachment(h.file) : null }));
+
+    return NextResponse.json({ success: true, data: clean });
   } catch (err: any) {
     console.error('GET /api/homework error:', err);
     return NextResponse.json({ success: false, message: 'Server xatosi' }, { status: 500 });

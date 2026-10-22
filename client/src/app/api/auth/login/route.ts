@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (isRateLimited(`login:${getClientIp(req)}:${loginIdentifier.toLowerCase()}`)) {
+    // One address may not try an endless list of usernames either
+    const clientIp = getClientIp(req);
+    if (isRateLimited(`login-ip:${clientIp}`, 60) || isRateLimited(`login:${clientIp}:${loginIdentifier.toLowerCase()}`)) {
       return NextResponse.json(
         { message: "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring" },
         { status: 429 }

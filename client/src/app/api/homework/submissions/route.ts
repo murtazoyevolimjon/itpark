@@ -92,7 +92,10 @@ export async function GET(req: NextRequest) {
     if (groupId) filtered = filtered.filter((s) => !s.groupId || s.groupId === groupId);
     if (studentId) filtered = filtered.filter((s) => s.studentId === studentId);
 
-    return NextResponse.json({ success: true, data: filtered });
+    // Links saved before validation existed may use another scheme (javascript:, data:): drop them on the way out
+    const clean = filtered.map((s) => ({ ...s, submissionLink: s.submissionLink ? safeHttpUrl(s.submissionLink) : '' }));
+
+    return NextResponse.json({ success: true, data: clean });
   } catch (err: any) {
     console.error('GET /api/homework/submissions error:', err);
     return NextResponse.json({ success: false, message: 'Server xatosi' }, { status: 500 });
