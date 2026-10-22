@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <button
             type="button"
             onClick={() => router.push('/superadmin')}
-            title="Dasturchi paneliga qaytish"
+            title={t('backToDeveloperTooltip')}
             style={{
               padding: '6px 10px',
               borderRadius: '8px',
@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               whiteSpace: 'nowrap',
             }}
           >
-            ← Dasturchi
+            {t('backToDeveloper')}
           </button>
         )}
 
@@ -85,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         <button
           className={styles.themeToggle}
           onClick={toggleTheme}
-          title={theme === 'light' ? "Tungi rejimga o'tish" : "Kunduzgi rejimga o'tish"}
+          title={theme === 'light' ? t('switchToDark') : t('switchToLight')}
         >
           {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
@@ -108,9 +108,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <div className={styles.userTrigger} onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
             <div className={styles.avatar}>{getInitials(user?.fullName)}</div>
             <div className={styles.userInfo}>
-              <span className={styles.userName}>{user?.fullName || 'Foydalanuvchi'}</span>
+              <span className={styles.userName}>{user?.fullName || t('profile')}</span>
               <span className={styles.userRole}>
-                {user?.role === 'TEACHER' ? "O'QITUVCHI" : (user?.role || 'OWNER')}
+                {user?.role === 'TEACHER' ? t('roleTeacher') : (user?.role === 'OWNER' ? t('roleOwner') : t('roleAdmin'))}
               </span>
             </div>
             <ChevronDown size={14} color="var(--text-muted)" />

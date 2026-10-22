@@ -25,9 +25,11 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { Button } from '../components/ui/Button/Button';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const TeacherSalaryView: React.FC = () => {
   const { user } = useAuth();
+  const { t, dict } = useLanguage();
   const currentYm = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentYm);
   const [activeTab, setActiveTab] = useState<'groups' | 'students'>('groups');

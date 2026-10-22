@@ -30,20 +30,21 @@ import { TeacherSalaryModal } from '../components/ui/TeacherSalaryModal/TeacherS
 import { Group } from '../types';
 import styles from './TeacherGroups.module.css';
 
-const DAY_NAMES_MAP: Record<string, string> = {
-  DUSH: 'Dushanba',
-  SESH: 'Seshanba',
-  CHOR: 'Chorshanba',
-  PAY: 'Payshanba',
-  JU: 'Juma',
-  SHAN: 'Shanba',
-  YAK: 'Yakshanba',
-};
+const getDayNamesMap = (dict: any): Record<string, string> => ({
+  DUSH: dict.days?.mon || 'Dushanba',
+  SESH: dict.days?.tue || 'Seshanba',
+  CHOR: dict.days?.wed || 'Chorshanba',
+  PAY: dict.days?.thu || 'Payshanba',
+  JU: dict.days?.fri || 'Juma',
+  SHAN: dict.days?.sat || 'Shanba',
+  YAK: dict.days?.sun || 'Yakshanba',
+});
 
 export const TeacherGroups: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { dict } = useLanguage();
+  const { t, dict } = useLanguage();
+  const DAY_NAMES_MAP = useMemo(() => getDayNamesMap(dict), [dict]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'main' | 'archive'>('main');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -206,7 +207,7 @@ export const TeacherGroups: React.FC = () => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                  Mening Oylik Maoshim & To'lovlar
+                  {(dict.teacher?.salary || "Mening Oylik Maoshim")} & {(dict.financePayments || "To'lovlar")}
                 </h3>
                 {salaryData?.teacher && (
                   <span
@@ -221,13 +222,13 @@ export const TeacherGroups: React.FC = () => {
                     }}
                   >
                     {salaryData.teacher.salaryType === 'PERCENT'
-                      ? `Stavka: ${salaryData.teacher.salaryValue}% (Foiz)`
-                      : `Stavka: ${salaryData.teacher.salaryValue >= 1000000 ? formatMoney(salaryData.teacher.salaryValue) : `${formatMoney(salaryData.teacher.salaryValue)}/o'quvchi`}`}
+                      ? `Stavka: ${salaryData.teacher.salaryValue}%`
+                      : `Stavka: ${salaryData.teacher.salaryValue >= 1000000 ? formatMoney(salaryData.teacher.salaryValue) : `${formatMoney(salaryData.teacher.salaryValue)}/${dict.countUnit || 'ta'}`}`}
                   </span>
                 )}
               </div>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                O'quvchilaringiz qilgan to'lovlari va sizga hisoblangan oylik maosh summasi
+                {dict.teacher?.groupsSubtitle || "O'quvchilaringiz qilgan to'lovlari va sizga hisoblangan oylik maosh summasi"}
               </p>
             </div>
           </div>
@@ -251,7 +252,7 @@ export const TeacherGroups: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            <span>Batafsil hisob-kitobni ko'rish</span>
+            <span>{dict.teachersPage?.salaryCalcLink || "Batafsil hisob-kitobni ko'rish"}</span>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -267,13 +268,13 @@ export const TeacherGroups: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              Yig'ilgan to'lovlar (Jami tushum)
+              {dict.financePage?.revenue || "Yig'ilgan to'lovlar"}
             </div>
             <div style={{ fontSize: '20px', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
               {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.totalCollected || 0)}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              {salaryData?.summary?.paidStudentsCount || 0} ta to'lov qabul qilingan
+              {salaryData?.summary?.paidStudentsCount || 0} {dict.countUnit || 'ta'}
             </div>
           </div>
 
@@ -286,13 +287,13 @@ export const TeacherGroups: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              To'lov qilgan o'quvchilar
+              {t('paid')}
             </div>
             <div style={{ fontSize: '20px', fontWeight: 800, color: '#fbbf24', marginTop: '4px' }}>
-              {isSalaryLoading ? '...' : `${salaryData?.summary?.paidStudentsCount || 0} / ${salaryData?.summary?.totalStudents || 0} ta`}
+              {isSalaryLoading ? '...' : `${salaryData?.summary?.paidStudentsCount || 0} / ${salaryData?.summary?.totalStudents || 0} ${dict.countUnit || 'ta'}`}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              {salaryData?.summary?.unpaidStudentsCount || 0} ta o'quvchi to'lamagan
+              {salaryData?.summary?.unpaidStudentsCount || 0} {dict.countUnit || 'ta'}
             </div>
           </div>
 
@@ -305,13 +306,13 @@ export const TeacherGroups: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: 700 }}>
-              💰 Mening Hisoblangan Maoshim
+              💰 {dict.teacher?.salary || "Mening Hisoblangan Maoshim"}
             </div>
             <div style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
               {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.calculatedSalary || 0)}
             </div>
             <div style={{ fontSize: '11px', color: '#6ee7b7', marginTop: '2px' }}>
-              Hozirgi to'lovlar va stavka asosida
+              {dict.teacher?.groupsSubtitle || "Hozirgi to'lovlar va stavka asosida"}
             </div>
           </div>
         </div>

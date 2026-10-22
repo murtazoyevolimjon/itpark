@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { firstError, numberValue, optionalText, text } from '@/lib/validation';
 
 export async function GET(
@@ -28,7 +28,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -77,7 +77,7 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -123,6 +123,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

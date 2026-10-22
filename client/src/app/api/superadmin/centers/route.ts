@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
       .order('createdAt', { ascending: false });
 
     if (centersError) {
-      return NextResponse.json({ message: centersError.message }, { status: 500 });
+      return serverErrorResponse(centersError);
     }
 
     // 2. Fetch all users to map admin logins and names
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ centers: centersWithStats });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (centerError) {
-      return NextResponse.json({ message: centerError.message }, { status: 500 });
+      return serverErrorResponse(centerError);
     }
 
     // 2. Create Owner User for this Center
@@ -148,7 +149,7 @@ export async function POST(req: NextRequest) {
     if (userError) {
       // Roll back so a half-created center (without an owner) is never left behind
       await supabase.from('centers').delete().eq('id', centerId);
-      return NextResponse.json({ message: userError.message }, { status: 500 });
+      return serverErrorResponse(userError);
     }
 
     return NextResponse.json({
@@ -167,6 +168,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

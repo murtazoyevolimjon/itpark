@@ -18,12 +18,12 @@ export interface SuperAdminJwtPayload {
 }
 
 export function signSuperAdminToken(payload: SuperAdminJwtPayload): string {
-  return jwt.sign(payload, getSuperAdminSecret(), { expiresIn: '12h' });
+  return jwt.sign(payload, getSuperAdminSecret(), { expiresIn: '12h', algorithm: 'HS256' });
 }
 
 export function verifySuperAdminToken(token: string): SuperAdminJwtPayload | null {
   try {
-    const decoded = jwt.verify(token, getSuperAdminSecret()) as SuperAdminJwtPayload;
+    const decoded = jwt.verify(token, getSuperAdminSecret(), { algorithms: ['HS256'] }) as SuperAdminJwtPayload;
     if (decoded && decoded.role === 'SUPERADMIN') {
       return decoded;
     }

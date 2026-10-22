@@ -31,11 +31,13 @@ import {
   checkAttendanceTimeEligibility,
 } from '../utils/attendanceTime';
 import { LessonTopicSelect } from '../components/ui/LessonTopicSelect/LessonTopicSelect';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const AttendanceTake: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
 
   const todayStr = useMemo(() => getTashkentDateString(), []);
   const minAllowedDate = useMemo(() => {
@@ -366,14 +368,14 @@ export const AttendanceTake: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Button variant="outline" size="sm" onClick={() => router.push('/attendance')}>
-            <ArrowLeft size={16} /> Davomatlar ro'yxatiga qaytish
+            <ArrowLeft size={16} /> {dict.attendanceTake?.backBtn || "Orqaga"}
           </Button>
           <div>
             <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-              Davomat Olish
+              {dict.attendanceTake?.title || "Davomat Olish"}
             </h2>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Guruhlar bo'yicha kunlik dars davomatini qayd qilish
+              {dict.attendanceSubtitle || "Guruhlar bo'yicha kunlik dars davomatini qayd qilish"}
             </p>
           </div>
         </div>
@@ -382,13 +384,13 @@ export const AttendanceTake: React.FC = () => {
         {studentsList.length > 0 && (
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.12)', color: '#10b981' }}>
-              ✓ Kelgan: {summaryCounts.kelgan}
+              ✓ {dict.attendanceTake?.presentBtn || "Kelgan"}: {summaryCounts.kelgan}
             </span>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444' }}>
-              ✕ Kelmagan: {summaryCounts.kelmagan}
+              ✕ {dict.attendanceTake?.absentBtn || "Kelmagan"}: {summaryCounts.kelmagan}
             </span>
             <span style={{ fontSize: '12px', fontWeight: 600, padding: '4px 10px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b' }}>
-              🕒 Kechikkan: {summaryCounts.kechikkan}
+              🕒 {dict.attendanceTake?.lateBtn || "Kechikkan"}: {summaryCounts.kechikkan}
             </span>
           </div>
         )}
@@ -398,15 +400,15 @@ export const AttendanceTake: React.FC = () => {
       <Card>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', alignItems: 'flex-start' }}>
           <GroupCardSelect
-            label="Guruhni tanlang"
+            label={dict.attendanceTake?.selectGroup || "Guruhni tanlang"}
             groups={groups?.data || []}
             value={selectedGroupId}
             onChange={(groupId) => setSelectedGroupId(groupId)}
-            placeholder="Guruhni tanlang..."
-            searchPlaceholder="Guruh, fan yoki o'qituvchi bo'yicha qidirish..."
+            placeholder={dict.attendanceTake?.groupPlaceholder || "Guruhni tanlang..."}
+            searchPlaceholder={dict.attendanceTake?.groupSearchPlaceholder || "Guruh, fan yoki o'qituvchi bo'yicha qidirish..."}
           />
           <Input
-            label="Dars sanasi"
+            label={dict.attendanceTake?.classDate || "Dars sanasi"}
             type="date"
             value={attendanceDate}
             min={minAllowedDate}
@@ -425,8 +427,8 @@ export const AttendanceTake: React.FC = () => {
                 disabled={hasAnySavedAttendance}
                 required={true}
                 hasError={topicError}
-                errorMessage={topicError ? "Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi." : undefined}
-                label={hasAnySavedAttendance ? "O'tilgan dars mavzusi (Saqlangan):" : "Dars mavzusi:"}
+                errorMessage={topicError ? (dict.attendanceTake?.topicError || "Dars mavzusini tanlash yoki yozish majburiy! Mavzusiz davomat olib bo'lmaydi.") : undefined}
+                label={hasAnySavedAttendance ? (dict.attendanceTake?.savedTopic || "O'tilgan dars mavzusi (Saqlangan):") : (dict.attendanceTake?.lessonTopic || "Dars mavzusi:")}
                 lastLessonTopic={latestLessonTopic}
                 pastTopics={pastAttendanceTopics}
               />
@@ -453,10 +455,9 @@ export const AttendanceTake: React.FC = () => {
             <Lock size={20} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text)' }}>
               <strong style={{ color: '#d97706', display: 'block', fontSize: '14px', marginBottom: '2px' }}>
-                Davomat saqlangan! (Qulflangan)
+                {dict.attendanceTake?.lockedTitle || "Davomat saqlangan! (Qulflangan)"}
               </strong>
-              Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchi yoki admin saqlangan davomatni qayta o'zgartira olmaydi.{' '}
-              <strong>Yagona ruxsat:</strong> Dars boshida <em>"Kelmagan"</em> deb belgilangan o'quvchi kechikib kelsa, uni <em>"Kechikib keldi"</em> tugmasi orqali sababini yozib <em>"Kechikkan"</em> holatiga o'tkazishingiz mumkin.
+              {dict.attendanceTake?.lockedDesc || "Ushbu sana uchun kunlik davomat allaqachon olingan. O'qituvchi yoki admin saqlangan davomatni qayta o'zgartira olmaydi."}
             </div>
           </div>
         ) : !timeEligibility.canTakeAttendance ? (
@@ -491,12 +492,12 @@ export const AttendanceTake: React.FC = () => {
                 }}
               >
                 {timeEligibility.status === 'TIME_EXPIRED'
-                  ? 'Davomat olish vaqti tugagan!'
+                  ? (dict.attendanceTake?.timeExpiredTitle || 'Davomat olish vaqti tugagan!')
                   : timeEligibility.status === 'PAST_DATE'
-                  ? "O'tgan sana uchun yangi davomat saqlab bo'lmaydi!"
+                  ? (dict.attendanceTake?.pastDateTitle || "O'tgan sana uchun yangi davomat saqlab bo'lmaydi!")
                   : timeEligibility.status === 'FUTURE_DATE'
-                  ? "Kelgusi sana uchun davomat olinmaydi!"
-                  : 'Dars hali boshlanmagan!'}
+                  ? (dict.attendanceTake?.futureDateTitle || "Kelgusi sana uchun davomat olinmaydi!")
+                  : (dict.attendanceTake?.classNotStartedTitle || 'Dars hali boshlanmagan!')}
               </strong>
               {timeEligibility.message}
             </div>
@@ -519,17 +520,17 @@ export const AttendanceTake: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <CalendarCheck size={18} color="#3b82f6" />
               <span style={{ fontSize: '13px', color: 'var(--text)' }}>
-                Darsga kelganlarni <strong>"Kelgan"</strong>, hali kelmaganlarni <strong>"Kelmagan"</strong> deb belgilang va <strong>"Davomatni saqlash"</strong> tugmasini bosing.
+                {dict.attendanceTake?.takeBannerText || "Darsga kelganlarni 'Kelgan', hali kelmaganlarni 'Kelmagan' deb belgilang va 'Davomatni saqlash' tugmasini bosing."}
                 {timeEligibility.deadlineTime && (
                   <span style={{ color: '#2563eb', fontWeight: 600, marginLeft: '6px' }}>
-                    (Soat {timeEligibility.deadlineTime} gacha)
+                    {(dict.attendanceTake?.untilHour || '(Soat {time} gacha)').replace('{time}', timeEligibility.deadlineTime)}
                   </span>
                 )}
               </span>
             </div>
 
             <Button size="sm" variant="outline" onClick={handleMarkAllPresent}>
-              <CheckCheck size={15} /> Barchasini kelgan qilish
+              <CheckCheck size={15} /> {dict.attendanceTake?.markAllPresent || "Barchasini kelgan qilish"}
             </Button>
           </div>
         )
@@ -540,12 +541,12 @@ export const AttendanceTake: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-              {groupDetail ? `${groupDetail.name} — O'quvchilar ro'yxati (${studentsList.length} nafar)` : "O'quvchilar ro'yxati"}
+              {groupDetail ? `${groupDetail.name} — ${dict.attendanceTake?.studentsListTitle || "O'quvchilar ro'yxati"} (${studentsList.length})` : (dict.attendanceTake?.studentsListTitle || "O'quvchilar ro'yxati")}
             </h3>
             {groupDetail && (
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Kurs: {groupDetail.course?.name || '-'} | Xona: {groupDetail.room?.name || '-'}
-                {groupDetail.startTime && ` | Vaqti: ${groupDetail.startTime.slice(0, 5)} - ${groupDetail.endTime ? groupDetail.endTime.slice(0, 5) : '--:--'}`}
+                {dict.attendanceTake?.courseLabel || 'Kurs'}: {groupDetail.course?.name || '-'} | {dict.attendanceTake?.roomLabel || 'Xona'}: {groupDetail.room?.name || '-'}
+                {groupDetail.startTime && ` | ${dict.attendanceTake?.timeLabel || 'Vaqti'}: ${groupDetail.startTime.slice(0, 5)} - ${groupDetail.endTime ? groupDetail.endTime.slice(0, 5) : '--:--'}`}
               </span>
             )}
           </div>
@@ -563,16 +564,16 @@ export const AttendanceTake: React.FC = () => {
               }
             >
               {timeEligibility.status === 'TIME_EXPIRED'
-                ? `VAQT TUGAGAN (${timeEligibility.deadlineTime || ''} GACHA)`
+                ? `VAQT TUGAGAN (${timeEligibility.deadlineTime || ''})`
                 : timeEligibility.status === 'PAST_DATE'
-                ? "O'TGAN SANA"
+                ? (dict.attendanceTake?.pastDateTitle || "O'TGAN SANA")
                 : timeEligibility.status === 'TOO_EARLY'
                 ? `DARS BOSHLANMAGAN (${timeEligibility.startTime || ''})`
-                : 'DAVOMATNI SAQLASH'}
+                : (dict.attendanceTake?.saveAttendanceBtn || 'DAVOMATNI SAQLASH')}
             </Button>
           ) : (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.12)', padding: '6px 12px', borderRadius: '8px' }}>
-              <Lock size={14} /> Davomat qulflangan
+              <Lock size={14} /> {dict.attendanceTake?.alreadySaved || 'Davomat qulflangan'}
             </div>
           )}
         </div>
@@ -586,11 +587,11 @@ export const AttendanceTake: React.FC = () => {
           </div>
         ) : !selectedGroupId ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            Iltimos, yuqoridagi ro'yxatdan guruhni tanlang.
+            {dict.attendanceTake?.selectGroup || "Iltimos, yuqoridagi ro'yxatdan guruhni tanlang."}
           </div>
         ) : studentsList.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            Ushbu guruhga hali o'quvchilar biriktirilmagan.
+            {dict.attendanceTake?.noStudentsInGroup || "Ushbu guruhga hali o'quvchilar biriktirilmagan."}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -654,7 +655,7 @@ export const AttendanceTake: React.FC = () => {
                         {saved.status === 'KELGAN' && (
                           <Badge variant="success">
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <CheckCircle2 size={14} /> KELGAN
+                              <CheckCircle2 size={14} /> {dict.attendanceTake?.presentBtn || 'KELGAN'}
                             </span>
                           </Badge>
                         )}
@@ -663,12 +664,12 @@ export const AttendanceTake: React.FC = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                             <Badge variant="warning">
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <Clock size={14} /> KECHIKKAN
+                                <Clock size={14} /> {dict.attendanceTake?.lateBtn || 'KECHIKKAN'}
                               </span>
                             </Badge>
                             {saved.note && (
                               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                Sababi: {saved.note}
+                                {saved.note}
                               </span>
                             )}
                           </div>
@@ -678,7 +679,7 @@ export const AttendanceTake: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Badge variant="danger">
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <XCircle size={14} /> KELMAGAN
+                                <XCircle size={14} /> {dict.attendanceTake?.absentBtn || 'KELMAGAN'}
                               </span>
                             </Badge>
 
@@ -699,7 +700,7 @@ export const AttendanceTake: React.FC = () => {
                                 )
                               }
                             >
-                              <Clock size={14} /> Kechikib keldi
+                              <Clock size={14} /> {dict.attendanceTake?.markLateBtn || 'Kechikib keldi'}
                             </Button>
                           </div>
                         )}
@@ -731,7 +732,7 @@ export const AttendanceTake: React.FC = () => {
                             color: currentStatus === 'KELGAN' ? '#ffffff' : 'var(--text)',
                           }}
                         >
-                          <CheckCircle2 size={15} /> Kelgan
+                          <CheckCircle2 size={15} /> {dict.attendanceTake?.presentBtn || 'Kelgan'}
                         </button>
 
                         <button
@@ -758,7 +759,7 @@ export const AttendanceTake: React.FC = () => {
                             color: currentStatus === 'KELMAGAN' ? '#ffffff' : 'var(--text)',
                           }}
                         >
-                          <XCircle size={15} /> Kelmagan
+                          <XCircle size={15} /> {dict.attendanceTake?.absentBtn || 'Kelmagan'}
                         </button>
                       </div>
                     )}
@@ -774,31 +775,31 @@ export const AttendanceTake: React.FC = () => {
       <Modal
         isOpen={!!lateModalStudent}
         onClose={() => setLateModalStudent(null)}
-        title="O'quvchini kechikkan deb qayd etish"
+        title={dict.attendanceTake?.lateReasonModalTitle || "O'quvchini kechikkan deb qayd etish"}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-            <strong style={{ color: 'var(--text)' }}>{lateModalStudent?.name}</strong> darsga kechikib keldi. Kechikish sababini kiriting:
+            <strong style={{ color: 'var(--text)' }}>{lateModalStudent?.name}</strong> {dict.attendanceTake?.lateReasonModalDesc || "darsga kechikib keldi. Kechikish sababini kiriting:"}
           </p>
 
           <Input
-            label="Kechikish sababi (majburiy)"
+            label={dict.attendanceTake?.lateReasonModalTitle || "Kechikish sababi"}
             required
-            placeholder="Masalan: 15 minut, tirbandlik yoki uzrli sabab..."
+            placeholder={dict.attendanceTake?.lateReasonPlaceholder || "Masalan: 15 minut, tirbandlik yoki uzrli sabab..."}
             value={lateReason}
             onChange={(e) => setLateReason(e.target.value)}
           />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
             <Button variant="secondary" onClick={() => setLateModalStudent(null)}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button
               isLoading={bulkMutation.isPending}
               onClick={handleConfirmLate}
               style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
             >
-              Kechikkan deb saqlash
+              {dict.attendanceTake?.confirmLateBtn || "Kechikkan deb saqlash"}
             </Button>
           </div>
         </div>

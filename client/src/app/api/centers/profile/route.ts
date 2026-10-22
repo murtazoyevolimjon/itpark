@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(center);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -84,7 +85,7 @@ export async function PATCH(req: NextRequest) {
         .single();
 
       if (error) {
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        return serverErrorResponse(error);
       }
 
       return NextResponse.json(data);
@@ -100,11 +101,11 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -55,10 +56,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (centerError) {
-      return NextResponse.json(
-        { message: centerError.message },
-        { status: 500 }
-      );
+      return serverErrorResponse(centerError);
     }
 
     // Create User (Owner)
@@ -72,10 +70,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (userError) {
-      return NextResponse.json(
-        { message: userError.message },
-        { status: 500 }
-      );
+      return serverErrorResponse(userError);
     }
 
     const tokens = signToken({
@@ -96,9 +91,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ tokens, user });
   } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || 'Serverda xatolik yuz berdi' },
-      { status: 500 }
-    );
+    return serverErrorResponse(error);
   }
 }

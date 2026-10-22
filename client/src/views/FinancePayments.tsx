@@ -34,6 +34,7 @@ import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import { paymentsApi } from '../api/payments.api';
 import { studentsApi } from '../api/students.api';
 import { groupsApi } from '../api/groups.api';
@@ -53,6 +54,7 @@ export const FinancePayments: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -564,7 +566,7 @@ export const FinancePayments: React.FC = () => {
   const columns: Column<Payment>[] = [
     {
       key: 'student',
-      header: 'TALABA',
+      header: dict.financePaymentsPage.colStudent,
       render: (row) => (
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>
           {row.student ? `${row.student.firstName} ${row.student.lastName}` : '-'}
@@ -573,12 +575,12 @@ export const FinancePayments: React.FC = () => {
     },
     {
       key: 'receivedBy',
-      header: 'QABUL QILDI',
+      header: dict.financePaymentsPage.colReceivedBy,
       render: (row) => row.receivedBy?.fullName || 'Administrator',
     },
     {
       key: 'amount',
-      header: 'SUMMA',
+      header: dict.financePaymentsPage.colAmount,
       sortable: true,
       render: (row) => (
         <span style={{ fontWeight: 700, color: '#10b981' }}>
@@ -588,13 +590,13 @@ export const FinancePayments: React.FC = () => {
     },
     {
       key: 'paymentDate',
-      header: "TO'LOV SANASI",
+      header: dict.financePaymentsPage.colDate,
       sortable: true,
       render: (row) => formatDate(row.paymentDate),
     },
     {
       key: 'method',
-      header: "TO'LOV USULI",
+      header: dict.financePaymentsPage.colMethod,
       render: (row) => (
         <Badge variant="secondary">
           {row.method || 'NAQD'}
@@ -603,12 +605,12 @@ export const FinancePayments: React.FC = () => {
     },
     {
       key: 'course',
-      header: 'KURS / GURUH',
+      header: dict.financePaymentsPage.colCourseGroup,
       render: (row) => row.course?.name || row.group?.name || '-',
     },
     {
       key: 'status',
-      header: 'HOLATI',
+      header: dict.financePaymentsPage.colStatus,
       render: (row) => (
         <Badge
           variant={
@@ -620,16 +622,16 @@ export const FinancePayments: React.FC = () => {
           }
         >
           {row.status === 'TOLANGAN'
-            ? "TO'LANGAN"
+            ? t('paid')
             : row.status === 'QISMAN'
-            ? 'QISMAN'
-            : "TO'LANMAGAN"}
+            ? t('partiallyPaid')
+            : t('unpaid')}
         </Badge>
       ),
     },
     {
       key: 'actions',
-      header: 'AMALLAR',
+      header: dict.financePaymentsPage.colActions,
       render: (row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
@@ -649,10 +651,10 @@ export const FinancePayments: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
             onClick={() => handleOpenReceipt(row)}
-            title="Rasmiy to'lov kvitansiyasini chiqarish"
+            title={dict.receiptModal.officialBadge}
           >
             <FileText size={13} />
-            <span>Chek</span>
+            <span>{dict.financePaymentsPage.receiptBtn}</span>
           </button>
           <button
             type="button"
@@ -671,10 +673,10 @@ export const FinancePayments: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
             onClick={() => handleOpenEdit(row)}
-            title="To'lovni tahrirlash"
+            title={t('edit')}
           >
             <Edit2 size={13} color="var(--primary)" />
-            <span>Tahrirlash</span>
+            <span>{dict.financePaymentsPage.editBtn}</span>
           </button>
           <button
             type="button"
@@ -693,10 +695,10 @@ export const FinancePayments: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
             onClick={() => handleOpenDelete(row)}
-            title="To'lovni o'chirish"
+            title={t('delete')}
           >
             <Trash2 size={13} />
-            <span>O'chirish</span>
+            <span>{dict.financePaymentsPage.deleteBtn}</span>
           </button>
         </div>
       ),
@@ -708,9 +710,9 @@ export const FinancePayments: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>To'lovlar Tarixi</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{dict.financePaymentsPage.title}</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            O'quv markaziga amalga oshirilgan barcha to'lovlar jurnali
+            {dict.financePaymentsPage.subtitle}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -719,7 +721,7 @@ export const FinancePayments: React.FC = () => {
             onExportPdf={handleExportPdf}
           />
           <Button icon={<Plus size={16} />} onClick={() => setIsModalOpen(true)}>
-            To'lov qabul qilish
+            {dict.financePaymentsPage.acceptPaymentBtn}
           </Button>
         </div>
       </div>
@@ -1060,7 +1062,7 @@ export const FinancePayments: React.FC = () => {
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="To'lovni o'chirish"
+        title={dict.financePaymentsPage.deleteTitle}
         maxWidth="440px"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1082,7 +1084,7 @@ export const FinancePayments: React.FC = () => {
             </div>
             <div>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
-                Haqiqatan ham ushbu to'lovni o'chirmoqchimisiz?
+                {dict.financePaymentsPage.deleteConfirm}
               </p>
               {deletingPayment && (
                 <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -1098,7 +1100,7 @@ export const FinancePayments: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button
               type="button"
@@ -1106,7 +1108,7 @@ export const FinancePayments: React.FC = () => {
               isLoading={deleteMutation.isPending}
               onClick={() => deletingPayment && deleteMutation.mutate(deletingPayment.id)}
             >
-              Ha, o'chirilsin
+              {t('yes')}, {t('delete')}
             </Button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
@@ -47,7 +48,7 @@ export async function PATCH(req: NextRequest) {
         .eq('id', authUser.sub);
 
       if (updateErr) {
-        return NextResponse.json({ message: updateErr.message }, { status: 500 });
+        return serverErrorResponse(updateErr);
       }
 
       return NextResponse.json({ message: "Parol muvaffaqiyatli o'zgartirildi" });
@@ -78,7 +79,7 @@ export async function PATCH(req: NextRequest) {
       .eq('id', authUser.sub);
 
     if (updateErr) {
-      return NextResponse.json({ message: updateErr.message }, { status: 500 });
+      return serverErrorResponse(updateErr);
     }
 
     // The developer panel shows the password it handed out: it is no longer valid, so forget it
@@ -89,6 +90,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ message: "Parol muvaffaqiyatli o'zgartirildi" });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || "Server xatosi" }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

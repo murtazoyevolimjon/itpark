@@ -16,6 +16,10 @@ export const getTelegramBotUsername = (): string => {
 };
 
 /** The center's display name for message footers (the session token does not carry it). */
+/** Message bodies are sent with parse_mode=HTML: names and titles typed by users must not become markup. */
+export const esc = (value: unknown): string =>
+  String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export async function fetchCenterName(supabase: any, centerId: string): Promise<string | undefined> {
   try {
     const { data } = await supabase.from('centers').select('name').eq('id', centerId).maybeSingle();
@@ -197,26 +201,26 @@ export async function sendAttendanceAlert(params: {
 
   let emoji = '✅';
   let title = 'Darsda qatnashdi';
-  let desc = `Farzandingiz <b>${studentName}</b> bugungi darsga o'z vaqtida keldi va faol qatnashdi!`;
+  let desc = `Farzandingiz <b>${esc(studentName)}</b> bugungi darsga o'z vaqtida keldi va faol qatnashdi!`;
 
   if (status === 'KECHIKKAN') {
     emoji = '⏱';
     title = 'Darsga kechikib keldi';
-    desc = `Farzandingiz <b>${studentName}</b> bugungi darsga kechikib keldi. Iltimos, darslarga o'z vaqtida qatnashishni nazorat qiling.`;
+    desc = `Farzandingiz <b>${esc(studentName)}</b> bugungi darsga kechikib keldi. Iltimos, darslarga o'z vaqtida qatnashishni nazorat qiling.`;
   } else if (status === 'KELMAGAN') {
     emoji = '🚨';
     title = 'DIQQAT: Darsga kelmadi!';
-    desc = `Hurmatli ota-ona! Farzandingiz <b>${studentName}</b> bugungi darsga <b>qatnashmadi</b>. Agar sababli bo'lsa, markaz ma'muriyatiga xabar berishingizni so'raymiz.`;
+    desc = `Hurmatli ota-ona! Farzandingiz <b>${esc(studentName)}</b> bugungi darsga <b>qatnashmadi</b>. Agar sababli bo'lsa, markaz ma'muriyatiga xabar berishingizni so'raymiz.`;
   }
 
   const message = `
 ${emoji} <b>DAVOMAT BILDIRISHNOMASI</b>
 
 📌 <b>Holat:</b> ${title}
-👤 <b>O'quvchi:</b> ${studentName}
-📚 <b>Guruh:</b> ${groupName}
-📅 <b>Sana:</b> ${date}
-${teacherName ? `👨‍🏫 <b>Ustoz:</b> ${teacherName}\n` : ''}${centerName ? `🏢 <b>Markaz:</b> ${centerName}\n` : ''}
+👤 <b>O'quvchi:</b> ${esc(studentName)}
+📚 <b>Guruh:</b> ${esc(groupName)}
+📅 <b>Sana:</b> ${esc(date)}
+${teacherName ? `👨‍🏫 <b>Ustoz:</b> ${esc(teacherName)}\n` : ''}${centerName ? `🏢 <b>Markaz:</b> ${esc(centerName)}\n` : ''}
 ${desc}
 `.trim();
 
@@ -244,14 +248,14 @@ export async function sendPaymentAlert(params: {
   const message = `
 🧾 <b>TO'LOV QABUL QILINDI</b>
 
-Hurmatli <b>${studentName}</b>!
+Hurmatli <b>${esc(studentName)}</b>!
 Sizning kurs uchun to'lovingiz tizimda muvaffaqiyatli qayd etildi.
 
 💰 <b>To'langan summa:</b> ${formattedSum} so'm
-📚 <b>Kurs yo'nalishi:</b> ${courseName}
-🔢 <b>Kvitansiya raqami:</b> <code>${receiptNumber}</code>
-📅 <b>Sana:</b> ${date}
-${method ? `💳 <b>To'lov usuli:</b> ${method}\n` : ''}${centerName ? `🏢 <b>O'quv markaz:</b> ${centerName}\n` : ''}
+📚 <b>Kurs yo'nalishi:</b> ${esc(courseName)}
+🔢 <b>Kvitansiya raqami:</b> <code>${esc(receiptNumber)}</code>
+📅 <b>Sana:</b> ${esc(date)}
+${method ? `💳 <b>To'lov usuli:</b> ${esc(method)}\n` : ''}${centerName ? `🏢 <b>O'quv markaz:</b> ${esc(centerName)}\n` : ''}
 <i>To'lovingiz uchun tashakkur!</i>
 `.trim();
 
@@ -277,12 +281,12 @@ export async function sendDebtReminder(params: {
   const message = `
 💳 <b>OYLIK TO'LOV ESLATMASI</b>
 
-Hurmatli <b>${studentName}</b>!
-<b>"${courseName}"</b> kursi bo'yicha to'lov muddati yaqinlashmoqda.
+Hurmatli <b>${esc(studentName)}</b>!
+<b>"${esc(courseName)}"</b> kursi bo'yicha to'lov muddati yaqinlashmoqda.
 
 ⚠️ <b>To'lanishi kerak:</b> ${formattedSum} so'm
-📅 <b>Muddati:</b> ${dueDate}
-${centerName ? `🏢 <b>Markaz:</b> ${centerName}\n` : ''}
+📅 <b>Muddati:</b> ${esc(dueDate)}
+${centerName ? `🏢 <b>Markaz:</b> ${esc(centerName)}\n` : ''}
 <i>Darslarda uzilishlar bo'lmasligi uchun to'lovni o'z vaqtida amalga oshirishingizni so'raymiz.</i>
 `.trim();
 

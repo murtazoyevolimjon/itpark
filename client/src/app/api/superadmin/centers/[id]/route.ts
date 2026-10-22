@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import bcrypt from 'bcryptjs';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json({ center, users });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -90,7 +91,7 @@ export async function PATCH(
         .eq('centerId', id)
         .eq('role', 'OWNER');
       if (loginErr) {
-        return NextResponse.json({ message: loginErr.message }, { status: 500 });
+        return serverErrorResponse(loginErr);
       }
     }
 
@@ -114,7 +115,7 @@ export async function PATCH(
         .eq('id', id);
 
       if (centerUpdateError) {
-        return NextResponse.json({ message: centerUpdateError.message }, { status: 500 });
+        return serverErrorResponse(centerUpdateError);
       }
     }
 
@@ -128,7 +129,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, message: "Markaz ma'lumotlari yangilandi" });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -184,11 +185,11 @@ export async function DELETE(
     const { error } = await supabase.from('centers').delete().eq('id', id);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json({ success: true, message: "Markaz muvaffaqiyatli o'chirildi" });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

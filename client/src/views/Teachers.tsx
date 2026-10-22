@@ -16,6 +16,7 @@ import { TeacherSalaryModal } from '../components/ui/TeacherSalaryModal/TeacherS
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { teachersApi } from '../api/teachers.api';
 import { groupsApi } from '../api/groups.api';
 import { Teacher } from '../types';
@@ -27,6 +28,7 @@ export const Teachers: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -215,7 +217,7 @@ export const Teachers: React.FC = () => {
   const columns: Column<Teacher>[] = [
     {
       key: 'name',
-      header: 'ISM FAMILIYA',
+      header: dict.teachersPage.colName,
       sortable: true,
       render: (row) => (
         <div
@@ -223,21 +225,21 @@ export const Teachers: React.FC = () => {
             e.stopPropagation();
             setSalaryTeacher(row);
           }}
-          title="Oylik maosh hisob-kitobini ko'rish"
+          title={dict.teachersPage.salaryCalcLink}
           style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
         >
           <span style={{ fontWeight: 600, color: 'var(--text)' }}>
             {row.firstName} {row.lastName}
           </span>
           <span style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 500 }}>
-            Oylik hisob-kitob &rarr;
+            {dict.teachersPage.salaryCalcLink}
           </span>
         </div>
       ),
     },
     {
       key: 'login',
-      header: 'KIRISH (LOGIN / PAROL)',
+      header: dict.teachersPage.colLogin,
       render: (row) => {
         const isPassVisible = !!showTeacherPassMap[row.id];
         const teacherLogin = row.login || unmaskPhone(row.phone);
@@ -269,13 +271,13 @@ export const Teachers: React.FC = () => {
                 onClick={(e) => {
                   e.stopPropagation();
                   navigator.clipboard.writeText(
-                    `👤 O'qituvchi: ${row.firstName} ${row.lastName}\n🔑 Login: ${teacherLogin}\n🔒 Parol: ${teacherPass}\n🌐 Kirish: ${window.location.origin}/login`
+                    `👤 ${dict.teachersPage.title}: ${row.firstName} ${row.lastName}\n🔑 Login: ${teacherLogin}\n🔒 Parol: ${teacherPass}\n🌐 Kirish: ${window.location.origin}/login`
                   );
                   setCopiedTeacherId(row.id);
-                  success("Ustoz login va paroli nusxalandi!");
+                  success(dict.teachersPage.copiedCreds);
                   setTimeout(() => setCopiedTeacherId(null), 2000);
                 }}
-                title="Login va parolni nusxalash"
+                title={dict.teachersPage.copyCredsTitle}
                 style={{
                   background: isCopied ? '#10b981' : 'rgba(255, 255, 255, 0.08)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -308,7 +310,7 @@ export const Teachers: React.FC = () => {
                   e.stopPropagation();
                   setShowTeacherPassMap((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
                 }}
-                title={isPassVisible ? "Parolni yashirish" : "Parolni ko'rish"}
+                title={isPassVisible ? dict.loginPage.hidePassword : dict.loginPage.showPassword}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -328,19 +330,19 @@ export const Teachers: React.FC = () => {
     },
     {
       key: 'phone',
-      header: 'TELEFON',
+      header: dict.teachersPage.colPhone,
       render: (row) => formatPhone(row.phone),
     },
     {
       key: 'salary',
-      header: 'MAOSH',
+      header: dict.teachersPage.colSalary,
       render: (row) => {
         const rateText =
           row.salaryType === 'FIXED'
             ? row.salaryValue >= 1000000
               ? formatMoney(row.salaryValue)
-              : `${formatMoney(row.salaryValue)} / o'quvchi`
-            : `${row.salaryValue}% (Foiz)`;
+              : `${formatMoney(row.salaryValue)} ${dict.teachersPage.perStudent}`
+            : `${row.salaryValue}${dict.teachersPage.percentRate}`;
         const stats = row.salaryStats;
 
         return (
@@ -349,7 +351,7 @@ export const Teachers: React.FC = () => {
               e.stopPropagation();
               setSalaryTeacher(row);
             }}
-            title="Oylik to'lov hisob-kitobini ko'rish uchun bosing"
+            title={dict.teachersPage.salaryCalcLink}
             style={{
               cursor: 'pointer',
               display: 'inline-flex',
@@ -394,7 +396,7 @@ export const Teachers: React.FC = () => {
                       fontWeight: 600,
                     }}
                   >
-                    {stats.paidStudents} ta to'lagan
+                    {stats.paidStudents} {dict.teachersPage.paidCount}
                   </span>
                 </>
               )}
@@ -405,7 +407,7 @@ export const Teachers: React.FC = () => {
     },
     {
       key: 'groupsCount',
-      header: 'GURUHLAR',
+      header: dict.teachersPage.colGroups,
       render: (row) => (
         <button
           type="button"
@@ -427,31 +429,31 @@ export const Teachers: React.FC = () => {
             cursor: 'pointer',
             transition: 'all 0.15s ease',
           }}
-          title="Guruhlarni ko'rish va davomat olish"
+          title={dict.teachersPage.colGroups}
         >
           <CalendarCheck size={13} />
-          <span>{row._count?.groups || 0} ta guruh</span>
+          <span>{row._count?.groups || 0} {dict.teachersPage.groupsCount}</span>
         </button>
       ),
     },
     {
       key: 'status',
-      header: 'HOLATI',
+      header: dict.teachersPage.colStatus,
       render: (row) => (
         <Badge variant={row.status === 'FAOL' ? 'success' : 'danger'}>
-          {row.status}
+          {row.status === 'FAOL' ? t('active') : t('inactive')}
         </Badge>
       ),
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: dict.teachersPage.colAction,
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button
             size="sm"
             variant="outline"
-            title="Oylik maosh hisob-kitobi"
+            title={dict.teachersPage.salaryCalcLink}
             style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -463,7 +465,7 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            title="Guruhlar va davomat"
+            title={dict.teachersPage.colGroups}
             style={{ color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.4)' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -475,7 +477,7 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            title="Tahrirlash"
+            title={t('edit')}
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
@@ -486,7 +488,7 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            title="Parolni yangilash"
+            title={dict.teachersPage.resetPasswordTitle}
             style={{ color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)' }}
             onClick={(e) => {
               e.stopPropagation();
@@ -499,7 +501,7 @@ export const Teachers: React.FC = () => {
           <Button
             size="sm"
             variant="danger"
-            title="O'chirish"
+            title={t('delete')}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteTeacherId(row.id);
@@ -586,9 +588,9 @@ export const Teachers: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Ustozlar</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{dict.teachersPage.title}</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            O'quv markazining barcha o'qituvchilari ro'yxati
+            {dict.teachersPage.subtitle}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -597,7 +599,7 @@ export const Teachers: React.FC = () => {
             onExportPdf={handleExportPdf}
           />
           <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-            YANGI USTOZ
+            {dict.teachersPage.newTeacherBtn}
           </Button>
         </div>
       </div>
@@ -623,25 +625,25 @@ export const Teachers: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedTeacher ? 'Ustozni tahrirlash' : 'Yangi Ustoz Qo\'shish'}
+        title={selectedTeacher ? dict.teachersPage.modalEditTitle : dict.teachersPage.modalAddTitle}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
-            label="Ism"
+            label={dict.employeesPage.firstName || 'Ism'}
             required
             value={formData.firstName}
             onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
           />
 
           <Input
-            label="Familiya"
+            label={dict.employeesPage.lastName || 'Familiya'}
             required
             value={formData.lastName}
             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
           />
 
           <Input
-            label="Telefon raqam"
+            label={t('phone')}
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.phone)}
@@ -771,10 +773,10 @@ export const Teachers: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -788,7 +790,7 @@ export const Teachers: React.FC = () => {
           setNewPassword('');
           setShowResetPassword(false);
         }}
-        title="O'qituvchi parolini yangilash"
+        title={dict.teachersPage.resetPasswordTitle}
       >
         <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
@@ -803,13 +805,13 @@ export const Teachers: React.FC = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>
-              Yangi parol <span style={{ color: '#ef4444' }}>*</span>
+              {dict.teachersPage.newPasswordLabel} <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <input
                 type={showResetPassword ? 'text' : 'password'}
                 required
-                placeholder="Yangi parolni kiriting (masalan: 123456)"
+                placeholder="123456"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 style={{
@@ -844,7 +846,7 @@ export const Teachers: React.FC = () => {
                   borderRadius: '4px',
                   transition: 'color 0.15s',
                 }}
-                title={showResetPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                title={showResetPassword ? dict.loginPage.hidePassword : dict.loginPage.showPassword}
               >
                 {showResetPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -860,10 +862,10 @@ export const Teachers: React.FC = () => {
                 setNewPassword('');
               }}
             >
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={passwordMutation.isPending}>
-              Parolni saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -873,21 +875,21 @@ export const Teachers: React.FC = () => {
       <Modal
         isOpen={!!deleteTeacherId}
         onClose={() => setDeleteTeacherId(null)}
-        title="Ustozni o'chirish"
+        title={dict.teachersPage.deleteTitle}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu ustozni o'chirmoqchimisiz?
+          {dict.teachersPage.deleteConfirm}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteTeacherId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteTeacherId && deleteMutation.mutate(deleteTeacherId)}
           >
-            Ha, o'chirish
+            {t('yes')}, {t('delete')}
           </Button>
         </div>
       </Modal>
@@ -955,7 +957,7 @@ export const Teachers: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
             <Button variant="secondary" onClick={() => setAttendanceTeacher(null)}>
-              Yopish
+              {t('close')}
             </Button>
           </div>
         </div>

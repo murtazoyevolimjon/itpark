@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { ENUMS, date, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
@@ -30,7 +31,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -81,12 +82,12 @@ export async function PATCH(
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -111,11 +112,11 @@ export async function DELETE(
       .eq('centerId', authUser.centerId);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

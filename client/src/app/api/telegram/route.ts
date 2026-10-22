@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { getAuthUser } from '@/lib/auth';
+import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { parseStudentCreds } from '@/lib/credentials';
 import {
@@ -12,6 +14,10 @@ import {
 } from '@/lib/telegram';
 
 const ADMIN_ROLES = ['OWNER', 'ADMIN', 'MANAGER'];
+
+// The bot and its webhook are shared by every center: changing them, or sending free-text through the bot,
+// is the platform owner's (developer's) job, never a single center's admin.
+const PLATFORM_ACTIONS = ['set_webhook', 'delete_webhook', 'send_test', 'test_attendance', 'test_payment', 'test_debt'];
 
 const MAX_MESSAGE_LENGTH = 1500;
 
@@ -52,11 +58,7 @@ async function deliver(chatIds: string[], message: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = getAuthUser(req);
-    if (!authUser) {
-      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
-    }
-    if (!ADMIN_ROLES.includes(authUser.role)) {
+    if (!getSuperAdminAuth(req)) {
       return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
@@ -77,23 +79,29 @@ export async function GET(req: NextRequest) {
       webhook: webhookData?.result || null,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = getAuthUser(req);
-    if (!authUser) {
-      return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
-    }
+    const body = await req.json();
+    const { action } = body;
+    const isPlatformAction = PLATFORM_ACTIONS.includes(action);
 
-    if (!ADMIN_ROLES.includes(authUser.role)) {
+    if (isPlatformAction && !getSuperAdminAuth(req)) {
       return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { action } = body;
+    const authUser = isPlatformAction ? null : getAuthUser(req);
+    if (!isPlatformAction) {
+      if (!authUser) {
+        return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
+      }
+      if (!ADMIN_ROLES.includes(authUser.role)) {
+        return NextResponse.json({ message: "Ruxsat yo'q" }, { status: 403 });
+      }
+    }
     const token = getTelegramBotToken();
 
     // 1. Action: Set Webhook
@@ -133,7 +141,7 @@ export async function POST(req: NextRequest) {
         date: new Date().toLocaleDateString('uz-UZ'),
         groupName: groupName || 'Frontend Web Dasturlash',
         chatId,
-        centerName: authUser.centerName || 'IT Park Academy',
+        centerName: 'IT Park Academy',
       });
       return NextResponse.json({ success: true, results: res });
     }
@@ -148,9 +156,14 @@ export async function POST(req: NextRequest) {
         receiptNumber: receiptNumber || `REC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
         date: new Date().toLocaleDateString('uz-UZ'),
         chatId,
-        centerName: authUser.centerName || 'IT Park Academy',
+        centerName: 'IT Park Academy',
       });
       return NextResponse.json({ success: true, results: res });
+    }
+
+    // Everything below belongs to a single center's admin
+    if (!authUser) {
+      return NextResponse.json({ message: "Noma'lum harakat" }, { status: 400 });
     }
 
     // 6. Action: message one student and/or parent through the bot
@@ -225,6 +238,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Noma'lum harakat" }, { status: 400 });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

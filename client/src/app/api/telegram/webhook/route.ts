@@ -4,13 +4,25 @@ import {
   linkStudentTelegram,
   linkTelegramByPhone,
   getTelegramBotUsername,
+  esc,
 } from '@/lib/telegram';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
+    // Without the shared secret anybody could post forged updates (e.g. "link my chat to this phone number"),
+    // so in production the webhook is closed until TELEGRAM_WEBHOOK_SECRET is configured.
     const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-    if (expectedSecret && req.headers.get('x-telegram-bot-api-secret-token') !== expectedSecret) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    if (!expectedSecret && process.env.NODE_ENV === 'production') {
+      console.error('Telegram webhook refused: TELEGRAM_WEBHOOK_SECRET is not configured');
+      return NextResponse.json({ message: 'Webhook is not configured' }, { status: 503 });
+    }
+    if (expectedSecret) {
+      const given = Buffer.from(req.headers.get('x-telegram-bot-api-secret-token') || '');
+      const wanted = Buffer.from(expectedSecret);
+      if (given.length !== wanted.length || !crypto.timingSafeEqual(given, wanted)) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      }
     }
 
     const update = await req.json();
@@ -44,13 +56,13 @@ export async function POST(req: NextRequest) {
       if (linkRes.success) {
         await sendTelegramMessage(
           chatId,
-          `✅ <b>Muvaffaqiyatli ulandi!</b>\n\n👤 O'quvchi: <b>${linkRes.studentName}</b>\n📱 Telefon: <code>${phoneNumber}</code>\n\nEndi sizga dars davomati, to'lov kvitansiyalari va markaz xabarlari shu bot orqali yuborib turiladi! 🎉`,
+          `✅ <b>Muvaffaqiyatli ulandi!</b>\n\n👤 O'quvchi: <b>${esc(linkRes.studentName)}</b>\n📱 Telefon: <code>${esc(phoneNumber)}</code>\n\nEndi sizga dars davomati, to'lov kvitansiyalari va markaz xabarlari shu bot orqali yuborib turiladi! 🎉`,
           { reply_markup: { remove_keyboard: true } }
         );
       } else {
         await sendTelegramMessage(
           chatId,
-          `⚠️ <b>Topilmadi!</b>\n\nTizimda <code>${phoneNumber}</code> raqami bilan ro'yxatdan o'tgan o'quvchi topilmadi.\n\nIltimos, o'quv markaz ma'muriyatiga murojaat qiling: raqamingiz o'quvchi yoki ota-ona telefoni sifatida kiritilgan bo'lishi kerak.`,
+          `⚠️ <b>Topilmadi!</b>\n\nTizimda <code>${esc(phoneNumber)}</code> raqami bilan ro'yxatdan o'tgan o'quvchi topilmadi.\n\nIltimos, o'quv markaz ma'muriyatiga murojaat qiling: raqamingiz o'quvchi yoki ota-ona telefoni sifatida kiritilgan bo'lishi kerak.`,
           {
             reply_markup: { remove_keyboard: true },
           }
@@ -72,7 +84,7 @@ export async function POST(req: NextRequest) {
         if (linkRes.success) {
           await sendTelegramMessage(
             chatId,
-            `🎉 <b>Assalomu alaykum, ${linkRes.studentName}!</b>\n\nSizning Telegram hisobingiz <b>Markaz CRM</b> platformasiga muvaffaqiyatli ulandi!\n\nEndi barcha dars davomati, oylik to'lovlar va markaz xabarlari to'g'ridan-to'g'ri shu botga yuboriladi. 🚀`,
+            `🎉 <b>Assalomu alaykum, ${esc(linkRes.studentName)}!</b>\n\nSizning Telegram hisobingiz <b>Markaz CRM</b> platformasiga muvaffaqiyatli ulandi!\n\nEndi barcha dars davomati, oylik to'lovlar va markaz xabarlari to'g'ridan-to'g'ri shu botga yuboriladi. 🚀`,
             { reply_markup: { remove_keyboard: true } }
           );
           return NextResponse.json({ ok: true });
@@ -87,7 +99,7 @@ export async function POST(req: NextRequest) {
         if (linkRes.success) {
           await sendTelegramMessage(
             chatId,
-            `👨‍👩‍👧 <b>Hurmatli ota-ona!</b>\n\nFarzandingiz <b>${linkRes.studentName}</b> ning o'quv markazidagi faoliyatini kuzatib borish uchun hisobingiz muvaffaqiyatli ulandi!\n\nFarzandingizning darslarga qatnashuvi, kelgan/kelmaganligi va to'lov hisobotlari sizga shu bot orqali real vaqtda yetkaziladi.`,
+            `👨‍👩‍👧 <b>Hurmatli ota-ona!</b>\n\nFarzandingiz <b>${esc(linkRes.studentName)}</b> ning o'quv markazidagi faoliyatini kuzatib borish uchun hisobingiz muvaffaqiyatli ulandi!\n\nFarzandingizning darslarga qatnashuvi, kelgan/kelmaganligi va to'lov hisobotlari sizga shu bot orqali real vaqtda yetkaziladi.`,
             {
               reply_markup: { remove_keyboard: true },
             }
@@ -99,7 +111,7 @@ export async function POST(req: NextRequest) {
       // Default welcome when user simply opens the bot
       await sendTelegramMessage(
         chatId,
-        `👋 <b>Assalomu alaykum, ${firstName || 'foydalanuvchi'}!</b>\n\n<b>Markaz CRM Xabarnoma Botiga</b> xush kelibsiz! 🤖\n\nUshbu bot orqali o'quv markazidagi dars davomati, oylik to'lov kvitansiyalari va dars eslatmalarini real vaqtda kuzatib borishingiz mumkin.\n\n👇 <b>Profilingizni ulash uchun quyidagi tugmani bosing:</b>`,
+        `👋 <b>Assalomu alaykum, ${esc(firstName || 'foydalanuvchi')}!</b>\n\n<b>Markaz CRM Xabarnoma Botiga</b> xush kelibsiz! 🤖\n\nUshbu bot orqali o'quv markazidagi dars davomati, oylik to'lov kvitansiyalari va dars eslatmalarini real vaqtda kuzatib borishingiz mumkin.\n\n👇 <b>Profilingizni ulash uchun quyidagi tugmani bosing:</b>`,
         {
           reply_markup: {
             keyboard: [

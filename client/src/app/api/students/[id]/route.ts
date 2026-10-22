@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { requireStaff } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 import { ENUMS, date, firstError, oneOf, phone as phone_, phoneDigits, text } from '@/lib/validation';
 import {
@@ -20,13 +21,16 @@ export async function GET(
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
 
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
+
     const supabase = createServerSupabaseClient();
     const studentId = params.id === 'me' ? authUser.sub : params.id;
     const { data: student, error } = await supabase
       .from('students')
       .select(`
         *,
-        studentGroups:student_groups(*, group:groups(*, course:courses(*), teacher:teachers(*))),
+        studentGroups:student_groups(*, group:groups(*, course:courses(*), teacher:teachers(id, firstName, lastName, phone, status, centerId, salaryType, salaryValue))),
         attendances:attendances(*),
         payments:payments(*)
       `)
@@ -63,7 +67,7 @@ export async function GET(
       attendancePercentage,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -218,7 +222,7 @@ export async function PATCH(
       subject: creds.subject || null,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -264,6 +268,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

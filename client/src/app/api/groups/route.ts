@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { clampLimit, clampPage, safeSearch } from '@/lib/pagedFetch';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkGroupReferences, checkGroupSchedule, violationResponse } from '@/lib/groupRules';
 import { validateSlot } from '@/lib/schedule';
 import { ENUMS, date, firstError, oneOf, text } from '@/lib/validation';
@@ -15,26 +16,28 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
+    const search = safeSearch(searchParams.get('search'));
     const teacherId = searchParams.get('teacherId');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const page = clampPage(searchParams.get('page'));
+    const limit = clampLimit(searchParams.get('limit'), 10, 1000);
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') === 'asc' ? true : false;
 
     const supabase = createServerSupabaseClient();
     let query = supabase
       .from('groups')
-      .select('*, course:courses(*), teacher:teachers(*), room:rooms(*), studentGroups:student_groups(count)', { count: 'exact' })
+      .select('*, course:courses(*), teacher:teachers(id, firstName, lastName, phone, status, centerId, salaryType, salaryValue), room:rooms(*), studentGroups:student_groups(count)', { count: 'exact' })
       .eq('centerId', authUser.centerId);
 
     // If teacher, return their assigned groups
     if (authUser.role === 'TEACHER') {
+      // Strip filter syntax characters: the value is placed into a PostgREST .or() expression
+      const safeEmail = String(authUser.email || '').replace(/[,()%*\\"']/g, '');
       const { data: teacherRecord } = await supabase
         .from('teachers')
         .select('id')
         .eq('centerId', authUser.centerId)
-        .or(`login.eq.${authUser.email},phone.eq.${authUser.email}`)
+        .or(`login.eq.${safeEmail},phone.eq.${safeEmail}`)
         .maybeSingle();
 
       if (teacherRecord) {
@@ -75,7 +78,7 @@ export async function GET(req: NextRequest) {
       limit,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -149,6 +152,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

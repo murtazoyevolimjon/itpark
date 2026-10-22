@@ -18,7 +18,7 @@ import { formatMoney } from '../utils/formatMoney';
 export const Courses: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
-  const { t } = useLanguage();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -126,7 +126,7 @@ export const Courses: React.FC = () => {
     },
     {
       key: 'description',
-      header: 'IZOH',
+      header: dict.courseDescription,
       render: (row) => row.description || '-',
     },
     {
@@ -209,8 +209,8 @@ export const Courses: React.FC = () => {
           />
 
           <Input
-            label="Izoh"
-            placeholder="Kurs haqida qisqacha"
+            label={dict.courseDescription}
+            placeholder="Frontend React"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
@@ -233,7 +233,7 @@ export const Courses: React.FC = () => {
         title={t('delete')}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu kursni o'chirmoqchimisiz?
+          {dict.deleteCourseConfirm}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteCourseId(null)}>
@@ -244,7 +244,7 @@ export const Courses: React.FC = () => {
             isLoading={deleteMutation.isPending}
             onClick={() => deleteCourseId && deleteMutation.mutate(deleteCourseId)}
           >
-            {t('yes')}
+            {t('yes')}, {t('delete')}
           </Button>
         </div>
       </Modal>

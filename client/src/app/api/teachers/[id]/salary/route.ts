@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { fetchAll } from '@/lib/pagedFetch';
@@ -67,7 +68,7 @@ export async function GET(
       .eq('centerId', authUser.centerId);
 
     if (gErr) {
-      return NextResponse.json({ message: gErr.message }, { status: 500 });
+      return serverErrorResponse(gErr);
     }
 
     const groupList = groups || [];
@@ -338,6 +339,6 @@ export async function GET(
       students: studentRows,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || 'Serverda xatolik yuz berdi' }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

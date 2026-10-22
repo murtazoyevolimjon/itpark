@@ -102,8 +102,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
   const isTeacher = user?.role === 'TEACHER';
 
   const teacherNavItems = [
-    { path: '/teacher', label: 'Mening guruhlarim', icon: Users },
-    { path: '/teacher/attendance', label: 'Davomat olish', icon: CalendarCheck },
+    { path: '/teacher', label: t('myGroups'), icon: Users },
+    { path: '/teacher/attendance', label: t('takeAttendance'), icon: CalendarCheck },
     { path: '/ai-assistant', label: t('aiAssistant'), icon: Sparkles },
   ];
 
@@ -178,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed =
               type="button"
               className={styles.collapseBtn}
               onClick={onToggleCollapse}
-              title="Sidebar'ni yig'ish"
+              title={t('collapseSidebar')}
             >
               <ChevronLeft size={16} />
             </button>

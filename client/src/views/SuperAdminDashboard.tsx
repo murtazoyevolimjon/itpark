@@ -39,6 +39,7 @@ import { FloatingAIWidget } from '../components/ai/FloatingAIWidget';
 import { superadminApi } from '../api/superadmin.api';
 import { useSuperAdmin } from '../hooks/useSuperAdmin';
 import { useToast } from '../components/ui/Toast/Toast';
+import { useLanguage, Language } from '../hooks/useLanguage';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
 import styles from './SuperAdminDashboard.module.css';
@@ -48,6 +49,7 @@ export const SuperAdminDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, logout } = useSuperAdmin();
   const { success, error } = useToast();
+  const { lang, setLang, t, dict } = useLanguage();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -281,12 +283,26 @@ export const SuperAdminDashboard: React.FC = () => {
             <Sparkles size={22} />
           </div>
           <div>
-            <div className={styles.brandTitle}>Dasturchi Boshqaruv Markazi</div>
-            <div className={styles.brandBadge}>SaaS Super Admin Core</div>
+            <div className={styles.brandTitle}>{dict.superadmin?.brandTitle || 'Dasturchi Boshqaruv Markazi'}</div>
+            <div className={styles.brandBadge}>{dict.superadmin?.brandBadge || 'SaaS Super Admin Core'}</div>
           </div>
         </div>
 
         <div className={styles.navActions}>
+          {/* Language Selector Pills */}
+          <div className={styles.langSelector}>
+            {(['uz', 'en', 'ru'] as Language[]).map((l) => (
+              <button
+                key={l}
+                type="button"
+                className={`${styles.langBtn} ${lang === l ? styles.langBtnActive : ''}`}
+                onClick={() => setLang(l)}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <button
             className={styles.addBtn}
             onClick={() => {
@@ -295,8 +311,8 @@ export const SuperAdminDashboard: React.FC = () => {
             }}
           >
             <Plus size={18} />
-            <span className={styles.addBtnTextDesktop}>Yangi O&apos;quv Markaz Qo&apos;shish</span>
-            <span className={styles.addBtnTextMobile}>+ Yangi Markaz</span>
+            <span className={styles.addBtnTextDesktop}>{dict.superadmin?.addCenter || "Yangi O'quv Markaz Qo'shish"}</span>
+            <span className={styles.addBtnTextMobile}>{dict.superadmin?.addCenterShort || "+ Yangi Markaz"}</span>
           </button>
 
           <Link
@@ -307,20 +323,20 @@ export const SuperAdminDashboard: React.FC = () => {
               borderColor: 'rgba(99, 102, 241, 0.5)',
               color: '#a5b4fc',
             }}
-            title="AI Yordamchi"
+            title={dict.superadmin?.aiAnalysis || 'AI Tahlil'}
           >
             <Sparkles size={16} />
-            <span className={styles.navBtnText}>AI Tahlil</span>
+            <span className={styles.navBtnText}>{dict.superadmin?.aiAnalysis || 'AI Tahlil'}</span>
           </Link>
 
-          <a href="/dashboard" className={styles.secondaryBtn} title="CRM Paneli">
+          <a href="/dashboard" className={styles.secondaryBtn} title={dict.superadmin?.crmPanel || 'CRM Paneli'}>
             <ExternalLink size={16} />
-            <span className={styles.navBtnText}>CRM</span>
+            <span className={styles.navBtnText}>{dict.superadmin?.crmPanel || 'CRM'}</span>
           </a>
 
-          <button className={styles.logoutBtn} onClick={logout} title="Chiqish">
+          <button className={styles.logoutBtn} onClick={logout} title={dict.superadmin?.logout || 'Chiqish'}>
             <LogOut size={16} />
-            <span className={styles.navBtnText}>Chiqish</span>
+            <span className={styles.navBtnText}>{dict.superadmin?.logout || 'Chiqish'}</span>
           </button>
         </div>
       </header>
@@ -330,15 +346,14 @@ export const SuperAdminDashboard: React.FC = () => {
         {/* HERO BANNER */}
         <div className={styles.heroBanner}>
           <div className={styles.heroContent}>
-            <h2>Multi-Tenant O&apos;quv Markazlar Tarmog&apos;i</h2>
+            <h2>{dict.superadmin?.heroTitle || "Multi-Tenant O'quv Markazlar Tarmog'i"}</h2>
             <p>
-              Har bir o&apos;quv markaz to&apos;liq mustaqil: o&apos;z login/paroli, o&apos;z talabalari,
-              guruhlari va to&apos;lovlari bilan ishlaydi. Ma&apos;lumotlar mutlaqo aralashib ketmaydi.
+              {dict.superadmin?.heroDesc || "Har bir o'quv markaz to'liq mustaqil: o'z login/paroli, o'z talabalari, guruhlari va to'lovlari bilan ishlaydi. Ma'lumotlar mutlaqo aralashib ketmaydi."}
             </p>
           </div>
           <div className={styles.heroTag}>
             <ShieldCheck size={16} />
-            <span>Izolyatsiyalangan Baza</span>
+            <span>{dict.superadmin?.isolatedDb || "Izolyatsiyalangan Baza"}</span>
           </div>
         </div>
 
@@ -375,7 +390,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>Platforma AI Tahlili (Dasturchi)</span>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff' }}>{dict.superadmin?.platformAiTitle || "Platforma AI Tahlili (Dasturchi)"}</span>
                 <span
                   style={{
                     fontSize: '10px',
@@ -386,11 +401,11 @@ export const SuperAdminDashboard: React.FC = () => {
                     color: '#ffffff',
                   }}
                 >
-                  YANGI
+                  {dict.superadmin?.newBadge || "YANGI"}
                 </span>
               </div>
               <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
-                Barcha markazlar, talabalar statistikasi va tizim yuklamasi bo&apos;yicha sun&apos;iy intellekt tahlili
+                {dict.superadmin?.platformAiDesc || "Barcha markazlar, talabalar statistikasi va tizim yuklamasi bo'yicha sun'iy intellekt tahlili"}
               </p>
             </div>
           </div>
@@ -412,7 +427,7 @@ export const SuperAdminDashboard: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            <Sparkles size={15} /> AI Tahlilini Ko&apos;rish
+            <Sparkles size={15} /> {dict.superadmin?.runAnalysis || "AI Tahlilini Ko'rish"}
           </Link>
         </div>
 
@@ -424,7 +439,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <div>
               <div className={styles.statValue}>{stats.totalCenters}</div>
-              <div className={styles.statLabel}>Jami O&apos;quv Markazlar</div>
+              <div className={styles.statLabel}>{dict.superadmin?.totalCenters || "Jami O'quv Markazlar"}</div>
             </div>
           </div>
 
@@ -434,7 +449,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <div>
               <div className={styles.statValue}>{stats.totalStudents}</div>
-              <div className={styles.statLabel}>Barcha Talabalar</div>
+              <div className={styles.statLabel}>{dict.superadmin?.totalStudents || "Barcha Talabalar"}</div>
             </div>
           </div>
 
@@ -444,7 +459,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <div>
               <div className={styles.statValue}>{stats.totalGroups}</div>
-              <div className={styles.statLabel}>Faol Guruhlar</div>
+              <div className={styles.statLabel}>{dict.superadmin?.totalGroups || "Faol Guruhlar"}</div>
             </div>
           </div>
 
@@ -454,7 +469,7 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
             <div>
               <div className={styles.statValue}>{stats.totalTeachers}</div>
-              <div className={styles.statLabel}>Jami O&apos;qituvchilar</div>
+              <div className={styles.statLabel}>{dict.superadmin?.totalTeachers || "Jami O'qituvchilar"}</div>
             </div>
           </div>
         </div>

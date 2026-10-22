@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { fetchAll } from '@/lib/pagedFetch';
+import { isRateLimited } from '@/lib/rateLimit';
 
 const SYSTEM_PROMPT_TEMPLATE = `SEN — "MARKAZ CRM AI YORDAMCHISI". Sen o'quv markazlari (IT-markaz, til markazi, repetitorlik markazi) uchun CRM tizimida ishlaydigan aqlli, professional analitik yordamchisan.
 
@@ -1714,6 +1716,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan yoki markaz aniqlanmadi" }, { status: 401 });
     }
 
+    // AI calls cost money and CPU: a user may ask a limited number of questions per minute
+    if (!superAdmin && authUser && isRateLimited("ai:${authUser.centerId}:${authUser.sub}", 20, 60 * 1000)) {
+      return NextResponse.json({ message: "Juda ko'p so'rov. Bir daqiqadan keyin urinib ko'ring" }, { status: 429 });
+    }
+
     const supabase = createServerSupabaseClient();
     const effectiveCenterId = authUser?.centerId;
 
@@ -1900,6 +1907,19 @@ VAZIFANG:
       studentGroups = cStudentGroups || [];
     }
 
+    // A teacher's analysis covers only the groups they lead: no other teachers, expenses or students
+    if (tokenRole === 'TEACHER' && !isSuperAdmin) {
+      const myGroups = groups.filter((g: any) => g.teacherId === authUser?.sub);
+      const myGroupIds = new Set(myGroups.map((g: any) => g.id));
+      studentGroups = studentGroups.filter((sg: any) => myGroupIds.has(sg.groupId));
+      const myStudentIds = new Set(studentGroups.map((sg: any) => sg.studentId));
+      groups = myGroups;
+      students = students.filter((s: any) => myStudentIds.has(s.id));
+      payments = payments.filter((p: any) => myGroupIds.has(p.groupId));
+      attendances = attendances.filter((a: any) => myGroupIds.has(a.groupId));
+      teachers = teachers.filter((t: any) => t.id === authUser?.sub);
+      expenses = [];
+    }
     // Map teacher names
     const teacherMap: Record<string, string> = {};
     (teachers || []).forEach((t: any) => {
@@ -2243,6 +2263,6 @@ Javobing toza, chiroyli va o'qishli o'zbek tilida bo'lsin.`;
       task_type,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || 'Serverda xatolik yuz berdi' }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

@@ -31,6 +31,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
 import { useToast } from '../components/ui/Toast/Toast';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import { aiApi, AITaskType } from '../api/ai.api';
 
 interface ChatMessage {
@@ -43,6 +44,7 @@ interface ChatMessage {
 export const AIAssistant: React.FC = () => {
   const { user } = useAuth();
   const { success, error } = useToast();
+  const { t, dict, lang } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'analytics' | 'chat' | 'settings'>('analytics');
   const [selectedTask, setSelectedTask] = useState<AITaskType>('dashboard_summary');

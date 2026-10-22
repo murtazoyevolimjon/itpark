@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { requireStaff } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
 import { evaluateMonthlyPayment } from '@/lib/paymentRules';
 
@@ -14,6 +15,9 @@ export async function GET(
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const supabase = createServerSupabaseClient();
     const { data, error } = await supabase
@@ -29,7 +33,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -134,7 +138,7 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -164,6 +168,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

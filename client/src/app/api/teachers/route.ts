@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { requireStaff } from '@/lib/authz';
 import {
   parseTeacherCreds,
   serializeTeacherCreds,
   checkLoginUniqueness,
 } from '@/lib/credentials';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { clampLimit, clampPage, fetchAll, safeSearch } from '@/lib/pagedFetch';
 import { ENUMS, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const { searchParams } = new URL(req.url);
     const search = safeSearch(searchParams.get('search'));
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
       .range(from, to);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     const teacherIds = (data || []).map((t: any) => t.id);
@@ -161,7 +165,7 @@ export async function GET(req: NextRequest) {
       limit,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -249,6 +253,6 @@ export async function POST(req: NextRequest) {
       passportSeries: passportSeries || null,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

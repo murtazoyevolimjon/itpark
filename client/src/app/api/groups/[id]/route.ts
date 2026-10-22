@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkGroupReferences, checkGroupSchedule, violationResponse } from '@/lib/groupRules';
 import { validateSlot } from '@/lib/schedule';
 import { ENUMS, date, firstError, oneOf, text } from '@/lib/validation';
@@ -22,7 +22,7 @@ export async function GET(
       .select(`
         *,
         course:courses(*),
-        teacher:teachers(*),
+        teacher:teachers(id, firstName, lastName, phone, status, centerId, salaryType, salaryValue),
         room:rooms(*),
         studentGroups:student_groups(*, student:students(*)),
         attendances:attendances(*, student:students(id, firstName, lastName, phone)),
@@ -36,9 +36,17 @@ export async function GET(
       return NextResponse.json({ message: 'Guruh topilmadi' }, { status: 404 });
     }
 
-    // Teacher access check: allow within the center
-    if (authUser.role === 'TEACHER' && group.centerId !== authUser.centerId) {
+    // A teacher sees only the groups they lead
+    if (authUser.role === 'TEACHER' && group.teacherId !== authUser.sub) {
       return NextResponse.json({ message: "Siz faqat o'zingizning guruhingizni ko'ra olasiz" }, { status: 403 });
+    }
+
+    // Students' login / Telegram blob (passportSeries) is for staff only
+    if (authUser.role === 'TEACHER') {
+      for (const sg of group.studentGroups || []) {
+        if (sg.student) sg.student = { ...sg.student, passportSeries: null };
+      }
+      if (group.teacher) group.teacher = { ...group.teacher, password: null, passportSeries: null };
     }
 
     // Also fetch all payments of the students enrolled in this group
@@ -70,7 +78,7 @@ export async function GET(
       payments: allGroupPayments,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -170,7 +178,7 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -222,6 +230,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

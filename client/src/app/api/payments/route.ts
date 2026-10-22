@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { clampLimit, clampPage, safeSearch } from '@/lib/pagedFetch';
+import { requireStaff } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { ENUMS, date as dateRule, firstError, money, oneOf } from '@/lib/validation';
 import { parseStudentCreds } from '@/lib/credentials';
 import { evaluateMonthlyPayment } from '@/lib/paymentRules';
@@ -15,9 +17,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
 
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
+
     const { searchParams } = new URL(req.url);
-    const page =parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const page = clampPage(searchParams.get('page'));
+    const limit = clampLimit(searchParams.get('limit'), 10, 500);
     const sortBy = searchParams.get('sortBy') || 'paymentDate';
     const order = searchParams.get('order') === 'asc' ? true : false;
     const studentId = searchParams.get('studentId');
@@ -50,7 +55,7 @@ export async function GET(req: NextRequest) {
       limit,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -167,6 +172,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

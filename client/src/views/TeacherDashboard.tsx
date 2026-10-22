@@ -34,26 +34,28 @@ import { groupsApi } from '../api/groups.api';
 import { teachersApi } from '../api/teachers.api';
 import { formatMoney } from '../utils/formatMoney';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import { Group, GroupDay } from '../types';
-
-const DAY_LABELS: Record<GroupDay, string> = {
-  DUSH: 'Dush',
-  SESH: 'Sesh',
-  CHOR: 'Chor',
-  PAY: 'Pay',
-  JU: 'Jum',
-  SHAN: 'Shan',
-  YAK: 'Yak',
-};
-
-const DAY_MAP_BY_INDEX: GroupDay[] = ['YAK', 'DUSH', 'SESH', 'CHOR', 'PAY', 'JU', 'SHAN'];
 
 export const TeacherDashboard: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
+  const { t, dict } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSelectGroupModalOpen, setIsSelectGroupModalOpen] = useState(false);
   const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
+
+  const DAY_LABELS: Record<GroupDay, string> = {
+    DUSH: dict.days?.DUSH?.slice(0, 4) || 'Dush',
+    SESH: dict.days?.SESH?.slice(0, 4) || 'Sesh',
+    CHOR: dict.days?.CHOR?.slice(0, 4) || 'Chor',
+    PAY: dict.days?.PAY?.slice(0, 4) || 'Pay',
+    JU: dict.days?.JU?.slice(0, 4) || 'Jum',
+    SHAN: dict.days?.SHAN?.slice(0, 4) || 'Shan',
+    YAK: dict.days?.YAK?.slice(0, 4) || 'Yak',
+  };
+
+  const DAY_MAP_BY_INDEX: GroupDay[] = ['YAK', 'DUSH', 'SESH', 'CHOR', 'PAY', 'JU', 'SHAN'];
 
   // Teacher monthly salary and payments query
   const { data: salaryData, isLoading: isSalaryLoading } = useQuery({

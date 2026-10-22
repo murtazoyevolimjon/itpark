@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { forbidden, isTeacher, teacherOwnsGroup } from '@/lib/authz';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
 
@@ -20,6 +22,11 @@ export async function GET(
     const toParam = searchParams.get('to');
 
     const supabase = createServerSupabaseClient();
+
+    // A teacher sees the attendance of the groups they lead only
+    if (isTeacher(authUser) && !(await teacherOwnsGroup(supabase, authUser, params.groupId))) {
+      return forbidden();
+    }
 
     // 2-month retention policy: purge attendance older than previous month
     await purgeExpiredAttendances(supabase, authUser.centerId);
@@ -50,6 +57,6 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

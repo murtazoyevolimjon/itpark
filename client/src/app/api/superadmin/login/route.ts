@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import bcrypt from 'bcryptjs';
 import { signSuperAdminToken } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -81,9 +82,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || 'Serverda xatolik yuz berdi' },
-      { status: 500 }
-    );
+    return serverErrorResponse(error);
   }
 }

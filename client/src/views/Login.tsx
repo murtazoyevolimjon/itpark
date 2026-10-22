@@ -24,7 +24,7 @@ export const Login: React.FC = () => {
   const router = useRouter();
   const { loginWithCredentials } = useAuth();
   const { error, success } = useToast();
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang, t, dict } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
   const [login, setLogin] = useState('');
@@ -126,10 +126,10 @@ export const Login: React.FC = () => {
           <div className={styles.showcaseColumn}>
             <div className={styles.showcaseHeader}>
               <h2 className={styles.showcaseTitle}>
-                O'quv markazingizni yangi bosqichga olib chiqing
+                {dict.loginPage?.showcaseTitle || "O'quv markazingizni yangi bosqichga olib chiqing"}
               </h2>
               <p className={styles.showcaseSubtitle}>
-                Barcha o'quvchilar, o'qituvchilar, guruhlar, dars jadvallari va oylik to'lovlar tahlilini yagona aqlli tizim orqali samarali boshqaring.
+                {dict.loginPage?.showcaseSubtitle || "Barcha o'quvchilar, o'qituvchilar, guruhlar, dars jadvallari va oylik to'lovlar tahlilini yagona aqlli tizim orqali samarali boshqaring."}
               </p>
             </div>
 
@@ -178,8 +178,8 @@ export const Login: React.FC = () => {
                   <Shield size={16} />
                 </div>
                 <div>
-                  <p className={styles.badgeLabel}>Himoya</p>
-                  <p className={styles.badgeVal}>Xavfsiz Kirish Tizimi</p>
+                  <p className={styles.badgeLabel}>{dict.loginPage?.securityBadge || "Himoya"}</p>
+                  <p className={styles.badgeVal}>{dict.loginPage?.securityDesc || "Xavfsiz Kirish Tizimi"}</p>
                 </div>
               </div>
 
@@ -196,8 +196,8 @@ export const Login: React.FC = () => {
                   <CheckCircle2 size={16} />
                 </div>
                 <div>
-                  <p className={styles.badgeLabel}>Tizim holati</p>
-                  <p className={styles.badgeVal}>99.9% Ishonchli & Tezkor</p>
+                  <p className={styles.badgeLabel}>{dict.loginPage?.systemStatusBadge || "Tizim holati"}</p>
+                  <p className={styles.badgeVal}>{dict.loginPage?.systemStatusDesc || "99.9% Ishonchli & Tezkor"}</p>
                 </div>
               </div>
             </div>
@@ -209,11 +209,11 @@ export const Login: React.FC = () => {
                   <span className={styles.statusPing} />
                   <span className={styles.statusDot} />
                 </span>
-                <span className={styles.statusLabel}>Backend API: Ishlamoqda</span>
+                <span className={styles.statusLabel}>{dict.loginPage?.backendRunning || "Backend API: Ishlamoqda"}</span>
               </div>
               <span className={styles.statusDivider}>|</span>
               <div className={styles.versionItem}>
-                <span>Versiya:</span>
+                <span>{dict.loginPage?.version || "Versiya:"}</span>
                 <span className={styles.versionVal}>v2.5.0</span>
               </div>
             </div>
@@ -232,14 +232,14 @@ export const Login: React.FC = () => {
               <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    TELEFON RAQAM / LOGIN
+                    {dict.loginPage?.loginLabel || "TELEFON RAQAM / LOGIN"}
                   </label>
                   <div className={styles.inputWrap}>
                     <User size={18} className={styles.inputIcon} />
                     <input
                       type="text"
                       required
-                      placeholder="+998901234567 yoki Login"
+                      placeholder={dict.loginPage?.loginPlaceholder || "+998901234567 yoki Login"}
                       value={login}
                       onChange={(e) => setLogin(e.target.value)}
                       className={styles.textInput}
@@ -249,7 +249,7 @@ export const Login: React.FC = () => {
 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>
-                    PAROL
+                    {dict.loginPage?.passwordLabel || "PAROL"}
                   </label>
                   <div className={styles.inputWrap}>
                     <Lock size={18} className={styles.inputIcon} />
@@ -265,7 +265,7 @@ export const Login: React.FC = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className={styles.eyeBtn}
-                      aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                      aria-label={showPassword ? (dict.loginPage?.hidePassword || "Parolni yashirish") : (dict.loginPage?.showPassword || "Parolni ko'rsatish")}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -278,11 +278,11 @@ export const Login: React.FC = () => {
                   className={styles.loginActionBtn}
                 >
                   {isLoading ? (
-                    <span>Tekshirilmoqda...</span>
+                    <span>{dict.loginPage?.checking || "Tekshirilmoqda..."}</span>
                   ) : (
                     <>
                       <LogIn size={18} />
-                      <span>Tizimga kirish</span>
+                      <span>{dict.loginPage?.loginBtn || "Tizimga kirish"}</span>
                     </>
                   )}
                 </button>

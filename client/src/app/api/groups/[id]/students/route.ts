@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { forbidden, isTeacher, teacherOwnsGroup } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 
 export async function POST(
@@ -21,6 +22,11 @@ export async function POST(
     }
 
     const supabase = createServerSupabaseClient();
+
+    // A teacher may add students to the groups they lead only
+    if (isTeacher(authUser) && !(await teacherOwnsGroup(supabase, authUser, params.id))) {
+      return forbidden();
+    }
 
     // Check if already in group
     const { data: existing } = await supabase
@@ -58,6 +64,6 @@ export async function POST(
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

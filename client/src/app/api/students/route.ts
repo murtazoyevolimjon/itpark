@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { requireStaff } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { clampLimit, clampPage, fetchAll, safeSearch } from '@/lib/pagedFetch';
 import { computeDebt } from '@/lib/billing';
 import { findSamePerson } from '@/lib/studentRules';
@@ -37,6 +38,8 @@ export async function GET(req: NextRequest) {
     // Light mode feeds the "pick a student" dropdowns: every student of the center, but only the few
     // fields those lists need (no payment rows, no login blob), read page by page past the 1000-row cap.
     if (searchParams.get('light') === '1') {
+      const lightStaffOnly = requireStaff(authUser);
+      if (lightStaffOnly) return lightStaffOnly;
       const [students, paymentRows] = await Promise.all([
         fetchAll<any>((from, to) =>
           supabase
@@ -131,10 +134,19 @@ export async function GET(req: NextRequest) {
       });
       const paymentStatus = debt.status;
 
+      // Teachers only need who the student is: no logins / Telegram ids, no payments or debts
+      if (authUser.role === 'TEACHER') {
+        return {
+          ...student,
+          passportSeries: creds.subject || null,
+          subject: creds.subject || null,
+          studentGroups: sgList,
+          payments: [],
+        };
+      }
+
       return {
         ...student,
-        // Teachers only need the subject: the raw value holds logins and Telegram chat ids
-        passportSeries: authUser.role === 'TEACHER' ? creds.subject || null : student.passportSeries,
         subject: creds.subject || null,
         studentGroups: sgList,
         paymentStatus,
@@ -150,7 +162,7 @@ export async function GET(req: NextRequest) {
       limit,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -160,6 +172,9 @@ export async function POST(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const body = await req.json();
     const {
@@ -270,6 +285,6 @@ export async function POST(req: NextRequest) {
       subject: subjectToSave,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

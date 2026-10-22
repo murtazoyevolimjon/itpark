@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { requireStaff } from '@/lib/authz';
 import { getAttendanceRetentionCutoff, purgeExpiredAttendances } from '@/lib/attendanceRetention';
 import { fetchAll } from '@/lib/pagedFetch';
 import { loadStudentFinance, toDebtorRow } from '@/lib/studentFinance';
@@ -11,6 +13,9 @@ export async function GET(req: NextRequest) {
     if (!authUser) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get('date');
@@ -195,6 +200,6 @@ export async function GET(req: NextRequest) {
       unpaidStudents,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

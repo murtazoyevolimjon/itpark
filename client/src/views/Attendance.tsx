@@ -43,10 +43,12 @@ import { dashboardApi } from '../api/dashboard.api';
 import { formatPhone } from '../utils/phoneMask';
 import { formatMoney } from '../utils/formatMoney';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const Attendance: React.FC = () => {
   const router = useRouter();
   const { success, error } = useToast();
+  const { t, lang } = useLanguage();
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -81,19 +83,19 @@ export const Attendance: React.FC = () => {
 
   const handleExportAttendanceExcel = () => {
     if (!absentStudents || absentStudents.length === 0) {
-      error("Yuklab olish uchun ma'lumot mavjud emas");
+      error(t('noDataToDownload'));
       return;
     }
 
     const exportColumns = [
-      { header: 'Sana', key: 'date' },
-      { header: 'Talaba (Ism Familiya)', key: 'studentName' },
-      { header: 'Guruhi', key: 'groupName' },
-      { header: "O'quvchi telefoni", key: 'studentPhone' },
-      { header: 'Otasining telefoni', key: 'fatherPhone' },
-      { header: 'Onasining telefoni', key: 'motherPhone' },
-      { header: 'Holati', key: 'status' },
-      { header: 'Izoh', key: 'note' },
+      { header: t('date'), key: 'date' },
+      { header: `${t('student')} (${t('fullName')})`, key: 'studentName' },
+      { header: t('groups'), key: 'groupName' },
+      { header: t('phone'), key: 'studentPhone' },
+      { header: t('fatherPhone'), key: 'fatherPhone' },
+      { header: t('motherPhone'), key: 'motherPhone' },
+      { header: t('status'), key: 'status' },
+      { header: t('note'), key: 'note' },
     ];
 
     const exportRows = absentStudents.map((item: any) => ({
@@ -103,33 +105,33 @@ export const Attendance: React.FC = () => {
       studentPhone: formatPhone(item.studentPhone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      status: item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN',
+      status: item.status === 'KECHIKKAN' ? t('late') : t('absent'),
       note: item.note || '-',
     }));
 
     exportToExcel({
-      filename: `Davomat_Kelmaganlar_${filterType === 'custom_date' ? selectedDate : `Oxirgi_${daysFilter}_kun`}`,
-      sheetName: 'Kelmaganlar',
+      filename: `Attendance_${filterType === 'custom_date' ? selectedDate : `${daysFilter}_days`}`,
+      sheetName: 'Absents',
       columns: exportColumns,
       data: exportRows,
     });
-    success('Excel fayl yuklab olindi!');
+    success(t('excelDownloaded'));
   };
 
   const handleExportAttendancePdf = () => {
     if (!absentStudents || absentStudents.length === 0) {
-      error("Yuklab olish uchun ma'lumot mavjud emas");
+      error(t('noDataToDownload'));
       return;
     }
 
     const exportColumns = [
-      { header: 'Sana', key: 'date' },
-      { header: 'Talaba', key: 'studentName' },
-      { header: 'Guruhi', key: 'groupName' },
-      { header: "O'quvchi tel", key: 'studentPhone' },
-      { header: 'Otasi tel', key: 'fatherPhone' },
-      { header: 'Onasi tel', key: 'motherPhone' },
-      { header: 'Holat', key: 'status' },
+      { header: t('date'), key: 'date' },
+      { header: t('student'), key: 'studentName' },
+      { header: t('groups'), key: 'groupName' },
+      { header: t('phone'), key: 'studentPhone' },
+      { header: t('father'), key: 'fatherPhone' },
+      { header: t('mother'), key: 'motherPhone' },
+      { header: t('status'), key: 'status' },
     ];
 
     const exportRows = absentStudents.map((item: any) => ({
@@ -139,31 +141,31 @@ export const Attendance: React.FC = () => {
       studentPhone: formatPhone(item.studentPhone),
       fatherPhone: item.fatherPhone ? formatPhone(item.fatherPhone) : '-',
       motherPhone: item.motherPhone ? formatPhone(item.motherPhone) : '-',
-      status: item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN',
+      status: item.status === 'KECHIKKAN' ? t('late') : t('absent'),
     }));
 
     exportToPdf({
-      filename: `Davomat_Kelmaganlar_${filterType === 'custom_date' ? selectedDate : `Oxirgi_${daysFilter}_kun`}`,
-      title: "DARSGA KELMAGAN VA KECHIKKAN O'QUVCHILAR RO'YXATI",
+      filename: `Attendance_${filterType === 'custom_date' ? selectedDate : `${daysFilter}_days`}`,
+      title: t('absentLateTitle').toUpperCase(),
       columns: exportColumns,
       data: exportRows,
     });
-    success('PDF fayl yuklab olindi!');
+    success(t('pdfDownloaded'));
   };
 
   const periodTitle =
     filterType === 'custom_date'
-      ? `${selectedDate} sanasi`
-      : `Oxirgi ${daysFilter} kun`;
+      ? selectedDate
+      : `${lang === 'en' ? 'Last ' : (lang === 'ru' ? 'Последние ' : 'Oxirgi ')}${daysFilter} ${t('daysCount')}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Davomat ko'rsatkichlari</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{t('attendanceStats')}</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            O'quv markazidagi umumiy davomat statistikasi va dars qoldirganlar tahlili
+            {t('attendanceSubtitle')}
           </p>
         </div>
 
@@ -189,7 +191,7 @@ export const Attendance: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              Bugun
+              {t('today')}
             </button>
             <button
               type="button"
@@ -209,7 +211,7 @@ export const Attendance: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              Kecha
+              {t('yesterday')}
             </button>
             <button
               type="button"
@@ -229,7 +231,7 @@ export const Attendance: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              7 kun
+              7 {t('daysCount')}
             </button>
             <button
               type="button"
@@ -249,7 +251,7 @@ export const Attendance: React.FC = () => {
                 transition: 'all 0.15s ease',
               }}
             >
-              30 kun
+              30 {t('daysCount')}
             </button>
           </div>
 
@@ -281,7 +283,7 @@ export const Attendance: React.FC = () => {
           </div>
 
           <Button icon={<Plus size={16} />} onClick={() => router.push('/attendance/take')}>
-            Davomat olish
+            {t('takeAttendance')}
           </Button>
         </div>
       </div>
@@ -293,10 +295,10 @@ export const Attendance: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                O'quvchilar soni
+                {t('studentsCount')}
               </div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: '#2b7fff', marginTop: '4px' }}>
-                {isStatsLoading ? '...' : `${statsData?.studentsCount ?? 0} ta`}
+                {isStatsLoading ? '...' : `${statsData?.studentsCount ?? 0} ${t('countUnit')}`.trim()}
               </div>
             </div>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(43, 127, 255, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2b7fff' }}>
@@ -310,10 +312,10 @@ export const Attendance: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                O'qituvchilar soni
+                {t('teachersCount')}
               </div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
-                {isStatsLoading ? '...' : `${statsData?.teachersCount ?? 0} ta`}
+                {isStatsLoading ? '...' : `${statsData?.teachersCount ?? 0} ${t('countUnit')}`.trim()}
               </div>
             </div>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
@@ -327,10 +329,10 @@ export const Attendance: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Xodimlar soni
+                {t('employeesCount')}
               </div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: '#8b5cf6', marginTop: '4px' }}>
-                {isStatsLoading ? '...' : `${statsData?.employeesCount ?? 0} ta`}
+                {isStatsLoading ? '...' : `${statsData?.employeesCount ?? 0} ${t('countUnit')}`.trim()}
               </div>
             </div>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(139, 92, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
@@ -344,10 +346,10 @@ export const Attendance: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Guruhlar soni
+                {t('groupsCount')}
               </div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: '#f59e0b', marginTop: '4px' }}>
-                {isStatsLoading ? '...' : `${statsData?.groupsCount ?? 0} ta`}
+                {isStatsLoading ? '...' : `${statsData?.groupsCount ?? 0} ${t('countUnit')}`.trim()}
               </div>
             </div>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
@@ -357,7 +359,7 @@ export const Attendance: React.FC = () => {
         </Card>
       </div>
 
-      {/* 1. Absent and Late Students Table (PLACED FIRST AS REQUESTED) */}
+      {/* 1. Absent and Late Students Table */}
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -366,10 +368,10 @@ export const Attendance: React.FC = () => {
             </div>
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)' }}>
-                Darsga kelmagan va kechikkan o'quvchilar ro'yxati ({periodTitle})
+                {t('absentLateTitle')} ({periodTitle})
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Qoldirilgan va kech qolingan darslar, o'quvchi va ota-onaning bog'lanish ma'lumotlari
+                {t('absentLateDesc')}
               </p>
             </div>
           </div>
@@ -380,10 +382,10 @@ export const Attendance: React.FC = () => {
               onExportPdf={handleExportAttendancePdf}
             />
             <Badge variant="danger">
-              {absentStudents.filter((s: any) => s.status === 'KELMAGAN').length} ta kelmagan
+              {absentStudents.filter((s: any) => s.status === 'KELMAGAN').length} {t('absentCountBadge')}
             </Badge>
             <Badge variant="warning">
-              {absentStudents.filter((s: any) => s.status === 'KECHIKKAN').length} ta kechikkan
+              {absentStudents.filter((s: any) => s.status === 'KECHIKKAN').length} {t('lateCountBadge')}
             </Badge>
           </div>
         </div>
@@ -397,20 +399,20 @@ export const Attendance: React.FC = () => {
         ) : absentStudents.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
             <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{periodTitle} bo'yicha dars qoldirgan yoki kechikkan o'quvchilar yo'q</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>Barcha talabalar darslarga to'liq va o'z vaqtida qatnashmoqda 🎉</div>
+            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{periodTitle} {t('noAbsentStudents')}</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>{t('allStudentsPresent')}</div>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>SANA</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLAT / IZOH</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{t('date').toUpperCase()}</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{`${t('student')} (${t('fullName')})`.toUpperCase()}</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{t('groups').toUpperCase()}</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{t('phone').toUpperCase()}</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{t('parentPhone').toUpperCase()}</th>
+                  <th style={{ padding: '12px 14px', fontWeight: 600 }}>{`${t('status')} / ${t('note')}`.toUpperCase()}</th>
                 </tr>
               </thead>
               <tbody>
@@ -459,7 +461,7 @@ export const Attendance: React.FC = () => {
                             href={`tel:${item.fatherPhone}`}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                           >
-                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>{t('father')}</span>
                             <Phone size={12} color="var(--primary)" />
                             {formatPhone(item.fatherPhone)}
                           </a>
@@ -469,13 +471,13 @@ export const Attendance: React.FC = () => {
                             href={`tel:${item.motherPhone}`}
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                           >
-                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                            <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>{t('mother')}</span>
                             <Phone size={12} color="#ec4899" />
                             {formatPhone(item.motherPhone)}
                           </a>
                         )}
                         {!item.fatherPhone && !item.motherPhone && (
-                          <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{t('notEntered')}</span>
                         )}
                       </div>
                     </td>
@@ -483,7 +485,7 @@ export const Attendance: React.FC = () => {
                     {/* Holat / Izoh */}
                     <td style={{ padding: '14px' }}>
                       <Badge variant={item.status === 'KECHIKKAN' ? 'warning' : 'danger'}>
-                        {item.status === 'KECHIKKAN' ? 'KECHIKKAN' : 'KELMAGAN'}
+                        {item.status === 'KECHIKKAN' ? t('late') : t('absent')}
                       </Badge>
                       {item.note && (
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -499,14 +501,14 @@ export const Attendance: React.FC = () => {
         )}
       </Card>
 
-      {/* 2. Main Line Chart (PLACED AFTER TABLE AS REQUESTED) */}
+      {/* 2. Main Line Chart */}
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 700 }}>
-            Davomat dinamikasi grafigi ({periodTitle})
+            {t('attendanceDynamics')} ({periodTitle})
           </h3>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            Jami qaydlar: <strong>{data?.totalRecords || 0} ta</strong>
+            {t('totalRecords')}: <strong>{data?.totalRecords || 0} {t('countUnit')}</strong>
           </div>
         </div>
         <div style={{ width: '100%', height: 300 }}>
@@ -515,7 +517,7 @@ export const Attendance: React.FC = () => {
           ) : dailyChart.length === 0 ? (
             <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: 'var(--text-muted)' }}>
               <AlertCircle size={32} />
-              <span>Tanlangan davr bo'yicha davomat qaydlari topilmadi</span>
+              <span>{t('noRecordsFound')}</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -536,7 +538,7 @@ export const Attendance: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="KELGAN"
-                  name="🔵 Kelgan"
+                  name={`🔵 ${t('present')}`}
                   stroke="#2b7fff"
                   strokeWidth={3}
                   dot={{ r: 4, fill: '#2b7fff' }}
@@ -545,7 +547,7 @@ export const Attendance: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="KELMAGAN"
-                  name="🔴 Kelmagan"
+                  name={`🔴 ${t('absent')}`}
                   stroke="#ef4444"
                   strokeWidth={3}
                   dot={{ r: 4, fill: '#ef4444' }}
@@ -554,7 +556,7 @@ export const Attendance: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="KECHIKKAN"
-                  name="🟡 Kechikkan"
+                  name={`🟡 ${t('late')}`}
                   stroke="#f59e0b"
                   strokeWidth={3}
                   dot={{ r: 4, fill: '#f59e0b' }}
@@ -569,7 +571,7 @@ export const Attendance: React.FC = () => {
       {/* 3. Per Group Attendance Cards Grid */}
       {groupStats.length > 0 && (
         <>
-          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Guruhlar kesimidagi davomat</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: 700 }}>{t('groupAttendance')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
             {groupStats.map((g: any) => (
               <Card key={g.groupId}>
@@ -591,9 +593,9 @@ export const Attendance: React.FC = () => {
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="KELGAN" name="Kelgan" fill="#2b7fff" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="KELMAGAN" name="Kelmagan" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="KECHIKKAN" name="Kechikkan" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="KELGAN" name={t('present')} fill="#2b7fff" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="KELMAGAN" name={t('absent')} fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="KECHIKKAN" name={t('late')} fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

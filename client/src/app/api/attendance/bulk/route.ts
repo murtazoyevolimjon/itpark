@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest) {
           .upsert(inserts, { onConflict: 'studentId,groupId,date', ignoreDuplicates: true })
           .select('id');
         if (insertErr) {
-          return NextResponse.json({ message: insertErr.message }, { status: 500 });
+          return serverErrorResponse(insertErr);
         }
         insertedCount = insertedRows?.length || 0;
 
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
           : "Davomat allaqachon saqlangan va qulflangan!",
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 

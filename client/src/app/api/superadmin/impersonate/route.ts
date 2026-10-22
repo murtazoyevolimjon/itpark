@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { getSuperAdminAuth } from '@/lib/superadminAuth';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { signToken } from '@/lib/auth';
@@ -68,6 +69,6 @@ export async function POST(req: NextRequest) {
       centerName: center.name,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

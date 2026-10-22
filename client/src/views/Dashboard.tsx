@@ -57,7 +57,7 @@ import styles from './Dashboard.module.css';
 export const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
-  const { t } = useLanguage();
+  const { t, dict } = useLanguage();
   const { theme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<'student' | 'payment'>('student');
@@ -682,7 +682,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700 }}>Markaz CRM AI Yordamchisi</span>
+              <span style={{ fontSize: '15px', fontWeight: 700 }}>{dict.dash?.aiBannerTitle || "Sun'iy Intellekt Tahlil Markazi"}</span>
               <span
                 style={{
                   fontSize: '10px',
@@ -693,11 +693,11 @@ export const Dashboard: React.FC = () => {
                   color: '#ffffff',
                 }}
               >
-                YANGI
+                AI
               </span>
             </div>
             <p style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)', margin: '2px 0 0 0' }}>
-              Markazning bugungi ko'rsatkichlari, qarzdorlik, davomat va yuklama bo'yicha sun'iy intellekt tahlili
+              {dict.dash?.aiBannerDesc || "Markazning bugungi ko'rsatkichlari, qarzdorlik, davomat va yuklama bo'yicha sun'iy intellekt tahlili"}
             </p>
           </div>
         </div>
@@ -719,7 +719,7 @@ export const Dashboard: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
         >
-          <Sparkles size={15} /> AI Tahlilini Ko'rish
+          <Sparkles size={15} /> {dict.dash?.viewAiAnalysis || "AI Tahlilini Ko'rish"}
         </Link>
       </div>
 
@@ -766,18 +766,18 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className={styles.switchCardInfo}>
               <div className={styles.switchCardTitleRow}>
-                <span className={styles.switchCardTitle}>To'lov qilmaganlar</span>
-                <span className={styles.switchTagDebtors}>Qarzdorlar</span>
+                <span className={styles.switchCardTitle}>{dict.dash?.unpaidStudentsTitle || "To'lov qilmaganlar"}</span>
+                <span className={styles.switchTagDebtors}>{dict.dash?.debtorsBadge || "Qarzdorlar"}</span>
               </div>
               <p className={styles.switchCardDesc}>
-                To'lov muddati o'tgan yoki qisman to'lagan talabalar
+                {dict.dash?.unpaidStudentsDesc || "To'lov muddati o'tgan yoki qisman to'lagan talabalar"}
               </p>
             </div>
           </div>
           <div className={styles.switchCardRight}>
             <div className={`${styles.switchCountBadge} ${styles.switchCountBadgeDebtors}`}>
               <span className={styles.switchCountNumber}>{unpaidStudents.length}</span>
-              <span className={styles.switchCountUnit}>ta</span>
+              <span className={styles.switchCountUnit}>{dict.countUnit || 'ta'}</span>
             </div>
           </div>
         </button>
@@ -796,18 +796,18 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className={styles.switchCardInfo}>
               <div className={styles.switchCardTitleRow}>
-                <span className={styles.switchCardTitle}>Proba darsga keladiganlar</span>
-                <span className={styles.switchTagProba}>Sinov darsi</span>
+                <span className={styles.switchCardTitle}>{dict.dash?.probaStudentsTitle || "Proba darsga keladiganlar"}</span>
+                <span className={styles.switchTagProba}>{dict.dash?.probaBadge || "Sinov darsi"}</span>
               </div>
               <p className={styles.switchCardDesc}>
-                Markazga yangi kelgan va hali guruhga biriktirilmagan o'quvchilar
+                {dict.dash?.probaStudentsDesc || "Markazga yangi kelgan va hali guruhga biriktirilmagan o'quvchilar"}
               </p>
             </div>
           </div>
           <div className={styles.switchCardRight}>
             <div className={`${styles.switchCountBadge} ${styles.switchCountBadgeProba}`}>
               <span className={styles.switchCountNumber}>{probaStudents.length}</span>
-              <span className={styles.switchCountUnit}>ta</span>
+              <span className={styles.switchCountUnit}>{dict.countUnit || 'ta'}</span>
             </div>
           </div>
         </button>
@@ -823,10 +823,10 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                  To'lov qilmagan o'quvchilar ro'yxati (Qarzdorlar)
+                  {dict.dash?.debtorsListTitle || "To'lov qilmagan o'quvchilar ro'yxati (Qarzdorlar)"}
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                  To'lovni amalga oshirmagan yoki qisman to'lagan o'quvchilar va ularning bog'lanish ma'lumotlari
+                  {dict.dash?.debtorsListDesc || "To'lovni amalga oshirmagan yoki qisman to'lagan o'quvchilar va ularning bog'lanish ma'lumotlari"}
                 </p>
               </div>
             </div>
@@ -836,7 +836,7 @@ export const Dashboard: React.FC = () => {
                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  placeholder="Qarzdorlarni izlash..."
+                  placeholder={dict.dash?.searchDebtors || "Qarzdorlarni izlash..."}
                   value={debtorsSearch}
                   onChange={(e) => setDebtorsSearch(e.target.value)}
                   style={{
@@ -859,7 +859,7 @@ export const Dashboard: React.FC = () => {
               />
 
               <Badge variant="warning">
-                {filteredDebtors.length} ta qarzdor
+                {(dict.dash?.debtorsCount || "{n} ta qarzdor").replace('{n}', String(filteredDebtors.length))}
               </Badge>
             </div>
           </div>
@@ -874,10 +874,10 @@ export const Dashboard: React.FC = () => {
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
               <CheckCircle2 size={32} color="#10b981" style={{ margin: '0 auto 8px' }} />
               <div style={{ fontWeight: 600, color: 'var(--text)' }}>
-                {debtorsSearch ? "Qidiruv bo'yicha qarzdorlar topilmadi" : "Barcha o'quvchilar to'lovlarni to'liq amalga oshirgan"}
+                {debtorsSearch ? (dict.dash?.noDebtorsFound || "Qidiruv bo'yicha qarzdorlar topilmadi") : (dict.dash?.allStudentsPaid || "Barcha o'quvchilar to'lovlarni to'liq amalga oshirgan")}
               </div>
               <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                {debtorsSearch ? "Boshqa kalit so'z bilan izlab ko'ring" : "Hozirda qarzdor o'quvchilar mavjud emas 🎉"}
+                {debtorsSearch ? (dict.dash?.tryOtherSearch || "Boshqa kalit so'z bilan izlab ko'ring") : (dict.dash?.noDebtorsCurrently || "Hozirda qarzdor o'quvchilar mavjud emas 🎉")}
               </div>
             </div>
           ) : (
@@ -885,13 +885,13 @@ export const Dashboard: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>GURUHI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI TELEFONI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>KURS NARXI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>QARZDORLIK</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TO'LOV HOLATI</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colStudent || "O'QUVCHI (ISM FAMILIYA)"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colGroup || "GURUHI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colStudentPhone || "O'QUVCHI TELEFONI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colParentPhone || "OTA-ONASINING TELEFONI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colCoursePrice || "KURS NARXI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colDebt || "QARZDORLIK"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colPaymentStatus || "TO'LOV HOLATI"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -935,7 +935,7 @@ export const Dashboard: React.FC = () => {
                               href={`tel:${item.fatherPhone}`}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                             >
-                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>{dict.father || 'Otasi'}</span>
                               <Phone size={12} color="var(--primary)" />
                               {formatPhone(item.fatherPhone)}
                             </a>
@@ -945,13 +945,13 @@ export const Dashboard: React.FC = () => {
                               href={`tel:${item.motherPhone}`}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                             >
-                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                              <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>{dict.mother || 'Onasi'}</span>
                               <Phone size={12} color="#ec4899" />
                               {formatPhone(item.motherPhone)}
                             </a>
                           )}
                           {!item.fatherPhone && !item.motherPhone && (
-                            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{dict.notEntered || 'Kiritilmagan'}</span>
                           )}
                         </div>
                       </td>
@@ -969,7 +969,7 @@ export const Dashboard: React.FC = () => {
                       {/* To'lov holati */}
                       <td style={{ padding: '14px' }}>
                         <Badge variant={item.paymentStatus === 'QISMAN' ? 'warning' : 'danger'}>
-                          {item.paymentStatus === 'QISMAN' ? "QISMAN TO'LANGAN" : "TO'LANMAGAN"}
+                          {item.paymentStatus === 'QISMAN' ? (dict.dash?.partiallyPaidBadge || "QISMAN TO'LANGAN") : (dict.dash?.unpaidBadge || "TO'LANMAGAN")}
                         </Badge>
                       </td>
                     </tr>
@@ -1002,10 +1002,10 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                  Proba darsiga keladiganlar (Sinov darsi)
+                  {dict.dash?.probaListTitle || "Proba darsiga keladiganlar (Sinov darsi)"}
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                  Markazga yangi kelgan va guruhga biriktirilmagan sinov darsi o'quvchilari
+                  {dict.dash?.probaListDesc || "Markazga yangi kelgan va guruhga biriktirilmagan sinov darsi o'quvchilari"}
                 </p>
               </div>
             </div>
@@ -1015,7 +1015,7 @@ export const Dashboard: React.FC = () => {
                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  placeholder="Proba o'quvchilarni izlash..."
+                  placeholder={dict.dash?.searchProba || "Proba o'quvchilarni izlash..."}
                   value={probaSearch}
                   onChange={(e) => setProbaSearch(e.target.value)}
                   style={{
@@ -1038,7 +1038,7 @@ export const Dashboard: React.FC = () => {
               />
 
               <Badge variant="primary">
-                {probaStudents.length} ta o'quvchi
+                {(dict.dash?.studentsCountBadge || "{n} ta o'quvchi").replace('{n}', String(probaStudents.length))}
               </Badge>
 
               <Button
@@ -1047,7 +1047,7 @@ export const Dashboard: React.FC = () => {
                 icon={<Plus size={15} />}
                 onClick={() => setIsAddProbaModalOpen(true)}
               >
-                YANGI TALABA QO'SHISH
+                {dict.dash?.newStudent || "YANGI TALABA QO'SHISH"}
               </Button>
             </div>
           </div>
@@ -1062,10 +1062,10 @@ export const Dashboard: React.FC = () => {
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--card-subtle)', borderRadius: 'var(--radius-sm)' }}>
               <Sparkles size={32} color="#06b6d4" style={{ margin: '0 auto 8px' }} />
               <div style={{ fontWeight: 600, color: 'var(--text)' }}>
-                {probaSearch ? "Qidiruv bo'yicha proba o'quvchilari topilmadi" : "Hozirda proba (sinov) darsiga biriktirilmagan yangi talabalar yo'q"}
+                {probaSearch ? (dict.dash?.noProbaFound || "Qidiruv bo'yicha proba o'quvchilari topilmadi") : (dict.dash?.noProbaCurrently || "Hozirda proba (sinov) darsiga biriktirilmagan yangi talabalar yo'q")}
               </div>
               <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                Yangi talaba qo'shish uchun "+ YANGI TALABA QO'SHISH" tugmasini bosing
+                {dict.dash?.clickToAddStudent || "Yangi talaba qo'shish uchun \"+ YANGI TALABA QO'SHISH\" tugmasini bosing"}
               </div>
             </div>
           ) : (
@@ -1073,14 +1073,14 @@ export const Dashboard: React.FC = () => {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>O'QUVCHI (ISM FAMILIYA)</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TUG'ILGAN SANA</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>TELEFON RAQAMI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>OTA-ONASINING TELEFONI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>FAN</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>RO'YXATGA OLINGAN</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>HOLATI</th>
-                    <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>AMALLAR</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colStudent || "O'QUVCHI (ISM FAMILIYA)"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colBirthDate || "TUG'ILGAN SANA"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colStudentPhone || "TELEFON RAQAMI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colParentPhone || "OTA-ONASINING TELEFONI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colSubject || "FAN"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colRegistered || "RO'YXATGA OLINGAN"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600 }}>{dict.dash?.colStatus || "HOLATI"}</th>
+                    <th style={{ padding: '12px 14px', fontWeight: 600, textAlign: 'center' }}>{dict.dash?.colActions || "AMALLAR"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1109,7 +1109,7 @@ export const Dashboard: React.FC = () => {
                             <div>{item.studentName}</div>
                             {item.isSchoolStudent && (
                               <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 500 }}>
-                                Maktab o'quvchisi
+                                {dict.dash?.schoolStudentBadge || "Maktab o'quvchisi"}
                               </div>
                             )}
                           </div>
@@ -1144,7 +1144,7 @@ export const Dashboard: React.FC = () => {
                               href={`tel:${item.fatherPhone}`}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                             >
-                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>Otasi</span>
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(43, 127, 255, 0.1)', color: 'var(--primary)', fontWeight: 700 }}>{dict.father || 'Otasi'}</span>
                               <Phone size={11} color="var(--primary)" />
                               {formatPhone(item.fatherPhone)}
                             </a>
@@ -1154,13 +1154,13 @@ export const Dashboard: React.FC = () => {
                               href={`tel:${item.motherPhone}`}
                               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text)', textDecoration: 'none', fontSize: '12px' }}
                             >
-                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>Onasi</span>
+                              <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', fontWeight: 700 }}>{dict.mother || 'Onasi'}</span>
                               <Phone size={11} color="#ec4899" />
                               {formatPhone(item.motherPhone)}
                             </a>
                           )}
                           {!item.fatherPhone && !item.motherPhone && (
-                            <span style={{ color: 'var(--text-muted)' }}>Kiritilmagan</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{dict.notEntered || 'Kiritilmagan'}</span>
                           )}
                         </div>
                       </td>
@@ -1196,7 +1196,7 @@ export const Dashboard: React.FC = () => {
                       {/* Holati */}
                       <td style={{ padding: '14px' }}>
                         <Badge variant="warning">
-                          PROBA / SINOV
+                          {dict.dash?.probaStatusBadge || "PROBA / SINOV"}
                         </Badge>
                       </td>
 
@@ -1208,27 +1208,27 @@ export const Dashboard: React.FC = () => {
                             variant="primary"
                             icon={<FolderPlus size={13} />}
                             onClick={() => handleOpenAssignGroup(item)}
-                            title="Guruhga qo'shish"
+                            title={dict.dash?.addToGroupBtn || "Guruhga qo'shish"}
                           >
-                            GURUHGA QO'SHISH
+                            {dict.dash?.addToGroupBtn || "GURUHGA QO'SHISH"}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             icon={<Edit2 size={13} />}
                             onClick={() => handleOpenEditProba(item)}
-                            title="Tahrirlash"
+                            title={t('edit')}
                           >
-                            Tahrirlash
+                            {t('edit')}
                           </Button>
                           <Button
                             size="sm"
                             variant="danger"
                             icon={<Trash2 size={13} />}
                             onClick={() => handleOpenDeleteProba(item)}
-                            title="O'chirish"
+                            title={t('delete')}
                           >
-                            O'chirish
+                            {t('delete')}
                           </Button>
                         </div>
                       </td>
@@ -1646,7 +1646,7 @@ export const Dashboard: React.FC = () => {
       <Modal
         isOpen={isAssignGroupModalOpen}
         onClose={() => setIsAssignGroupModalOpen(false)}
-        title="Guruhga Qo'shish"
+        title={dict.dash?.assignGroupTitle || "Guruhga Qo'shish"}
         maxWidth="480px"
       >
         <form onSubmit={handleAssignGroupSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1691,7 +1691,7 @@ export const Dashboard: React.FC = () => {
           )}
 
           <GroupCardSelect
-            label="Qaysi guruhga qo'shmoqchisiz?"
+            label={dict.dash?.selectTargetGroup || "Guruhni tanlang"}
             required
             groups={groupsData?.data || []}
             value={targetGroupId}
@@ -1711,15 +1711,15 @@ export const Dashboard: React.FC = () => {
               lineHeight: 1.4,
             }}
           >
-            💡 Talaba guruhga qo'shilgandan so'ng, avtomatik tarzda <strong>proba darsi ro'yxatidan chiqariladi</strong> va guruh a'zosiga aylanadi.
+            {dict.dash?.assignGroupDesc || "Ushbu sinov darsi o'quvchisini mavjud o'quv guruhlaridan biriga rasman biriktiring."}
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsAssignGroupModalOpen(false)}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={assignGroupMutation.isPending}>
-              Guruhga Qo'shish
+              {dict.dash?.addToGroupBtn || "Guruhga Qo'shish"}
             </Button>
           </div>
         </form>
@@ -1729,20 +1729,20 @@ export const Dashboard: React.FC = () => {
       <Modal
         isOpen={isEditProbaModalOpen}
         onClose={() => setIsEditProbaModalOpen(false)}
-        title="Talaba Ma'lumotlarini Tahrirlash"
+        title={t('edit')}
         maxWidth="540px"
       >
         <form onSubmit={handleEditProbaSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <Input
-              label="Ism"
+              label={t('firstName')}
               placeholder="Ali"
               required
               value={editProbaForm.firstName}
               onChange={(e) => setEditProbaForm({ ...editProbaForm, firstName: e.target.value })}
             />
             <Input
-              label="Familiya"
+              label={t('lastName')}
               placeholder="Valiyev"
               required
               value={editProbaForm.lastName}
@@ -1751,7 +1751,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <Input
-            label="Telefon raqam"
+            label={t('phone')}
             placeholder="+998 90 123 45 67"
             required
             value={formatPhone(editProbaForm.phone)}
@@ -1759,7 +1759,7 @@ export const Dashboard: React.FC = () => {
           />
 
           <Input
-            label="Ota-onasining telefoni"
+            label={dict.dash?.colParentPhone || "Ota-onasining telefoni"}
             placeholder="+998 90 123 45 67"
             required
             value={formatPhone(editProbaForm.fatherPhone)}
@@ -1767,10 +1767,10 @@ export const Dashboard: React.FC = () => {
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsEditProbaModalOpen(false)}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={updateProbaStudentMutation.isPending}>
-              O'zgarishlarni Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>

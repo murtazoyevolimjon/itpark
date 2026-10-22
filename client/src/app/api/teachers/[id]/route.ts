@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { requireStaff } from '@/lib/authz';
 import {
   parseTeacherCreds,
   serializeTeacherCreds,
   checkLoginUniqueness,
 } from '@/lib/credentials';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { ENUMS, firstError, numberValue, oneOf, phone as phoneRule, text } from '@/lib/validation';
 
 export async function GET(
@@ -18,6 +19,9 @@ export async function GET(
     if (!authUser) {
       return NextResponse.json({ message: 'Avtorizatsiyadan o\'tilmagan' }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const supabase = createServerSupabaseClient();
     const { data, error } = await supabase
@@ -41,7 +45,7 @@ export async function GET(
 
     return NextResponse.json(sanitized);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -165,7 +169,7 @@ export async function PATCH(
       passportSeries: targetPassport || null,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -206,11 +210,11 @@ export async function DELETE(
       .eq('centerId', authUser.centerId);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

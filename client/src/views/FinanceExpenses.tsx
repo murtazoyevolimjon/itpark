@@ -12,6 +12,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { expensesApi } from '../api/expenses.api';
 import { Expense } from '../types';
 import { formatMoney } from '../utils/formatMoney';
@@ -20,6 +21,7 @@ import { formatDate } from '../utils/formatDate';
 export const FinanceExpenses: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -122,13 +124,13 @@ export const FinanceExpenses: React.FC = () => {
   const columns: Column<Expense>[] = [
     {
       key: 'date',
-      header: 'SANA',
+      header: dict.financePage.colDate,
       sortable: true,
       render: (row) => formatDate(row.date),
     },
     {
       key: 'amount',
-      header: 'QIYMAT',
+      header: dict.financePage.colAmount,
       sortable: true,
       render: (row) => (
         <span style={{ fontWeight: 600, color: 'var(--danger-text)' }}>
@@ -138,37 +140,46 @@ export const FinanceExpenses: React.FC = () => {
     },
     {
       key: 'type',
-      header: 'TURI',
+      header: dict.financeExpensesPage.typeLabel,
       render: (row) => (
         <Badge variant="secondary">
           {row.type === 'USTOZ_MAOSHI'
-            ? 'USTOZ MAOSHI'
+            ? dict.financeExpensesPage.typeSalary
+            : row.type === 'IJARA'
+            ? dict.financeExpensesPage.typeRent
+            : row.type === 'KOMMUNAL'
+            ? dict.financeExpensesPage.typeUtility
+            : row.type === 'REKLAMA'
+            ? dict.financeExpensesPage.typeAd
+            : row.type === 'BOSHQA'
+            ? dict.financeExpensesPage.typeOther
             : row.type}
         </Badge>
       ),
     },
     {
       key: 'ownerName',
-      header: 'EGASI',
+      header: dict.financeExpensesPage.ownerLabel,
       render: (row) => row.ownerName || '-',
     },
     {
       key: 'status',
-      header: 'HOLATI',
+      header: dict.financePage.colStatus,
       render: (row) => (
         <Badge variant={row.status === 'TOLANGAN' ? 'success' : 'danger'}>
-          {row.status === 'TOLANGAN' ? 'TO\'LANGAN' : 'KUTILMOQDA'}
+          {row.status === 'TOLANGAN' ? dict.financeExpensesPage.statusPaid : dict.financeExpensesPage.statusPending}
         </Badge>
       ),
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: dict.financePage.colAction,
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button
             size="sm"
             variant="outline"
+            title={t('edit')}
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
@@ -179,6 +190,7 @@ export const FinanceExpenses: React.FC = () => {
           <Button
             size="sm"
             variant="danger"
+            title={t('delete')}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteExpenseId(row.id);
@@ -194,9 +206,9 @@ export const FinanceExpenses: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Chiqimlar</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{dict.financeExpensesPage.title}</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          YANGI CHIQIM
+          {dict.financeExpensesPage.newExpenseBtn}
         </Button>
       </div>
 
@@ -220,11 +232,11 @@ export const FinanceExpenses: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedExpense ? 'Chiqimni tahrirlash' : 'Yangi Chiqim Qo\'shish'}
+        title={selectedExpense ? dict.financeExpensesPage.editExpenseTitle : dict.financeExpensesPage.addExpenseTitle}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
-            label="Chiqim sanasi"
+            label={dict.financeExpensesPage.dateLabel}
             type="date"
             required
             value={formData.date}
@@ -232,7 +244,7 @@ export const FinanceExpenses: React.FC = () => {
           />
 
           <Input
-            label="Qiymat / Summa (so'm)"
+            label={dict.financeExpensesPage.amountLabel}
             type="number"
             required
             placeholder="1200000"
@@ -241,50 +253,50 @@ export const FinanceExpenses: React.FC = () => {
           />
 
           <Select
-            label="Chiqim turi"
+            label={dict.financeExpensesPage.typeLabel}
             required
             options={[
-              { label: 'IJARA', value: 'IJARA' },
-              { label: 'KOMMUNAL', value: 'KOMMUNAL' },
-              { label: 'REKLAMA', value: 'REKLAMA' },
-              { label: 'USTOZ MAOSHI', value: 'USTOZ_MAOSHI' },
-              { label: 'BOSHQA', value: 'BOSHQA' },
+              { label: dict.financeExpensesPage.typeRent, value: 'IJARA' },
+              { label: dict.financeExpensesPage.typeUtility, value: 'KOMMUNAL' },
+              { label: dict.financeExpensesPage.typeAd, value: 'REKLAMA' },
+              { label: dict.financeExpensesPage.typeSalary, value: 'USTOZ_MAOSHI' },
+              { label: dict.financeExpensesPage.typeOther, value: 'BOSHQA' },
             ]}
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
           />
 
           <Input
-            label="Egasi / Qabul qiluvchi"
+            label={dict.financeExpensesPage.ownerLabel}
             placeholder="Bino egasi / REK"
             value={formData.ownerName}
             onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
           />
 
           <Select
-            label="Holati"
+            label={dict.financeExpensesPage.statusLabel}
             required
             options={[
-              { label: 'TO\'LANGAN', value: 'TOLANGAN' },
-              { label: 'KUTILMOQDA', value: 'KUTILMOQDA' },
+              { label: dict.financeExpensesPage.statusPaid, value: 'TOLANGAN' },
+              { label: dict.financeExpensesPage.statusPending, value: 'KUTILMOQDA' },
             ]}
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
           />
 
           <Input
-            label="Izoh (ixtiyoriy)"
-            placeholder="Avgust oyi ijara haqi"
+            label={dict.financeExpensesPage.noteLabel}
+            placeholder=""
             value={formData.note}
             onChange={(e) => setFormData({ ...formData, note: e.target.value })}
           />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -294,21 +306,21 @@ export const FinanceExpenses: React.FC = () => {
       <Modal
         isOpen={!!deleteExpenseId}
         onClose={() => setDeleteExpenseId(null)}
-        title="Chiqimni o'chirish"
+        title={dict.financeExpensesPage.deleteTitle}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu chiqimni o'chirmoqchimisiz?
+          {dict.financeExpensesPage.deleteConfirm}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteExpenseId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteExpenseId && deleteMutation.mutate(deleteExpenseId)}
           >
-            Ha, o'chirish
+            {t('yes')}, {t('delete')}
           </Button>
         </div>
       </Modal>

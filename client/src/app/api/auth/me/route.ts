@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser, signToken } from '@/lib/auth';
 
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
       center: centerRecord || { name: 'IT-Park Academy' },
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message || 'Server xatosi' }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -84,6 +85,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(tokens);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

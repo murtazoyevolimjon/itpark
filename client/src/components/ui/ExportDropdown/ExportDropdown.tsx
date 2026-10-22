@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, ChevronDown, FileSpreadsheet, FileText } from 'lucide-react';
 import { Button } from '../Button/Button';
+import { useLanguage } from '../../../hooks/useLanguage';
 import styles from './ExportDropdown.module.css';
 
 interface ExportDropdownProps {
@@ -16,10 +17,12 @@ interface ExportDropdownProps {
 export const ExportDropdown: React.FC<ExportDropdownProps> = ({
   onExportExcel,
   onExportPdf,
-  label = 'Yuklab olish',
+  label,
   size = 'md',
   variant = 'outline',
 }) => {
+  const { t } = useLanguage();
+  const displayLabel = label || t('download');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -58,7 +61,7 @@ export const ExportDropdown: React.FC<ExportDropdownProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
       >
-        <span>{label}</span>
+        <span>{displayLabel}</span>
         <ChevronDown
           size={14}
           style={{
@@ -75,8 +78,8 @@ export const ExportDropdown: React.FC<ExportDropdownProps> = ({
               <FileSpreadsheet size={16} />
             </div>
             <div className={styles.itemContent}>
-              <span className={styles.itemTitle}>Excel (.xlsx)</span>
-              <span className={styles.itemSubtitle}>Jadval shaklida</span>
+              <span className={styles.itemTitle}>{t('excelExport')}</span>
+              <span className={styles.itemSubtitle}>{t('tableFormat')}</span>
             </div>
           </button>
 
@@ -85,8 +88,8 @@ export const ExportDropdown: React.FC<ExportDropdownProps> = ({
               <FileText size={16} />
             </div>
             <div className={styles.itemContent}>
-              <span className={styles.itemTitle}>PDF (.pdf)</span>
-              <span className={styles.itemSubtitle}>Hisobot shaklida</span>
+              <span className={styles.itemTitle}>{t('pdfExport')}</span>
+              <span className={styles.itemSubtitle}>{t('reportFormat')}</span>
             </div>
           </button>
         </div>

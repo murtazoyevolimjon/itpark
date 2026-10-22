@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
-import { dbErrorResponse } from '@/lib/dbErrors';
+import { requireStaff } from '@/lib/authz';
+import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
 
 export async function POST(
@@ -14,6 +15,9 @@ export async function POST(
     if (!authUser) {
       return NextResponse.json({ message: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
     }
+
+    const staffOnly = requireStaff(authUser);
+    if (staffOnly) return staffOnly;
 
     const sourceGroupId = params.id;
     const body = await req.json();
@@ -122,7 +126,7 @@ export async function POST(
       .eq('centerId', authUser.centerId);
 
     if (deleteError) {
-      return NextResponse.json({ message: deleteError.message }, { status: 500 });
+      return serverErrorResponse(deleteError);
     }
 
     return NextResponse.json({
@@ -133,6 +137,6 @@ export async function POST(
       student,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

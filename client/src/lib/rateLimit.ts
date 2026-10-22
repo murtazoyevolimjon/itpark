@@ -13,6 +13,12 @@ export function getClientIp(req: NextRequest): string {
 
 export function isRateLimited(key: string, max = 10, windowMs = 15 * 60 * 1000): boolean {
   const now = Date.now();
+  // Expired windows are dropped now and then so the map cannot grow without bound
+  if (attempts.size > 5000) {
+    attempts.forEach((v, k) => {
+      if (v.resetAt < now) attempts.delete(k);
+    });
+  }
   const entry = attempts.get(key);
   if (!entry || entry.resetAt < now) {
     attempts.set(key, { count: 1, resetAt: now + windowMs });

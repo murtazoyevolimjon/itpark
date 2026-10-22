@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerSupabaseClient();
 
-    // Auto-seed if database is freshly empty
-    if (loginIdentifier === 'ITPARK_itpark' || loginIdentifier === 'admin@itpark.uz') {
+    // Demo data with a well-known password: never created in production unless explicitly enabled
+    if (process.env.ALLOW_DEMO_SEED === 'true' && (loginIdentifier === 'ITPARK_itpark' || loginIdentifier === 'admin@itpark.uz')) {
       const { seedSupabaseIfNeeded } = await import('@/lib/seed');
       await seedSupabaseIfNeeded();
     }
@@ -42,10 +42,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('[LOGIN] Supabase error:', error);
-      return NextResponse.json(
-        { message: `Ma'lumotlar bazasi xatosi: ${error.message}`, code: error.code },
-        { status: 500 }
-      );
+      return NextResponse.json({ message: 'Server xatosi. Birozdan keyin qayta urinib ko\'ring' }, { status: 500 });
     }
 
     if (!userRecord) {
@@ -172,9 +169,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ tokens, user });
   } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message || 'Serverda xatolik yuz berdi' },
-      { status: 500 }
-    );
+    console.error('[LOGIN] error:', error);
+    return NextResponse.json({ message: 'Serverda xatolik yuz berdi' }, { status: 500 });
   }
 }

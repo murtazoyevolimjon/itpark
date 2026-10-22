@@ -19,9 +19,11 @@ import { Card } from '../components/ui/Card/Card';
 import { dashboardApi } from '../api/dashboard.api';
 import { formatMoney } from '../utils/formatMoney';
 import { Skeleton } from '../components/ui/Skeleton/Skeleton';
+import { useLanguage } from '../hooks/useLanguage';
 import styles from './FinanceSummary.module.css';
 
 export const FinanceSummary: React.FC = () => {
+  const { t, dict } = useLanguage();
   const { data: summary, isLoading: isSummaryLoading } = useQuery({
     queryKey: ['financeSummary'],
     queryFn: dashboardApi.getFinanceSummary,
@@ -41,14 +43,14 @@ export const FinanceSummary: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Moliya Statistika</h2>
+      <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{dict.financePage?.statsTitle || 'Moliya Statistika'}</h2>
 
       {/* 4 Dotted-Border Cards */}
       <div className={styles.cardsGrid}>
         {/* Kirim */}
         <div className={styles.dottedCard}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Kirim</span>
+            <span className={styles.cardTitle}>{dict.financePage?.income || 'Kirim'}</span>
             <div className={styles.cardIcon} style={{ color: '#16a34a' }}>
               <TrendingUp size={20} />
             </div>
@@ -63,7 +65,7 @@ export const FinanceSummary: React.FC = () => {
         {/* Chiqim */}
         <div className={styles.dottedCard}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Chiqim</span>
+            <span className={styles.cardTitle}>{dict.financePage?.expense || 'Chiqim'}</span>
             <div className={styles.cardIcon} style={{ color: '#dc2626' }}>
               <TrendingDown size={20} />
             </div>
@@ -78,7 +80,7 @@ export const FinanceSummary: React.FC = () => {
         {/* Talaba Qarzi */}
         <div className={styles.dottedCard}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Talaba Qarzi</span>
+            <span className={styles.cardTitle}>{dict.financePage?.studentDebt || 'Talaba Qarzi'}</span>
             <div className={styles.cardIcon} style={{ color: '#ca8a04' }}>
               <AlertCircle size={20} />
             </div>
@@ -93,7 +95,7 @@ export const FinanceSummary: React.FC = () => {
         {/* Sof Foyda */}
         <div className={styles.dottedCard}>
           <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Sof Foyda</span>
+            <span className={styles.cardTitle}>{dict.financePage?.netProfit || 'Sof Foyda'}</span>
             <div className={styles.cardIcon} style={{ color: isProfitNegative ? '#dc2626' : '#2b7fff' }}>
               <DollarSign size={20} />
             </div>
@@ -117,7 +119,7 @@ export const FinanceSummary: React.FC = () => {
         {/* Monthly Income & Expenses Chart */}
         <Card>
           <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
-            Oylik daromad va chiqimlar
+            {dict.financePage?.monthlyIncomeExpense || 'Oylik daromad va chiqimlar'}
           </h3>
           <div style={{ width: '100%', height: 300 }}>
             {isMonthlyLoading ? (
@@ -140,14 +142,14 @@ export const FinanceSummary: React.FC = () => {
                   <Line
                     type="monotone"
                     dataKey="income"
-                    name="Kirim"
+                    name={dict.financePage?.income || 'Kirim'}
                     stroke="#16a34a"
                     strokeWidth={2}
                   />
                   <Line
                     type="monotone"
                     dataKey="expense"
-                    name="Chiqim"
+                    name={dict.financePage?.expense || 'Chiqim'}
                     stroke="#dc2626"
                     strokeWidth={2}
                   />
@@ -160,7 +162,7 @@ export const FinanceSummary: React.FC = () => {
         {/* Course Income Bar Chart */}
         <Card>
           <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
-            Kurslar bo'yicha daromad
+            {dict.financePage?.incomeByCourse || "Kurslar bo'yicha daromad"}
           </h3>
           <div style={{ width: '100%', height: 300 }}>
             {isCourseLoading ? (
@@ -172,7 +174,7 @@ export const FinanceSummary: React.FC = () => {
                   <XAxis dataKey="courseName" stroke="#64748b" fontSize={11} />
                   <YAxis stroke="#64748b" fontSize={11} />
                   <Tooltip formatter={(val: number) => formatMoney(val)} />
-                  <Bar dataKey="income" name="Daromad" fill="#2b7fff" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="income" name={dict.financePage?.revenue || 'Daromad'} fill="#2b7fff" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

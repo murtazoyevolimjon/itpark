@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { serverErrorResponse } from '@/lib/dbErrors';
 import crypto from 'crypto';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
+import { clampLimit, clampPage, safeSearch } from '@/lib/pagedFetch';
 import { ENUMS, date as dateRule, firstError, money, oneOf, optionalText } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {
@@ -15,8 +17,8 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const page = clampPage(searchParams.get('page'));
+    const limit = clampLimit(searchParams.get('limit'), 10, 500);
     const sortBy = searchParams.get('sortBy') || 'date';
     const order = searchParams.get('order') === 'asc' ? true : false;
     const type = searchParams.get('type');
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
       .range(from, to);
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json({
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
       limit,
     });
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }
 
@@ -96,11 +98,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+      return serverErrorResponse(error);
     }
 
     return NextResponse.json(data);
   } catch (error: any) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return serverErrorResponse(error);
   }
 }

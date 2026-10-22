@@ -15,6 +15,7 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { studentsApi } from '../api/students.api';
 import { groupsApi } from '../api/groups.api';
 import { askAddExistingStudent } from '../utils/existingStudent';
@@ -26,6 +27,7 @@ export const Students: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -245,7 +247,7 @@ export const Students: React.FC = () => {
   const columns: Column<Student>[] = [
     {
       key: 'name',
-      header: 'ISM FAMILIYA',
+      header: dict.studentsPage.colName,
       sortable: true,
       render: (row) => (
         <span
@@ -258,7 +260,7 @@ export const Students: React.FC = () => {
     },
     {
       key: 'group',
-      header: 'GURUH',
+      header: dict.studentsPage.colGroup,
       render: (row) => {
         const sgList = row.studentGroups || (row as any).student_groups || [];
         const group = sgList[0]?.group;
@@ -301,7 +303,7 @@ export const Students: React.FC = () => {
     },
     {
       key: 'phones',
-      header: 'TELEFONLAR',
+      header: dict.studentsPage.colPhones,
       render: (row) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
           <a
@@ -316,7 +318,7 @@ export const Students: React.FC = () => {
               textDecoration: 'none',
               whiteSpace: 'nowrap',
             }}
-            title="O'quvchi telefoni"
+            title={dict.studentsPage.studentPhoneTitle}
           >
             <Phone size={12} />
             {formatPhone(row.phone)}
@@ -333,7 +335,7 @@ export const Students: React.FC = () => {
                 textDecoration: 'none',
                 whiteSpace: 'nowrap',
               }}
-              title={row.fatherPhone ? "Otasi telefoni" : "Onasi telefoni"}
+              title={row.fatherPhone ? dict.studentsPage.fatherPhoneTitle : dict.studentsPage.motherPhoneTitle}
             >
               <span
                 style={{
@@ -345,7 +347,7 @@ export const Students: React.FC = () => {
                   fontWeight: 700,
                 }}
               >
-                {row.fatherPhone ? 'Otasi' : 'Onasi'}
+                {row.fatherPhone ? dict.studentsPage.father : dict.studentsPage.mother}
               </span>
               {formatPhone(row.fatherPhone || row.motherPhone)}
             </a>
@@ -357,7 +359,7 @@ export const Students: React.FC = () => {
     },
     {
       key: 'paymentStatus',
-      header: "TO'LOV HOLATI",
+      header: dict.studentsPage.colPaymentStatus,
       render: (row) => (
         <Badge
           variant={
@@ -369,16 +371,16 @@ export const Students: React.FC = () => {
           }
         >
           {row.paymentStatus === 'TOLANGAN'
-            ? "TO'LANGAN"
+            ? t('paid')
             : row.paymentStatus === 'QISMAN'
-            ? 'QISMAN'
-            : "TO'LANMAGAN"}
+            ? t('partiallyPaid')
+            : t('unpaid')}
         </Badge>
       ),
     },
     {
       key: 'telegram' as any,
-      header: 'TELEGRAM BOT',
+      header: dict.studentsPage.colTelegram,
       render: (row) => {
         const creds = parseStudentCreds(row.passportSeries, row.phone);
         const isStuConnected = !!creds.tgChatId;
@@ -395,10 +397,10 @@ export const Students: React.FC = () => {
                 color: isStuConnected ? '#10b981' : 'var(--text-muted)',
                 fontWeight: 600,
               }}
-              title={isStuConnected ? `O'quvchi ulangan (${creds.tgChatId})` : "O'quvchi ulanmagan"}
+              title={isStuConnected ? `${dict.studentsPage.studentPhoneTitle} (${creds.tgChatId})` : dict.studentsPage.tgStudentNotConnected}
             >
               <Send size={11} color={isStuConnected ? '#10b981' : '#94a3b8'} />
-              O'quvchi: {isStuConnected ? 'Ulangan' : 'Yo\'q'}
+              {isStuConnected ? dict.studentsPage.tgStudentConnected : dict.studentsPage.tgStudentNotConnected}
             </span>
             <span
               style={{
@@ -409,10 +411,10 @@ export const Students: React.FC = () => {
                 color: isParentConnected ? '#38bdf8' : 'var(--text-muted)',
                 fontWeight: 600,
               }}
-              title={isParentConnected ? `Ota-ona ulangan (${creds.parentTgChatId})` : "Ota-ona ulanmagan"}
+              title={isParentConnected ? `${dict.studentsPage.parentPhoneLabel} (${creds.parentTgChatId})` : dict.studentsPage.tgParentNotConnected}
             >
               <Send size={11} color={isParentConnected ? '#38bdf8' : '#94a3b8'} />
-              Ota-ona: {isParentConnected ? 'Ulangan' : 'Yo\'q'}
+              {isParentConnected ? dict.studentsPage.tgParentConnected : dict.studentsPage.tgParentNotConnected}
             </span>
           </div>
         );
@@ -420,12 +422,12 @@ export const Students: React.FC = () => {
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: dict.studentsPage.colAction,
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
             type="button"
-            title="Tahrirlash"
+            title={t('edit')}
             style={{
               width: '32px',
               height: '32px',
@@ -449,7 +451,7 @@ export const Students: React.FC = () => {
           </button>
           <button
             type="button"
-            title="O'chirish"
+            title={t('delete')}
             style={{
               width: '32px',
               height: '32px',
@@ -552,9 +554,9 @@ export const Students: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>Talabalar</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text)' }}>{dict.studentsPage.title}</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            O'quv markazidagi barcha ro'yxatdan o'tgan talabalar
+            {dict.studentsPage.subtitle}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -563,7 +565,7 @@ export const Students: React.FC = () => {
             onExportPdf={handleExportPdf}
           />
           <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-            YANGI TALABA
+            {dict.studentsPage.newStudentBtn}
           </Button>
         </div>
       </div>
@@ -589,29 +591,29 @@ export const Students: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedStudent ? 'Talabani tahrirlash' : 'Yangi Talaba Qo\'shish'}
+        title={selectedStudent ? dict.studentsPage.modalEditTitle : dict.studentsPage.modalAddTitle}
       >
         <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <GroupCardSelect
-            label="Guruh"
+            label={t('group')}
             groups={groups?.data || []}
             value={formData.groupId}
             onChange={(newId) => setFormData({ ...formData, groupId: newId })}
             allowEmpty={true}
-            emptyOptionLabel="Guruhsiz (Proba / Sinov darsi)"
-            placeholder="Guruhni tanlang"
-            searchPlaceholder="Guruh nomi, fan yoki o'qituvchi bo'yicha qidirish..."
+            emptyOptionLabel={dict.studentsPage.noGroupProba}
+            placeholder={dict.studentsPage.selectGroupPlaceholder}
+            searchPlaceholder={dict.studentsPage.searchGroupPlaceholder}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
-              label="Ism"
+              label={dict.employeesPage.firstName || 'Ism'}
               required
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             />
             <Input
-              label="Familiya"
+              label={dict.employeesPage.lastName || 'Familiya'}
               required
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -619,7 +621,7 @@ export const Students: React.FC = () => {
           </div>
 
           <Input
-            label="Telefon raqam"
+            label={t('phone')}
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.phone)}
@@ -629,7 +631,7 @@ export const Students: React.FC = () => {
           />
 
           <Input
-            label="Ota-onasining telefoni"
+            label={dict.studentsPage.parentPhoneLabel}
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.parentPhone)}
@@ -638,14 +640,14 @@ export const Students: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             {pendingSaves > 0 && (
               <span style={{ alignSelf: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-                Saqlanmoqda: {pendingSaves}
+                {dict.studentsPage.savingCount}: {pendingSaves}
               </span>
             )}
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              {selectedStudent ? 'Bekor qilish' : 'Yopish'}
+              {selectedStudent ? t('cancel') : t('close')}
             </Button>
             <Button type="submit" isLoading={!!selectedStudent && saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -655,21 +657,21 @@ export const Students: React.FC = () => {
       <Modal
         isOpen={!!deleteStudentId}
         onClose={() => setDeleteStudentId(null)}
-        title="Talabani o'chirish"
+        title={dict.studentsPage.deleteTitle}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu talabani o'chirmoqchimisiz?
+          {dict.studentsPage.deleteConfirm}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteStudentId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteStudentId && deleteMutation.mutate(deleteStudentId)}
           >
-            Ha, o'chirish
+            {t('yes')}, {t('delete')}
           </Button>
         </div>
       </Modal>

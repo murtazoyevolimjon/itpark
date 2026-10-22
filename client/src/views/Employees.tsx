@@ -13,6 +13,7 @@ import { EmptyState } from '../components/ui/EmptyState/EmptyState';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { employeesApi } from '../api/employees.api';
 import { Employee } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
@@ -21,6 +22,7 @@ import { formatMoney } from '../utils/formatMoney';
 export const Employees: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -136,31 +138,31 @@ export const Employees: React.FC = () => {
     },
     {
       key: 'position',
-      header: 'LAVOZIM',
+      header: dict.employeesPage?.colPosition || 'LAVOZIM',
       render: (row) => row.position,
     },
     {
       key: 'phone',
-      header: 'TELEFON',
+      header: dict.employeesPage?.colPhone || 'TELEFON',
       render: (row) => formatPhone(row.phone),
     },
     {
       key: 'salary',
-      header: 'MAOSH',
+      header: dict.employeesPage?.colSalary || 'MAOSH',
       render: (row) => formatMoney(row.salary),
     },
     {
       key: 'status',
-      header: 'HOLATI',
+      header: dict.employeesPage?.colStatus || 'HOLATI',
       render: (row) => (
         <Badge variant={row.status === 'FAOL' ? 'success' : 'danger'}>
-          {row.status}
+          {row.status === 'FAOL' ? (dict.employeesPage?.statusActive || 'FAOL') : (dict.employeesPage?.statusInactive || 'NOFAOL')}
         </Badge>
       ),
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: dict.employeesPage?.colAction || 'AMALLAR',
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button
@@ -191,21 +193,21 @@ export const Employees: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Xodimlar</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{dict.employeesPage?.title || t('employees')}</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          XODIM QO'SHISH
+          {dict.employeesPage?.newEmployee || "XODIM QO'SHISH"}
         </Button>
       </div>
 
       {!isLoading && data?.data?.length === 0 ? (
         <Card style={{ padding: '48px' }}>
           <EmptyState
-            title="Malumot bo'sh"
-            description="Hozircha o'quv markazingizga birorta ham xodim qo'shilmagan."
+            title={dict.employeesPage?.emptyTitle || "Malumot bo'sh"}
+            description={dict.employeesPage?.emptyDesc || "Hozircha o'quv markazingizga birorta ham xodim qo'shilmagan."}
             icon={<Briefcase size={40} color="var(--primary)" />}
             action={
               <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-                XODIM QO'SHISH
+                {dict.employeesPage?.newEmployee || "XODIM QO'SHISH"}
               </Button>
             }
           />
@@ -237,13 +239,13 @@ export const Employees: React.FC = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
-              label="Ism"
+              label={dict.employeesPage?.firstName || "Ism"}
               required
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             />
             <Input
-              label="Familiya"
+              label={dict.employeesPage?.lastName || "Familiya"}
               required
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
@@ -251,7 +253,7 @@ export const Employees: React.FC = () => {
           </div>
 
           <Input
-            label="Lavozim"
+            label={dict.employeesPage?.position || "Lavozim"}
             required
             placeholder="Administrator / Menejer"
             value={formData.position}
@@ -259,7 +261,7 @@ export const Employees: React.FC = () => {
           />
 
           <Input
-            label="Telefon raqam"
+            label={dict.employeesPage?.phone || "Telefon"}
             required
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.phone)}
@@ -267,7 +269,7 @@ export const Employees: React.FC = () => {
           />
 
           <Input
-            label="Maosh summasi (so'm)"
+            label={dict.employeesPage?.salary || "Maosh summasi"}
             type="number"
             required
             placeholder="3500000"
@@ -276,7 +278,7 @@ export const Employees: React.FC = () => {
           />
 
           <Input
-            label="Ishga kirgan sana"
+            label={dict.employeesPage?.hiredAt || "Ishga qabul qilingan sana"}
             type="date"
             required
             value={formData.hiredAt}
@@ -285,10 +287,10 @@ export const Employees: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -298,21 +300,21 @@ export const Employees: React.FC = () => {
       <Modal
         isOpen={!!deleteEmployeeId}
         onClose={() => setDeleteEmployeeId(null)}
-        title="Xodimni o'chirish"
+        title={t('delete')}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu xodimni o'chirmoqchimisiz?
+          {dict.employeesPage?.deleteConfirm || "Haqiqatan ham bu xodimni o'chirmoqchimisiz?"}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteEmployeeId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteEmployeeId && deleteMutation.mutate(deleteEmployeeId)}
           >
-            Ha, o'chirish
+            {t('yes')}
           </Button>
         </div>
       </Modal>

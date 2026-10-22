@@ -10,12 +10,14 @@ import { Input } from '../components/ui/Input/Input';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { roomsApi } from '../api/rooms.api';
 import { Room } from '../types';
 
 export const Rooms: React.FC = () => {
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
 
@@ -110,33 +112,33 @@ export const Rooms: React.FC = () => {
   const columns: Column<Room>[] = [
     {
       key: 'name',
-      header: 'NOMI',
+      header: dict.roomsPage?.colName || 'NOMI',
       sortable: true,
       render: (row) => <span style={{ fontWeight: 600 }}>{row.name}</span>,
     },
     {
       key: 'floor',
-      header: 'QAVAT',
-      render: (row) => `${row.floor}-qavat`,
+      header: dict.roomsPage?.colFloor || 'QAVAT',
+      render: (row) => `${row.floor}${dict.roomsPage?.floorSuffix || '-qavat'}`,
     },
     {
       key: 'number',
-      header: 'RAQAM',
-      render: (row) => `${row.number}-xona`,
+      header: dict.roomsPage?.colNumber || 'RAQAM',
+      render: (row) => `${row.number}${dict.roomsPage?.roomSuffix || '-xona'}`,
     },
     {
       key: 'capacity',
-      header: 'SIG\'IMI',
-      render: (row) => `${row.capacity} kishilik`,
+      header: dict.roomsPage?.colCapacity || "SIG'IMI",
+      render: (row) => `${row.capacity}${dict.roomsPage?.capacitySuffix || ' kishilik'}`,
     },
     {
       key: 'groupsCount',
-      header: 'GURUHLAR',
-      render: (row) => `${row._count?.groups || 0} ta`,
+      header: dict.roomsPage?.colGroups || 'GURUHLAR',
+      render: (row) => `${row._count?.groups || 0} ${dict.countUnit || 'ta'}`,
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: dict.roomsPage?.colAction || 'AMALLAR',
       render: (row) => (
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button
@@ -167,9 +169,9 @@ export const Rooms: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Xonalar</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{dict.roomsPage?.title || t('rooms')}</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          YANGI XONA
+          {dict.roomsPage?.newRoom || 'YANGI XONA'}
         </Button>
       </div>
 
@@ -193,11 +195,11 @@ export const Rooms: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedRoom ? 'Xonani tahrirlash' : 'Yangi Xona Yaratish'}
+        title={selectedRoom ? (dict.roomsPage?.editRoom || 'Xonani tahrirlash') : (dict.roomsPage?.createRoom || 'Yangi Xona Yaratish')}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
-            label="Xona nomi"
+            label={dict.roomsPage?.nameLabel || "Xona nomi"}
             required
             placeholder="Lab 1"
             value={formData.name}
@@ -206,7 +208,7 @@ export const Rooms: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
-              label="Qavat"
+              label={dict.roomsPage?.floorLabel || "Qavat"}
               type="number"
               required
               placeholder="1"
@@ -214,7 +216,7 @@ export const Rooms: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
             />
             <Input
-              label="Xona raqami"
+              label={dict.roomsPage?.numberLabel || "Xona raqami"}
               required
               placeholder="101"
               value={formData.number}
@@ -223,7 +225,7 @@ export const Rooms: React.FC = () => {
           </div>
 
           <Input
-            label="Sig'imi (kishilik)"
+            label={dict.roomsPage?.capacityLabel || "Sig'imi (kishilik)"}
             type="number"
             required
             placeholder="15"
@@ -233,10 +235,10 @@ export const Rooms: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -246,21 +248,21 @@ export const Rooms: React.FC = () => {
       <Modal
         isOpen={!!deleteRoomId}
         onClose={() => setDeleteRoomId(null)}
-        title="Xonani o'chirish"
+        title={t('delete')}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu xonani o'chirmoqchimisiz?
+          {dict.roomsPage?.deleteConfirm || "Haqiqatan ham bu xonani o'chirmoqchimisiz?"}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteRoomId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteRoomId && deleteMutation.mutate(deleteRoomId)}
           >
-            Ha, o'chirish
+            {t('yes')}
           </Button>
         </div>
       </Modal>

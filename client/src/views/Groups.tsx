@@ -14,29 +14,30 @@ import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
 import { useDebounce } from '../hooks/useDebounce';
+import { useLanguage } from '../hooks/useLanguage';
 import { groupsApi } from '../api/groups.api';
 import { coursesApi } from '../api/courses.api';
 import { teachersApi } from '../api/teachers.api';
 import { roomsApi } from '../api/rooms.api';
 import { Group, GroupDay } from '../types';
-import { uz } from '../locales/uz';
-
-const ALL_DAYS: { key: GroupDay; label: string }[] = [
-  { key: 'DUSH', label: 'DUSH' },
-  { key: 'SESH', label: 'SESH' },
-  { key: 'CHOR', label: 'CHOR' },
-  { key: 'PAY', label: 'PAY' },
-  { key: 'JU', label: 'JU' },
-  { key: 'SHAN', label: 'SHAN' },
-  { key: 'YAK', label: 'YAK' },
-];
 
 export const Groups: React.FC = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { success, error } = useToast();
+  const { t, dict } = useLanguage();
   const pagination = usePagination();
   const debouncedSearch = useDebounce(pagination.search, 300);
+
+  const ALL_DAYS: { key: GroupDay; label: string }[] = [
+    { key: 'DUSH', label: dict.days?.DUSH || 'DUSH' },
+    { key: 'SESH', label: dict.days?.SESH || 'SESH' },
+    { key: 'CHOR', label: dict.days?.CHOR || 'CHOR' },
+    { key: 'PAY', label: dict.days?.PAY || 'PAY' },
+    { key: 'JU', label: dict.days?.JU || 'JU' },
+    { key: 'SHAN', label: dict.days?.SHAN || 'SHAN' },
+    { key: 'YAK', label: dict.days?.YAK || 'YAK' },
+  ];
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
@@ -215,12 +216,12 @@ export const Groups: React.FC = () => {
   const columns: Column<Group>[] = [
     {
       key: 'course',
-      header: 'KURS',
+      header: t('courses').toUpperCase(),
       render: (row) => row.course?.name || '-',
     },
     {
       key: 'name',
-      header: 'RAQAMI',
+      header: t('groupName'),
       sortable: true,
       render: (row) => (
         <span
@@ -233,18 +234,18 @@ export const Groups: React.FC = () => {
     },
     {
       key: 'teacher',
-      header: 'USTOZ',
+      header: t('teachers').toUpperCase(),
       render: (row) =>
         row.teacher ? `${row.teacher.firstName} ${row.teacher.lastName}` : '-',
     },
     {
       key: 'days',
-      header: 'KUNLAR',
+      header: t('lessonDays'),
       render: (row) => (
         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           {row.days?.map((d) => (
             <Badge key={d} variant="secondary">
-              {d}
+              {dict.days?.[d as GroupDay] || d}
             </Badge>
           ))}
         </div>
@@ -252,7 +253,7 @@ export const Groups: React.FC = () => {
     },
     {
       key: 'status',
-      header: 'HOLATI',
+      header: t('status'),
       render: (row) => (
         <Badge
           variant={
@@ -263,19 +264,19 @@ export const Groups: React.FC = () => {
               : 'danger'
           }
         >
-          {row.status}
+          {row.status === 'FAOL' ? t('active') : row.status === 'TUGAGAN' ? t('completed') : t('suspended')}
         </Badge>
       ),
     },
     {
       key: 'action',
-      header: 'ACTION',
+      header: t('action'),
       render: (row) => (
         <div style={{ display: 'flex', gap: '6px' }}>
           <Button
             size="sm"
             variant="outline"
-            title="Guruh davomati va talabalari"
+            title={t('attendance')}
             onClick={(e) => {
               e.stopPropagation();
               router.push(`/groups/${row.id}`);
@@ -286,7 +287,7 @@ export const Groups: React.FC = () => {
           <Button
             size="sm"
             variant="outline"
-            title="Tahrirlash"
+            title={t('edit')}
             onClick={(e) => {
               e.stopPropagation();
               handleOpenModal(row);
@@ -297,7 +298,7 @@ export const Groups: React.FC = () => {
           <Button
             size="sm"
             variant="danger"
-            title="O'chirish"
+            title={t('delete')}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteGroupId(row.id);
@@ -313,9 +314,9 @@ export const Groups: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Guruhlar</h2>
+        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{t('groups')}</h2>
         <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
-          GURUH OCHISH
+          {t('newGroup')}
         </Button>
       </div>
 
@@ -340,11 +341,11 @@ export const Groups: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={selectedGroup ? 'Guruhni tahrirlash' : 'Guruh Ochish'}
+        title={selectedGroup ? t('edit') : t('newGroup')}
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
-            label="Guruh nomi / raqami"
+            label={t('groupName')}
             required
             placeholder="#1 guruh (Frontend)"
             value={formData.name}
@@ -352,7 +353,7 @@ export const Groups: React.FC = () => {
           />
 
           <Select
-            label="Kurs"
+            label={t('courses')}
             required
             options={courses?.data?.map((c) => ({ label: c.name, value: c.id })) || []}
             value={formData.courseId}
@@ -360,7 +361,7 @@ export const Groups: React.FC = () => {
           />
 
           <Select
-            label="Ustoz"
+            label={t('teachers')}
             required
             options={
               teachers?.data?.map((t) => ({
@@ -373,7 +374,7 @@ export const Groups: React.FC = () => {
           />
 
           <Select
-            label="Xona"
+            label={t('rooms')}
             required
             options={rooms?.data?.map((r) => ({ label: `${r.name} (${r.number})`, value: r.id })) || []}
             value={formData.roomId}
@@ -382,7 +383,7 @@ export const Groups: React.FC = () => {
 
           <div>
             <label style={{ fontSize: '13px', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
-              Dars kunlari *
+              {t('lessonDays')} *
             </label>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {ALL_DAYS.map((day) => (
@@ -398,14 +399,14 @@ export const Groups: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <Input
-              label="Boshlanish vaqti"
+              label={t('startTime')}
               type="time"
               required
               value={formData.startTime}
               onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
             />
             <Input
-              label="Tugash vaqti"
+              label={t('endTime')}
               type="time"
               required
               value={formData.endTime}
@@ -414,7 +415,7 @@ export const Groups: React.FC = () => {
           </div>
 
           <Input
-            label="Boshlanish sanasi"
+            label={t('startDate')}
             type="date"
             required
             value={formData.startDate}
@@ -423,10 +424,10 @@ export const Groups: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {t('cancel')}
             </Button>
             <Button type="submit" isLoading={saveMutation.isPending}>
-              Saqlash
+              {t('save')}
             </Button>
           </div>
         </form>
@@ -436,21 +437,21 @@ export const Groups: React.FC = () => {
       <Modal
         isOpen={!!deleteGroupId}
         onClose={() => setDeleteGroupId(null)}
-        title="Guruhni o'chirish"
+        title={t('delete')}
       >
         <p style={{ marginBottom: '20px', color: 'var(--text-muted)' }}>
-          Haqiqatan ham bu guruhni o'chirmoqchimisiz?
+          {t('confirm')}?
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <Button variant="secondary" onClick={() => setDeleteGroupId(null)}>
-            Yo'q
+            {t('no')}
           </Button>
           <Button
             variant="danger"
             isLoading={deleteMutation.isPending}
             onClick={() => deleteGroupId && deleteMutation.mutate(deleteGroupId)}
           >
-            Ha, o'chirish
+            {t('delete')}
           </Button>
         </div>
       </Modal>
