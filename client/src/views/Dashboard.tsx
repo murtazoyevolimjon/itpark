@@ -350,42 +350,20 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
-    const cleanFather = unmaskPhone(probaForm.fatherPhone);
-    const cleanMother = unmaskPhone(probaForm.motherPhone);
-    if (!cleanFather && !cleanMother) {
-      error("Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi)!");
+    const cleanParent = unmaskPhone(probaForm.fatherPhone);
+    if (!cleanParent) {
+      error("Ota-onasining telefon raqamini kiriting");
       return;
     }
 
-    const validSubj = validateSubjectName(probaForm.subject);
-    if (!validSubj.isValid) {
-      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
-      return;
-    }
-
-    // Duplicate check on client
-    const cleanP = unmaskPhone(probaForm.phone);
-    const existingDup = probaStudents.find((st: any) => {
-      const stClean = (st.phone || '').replace(/\D/g, '');
-      const stSub = getStudentSubject(st).trim().toLowerCase();
-      return stClean === cleanP && stSub === probaForm.subject.trim().toLowerCase();
-    });
-    if (existingDup) {
-      error(`Ushbu talaba (${existingDup.studentName}) allaqachon "${probaForm.subject}" faniga qo'shilgan! Bitta talabani bir xil fanga ikki marta qo'shib bo'lmaydi.`);
-      return;
-    }
-
+    // The same person (phone + name) is rejected by the server and offered as "add the existing student"
     createProbaStudentMutation.mutate({
-      ...probaForm,
-      subject: probaForm.subject.trim(),
-      passportSeries: probaForm.subject.trim(),
+      firstName: probaForm.firstName,
+      lastName: probaForm.lastName,
       phone: unmaskPhone(probaForm.phone),
-      fatherPhone: probaForm.fatherPhone ? unmaskPhone(probaForm.fatherPhone) : null,
-      motherPhone: probaForm.motherPhone ? unmaskPhone(probaForm.motherPhone) : null,
-      birthDate: probaForm.birthDate ? new Date(probaForm.birthDate).toISOString() : new Date().toISOString(),
+      fatherPhone: cleanParent,
     });
   };
-
   const handleOpenAssignGroup = (student: any) => {
     setSelectedProbaStudent(student);
     setTargetGroupId(groupsData?.data?.[0]?.id || '');
@@ -413,8 +391,8 @@ export const Dashboard: React.FC = () => {
       lastName: student.lastName || '',
       birthDate: student.birthDate ? student.birthDate.split('T')[0] : '2005-01-01',
       phone: formatPhone(student.phone) || '',
-      fatherPhone: student.fatherPhone ? formatPhone(student.fatherPhone) : '',
-      motherPhone: student.motherPhone ? formatPhone(student.motherPhone) : '',
+      fatherPhone: formatPhone(student.fatherPhone || student.motherPhone || ''),
+      motherPhone: '',
       subject: getStudentSubject(student),
       gender: student.gender || 'ERKAK',
       isSchoolStudent: !!student.isSchoolStudent,
@@ -429,36 +407,24 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
-    const cleanEditFather = unmaskPhone(editProbaForm.fatherPhone);
-    const cleanEditMother = unmaskPhone(editProbaForm.motherPhone);
-    if (!cleanEditFather && !cleanEditMother) {
-      error("Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi)!");
+    const cleanEditParent = unmaskPhone(editProbaForm.fatherPhone);
+    if (!cleanEditParent) {
+      error("Ota-onasining telefon raqamini kiriting");
       return;
     }
 
-    const validSubj = validateSubjectName(editProbaForm.subject);
-    if (!validSubj.isValid) {
-      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
-      return;
-    }
-
+    // Only the shown fields are sent: subject, gender, birth date and the rest of the student stay as they are
+    const parentField = !selectedProbaStudent?.fatherPhone && selectedProbaStudent?.motherPhone ? 'motherPhone' : 'fatherPhone';
     updateProbaStudentMutation.mutate({
       id: editProbaForm.id,
       data: {
         firstName: editProbaForm.firstName,
         lastName: editProbaForm.lastName,
-        birthDate: editProbaForm.birthDate ? new Date(editProbaForm.birthDate).toISOString() : undefined,
         phone: unmaskPhone(editProbaForm.phone),
-        fatherPhone: editProbaForm.fatherPhone ? unmaskPhone(editProbaForm.fatherPhone) : null,
-        motherPhone: editProbaForm.motherPhone ? unmaskPhone(editProbaForm.motherPhone) : null,
-        subject: editProbaForm.subject.trim(),
-        passportSeries: editProbaForm.subject.trim(),
-        gender: editProbaForm.gender,
-        isSchoolStudent: editProbaForm.isSchoolStudent,
+        [parentField]: cleanEditParent,
       },
     });
   };
-
   const handleOpenDeleteProba = (student: any) => {
     setSelectedProbaStudent(student);
     setIsDeleteProbaModalOpen(true);
@@ -1647,15 +1613,6 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Tug'ilgan kun */}
-          <Input
-            label="Tug'ilgan kun"
-            type="date"
-            required
-            value={probaForm.birthDate}
-            onChange={(e) => setProbaForm({ ...probaForm, birthDate: e.target.value })}
-          />
-
           {/* Telefon raqam */}
           <Input
             label="Telefon raqam"
@@ -1665,56 +1622,14 @@ export const Dashboard: React.FC = () => {
             onChange={(e) => setProbaForm({ ...probaForm, phone: unmaskPhone(e.target.value) })}
           />
 
-          {/* Otasi & Onasi telefoni */}
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <Input
-                label="Otasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(probaForm.fatherPhone)}
-                onChange={(e) => setProbaForm({ ...probaForm, fatherPhone: unmaskPhone(e.target.value) })}
-              />
-              <Input
-                label="Onasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(probaForm.motherPhone)}
-                onChange={(e) => setProbaForm({ ...probaForm, motherPhone: unmaskPhone(e.target.value) })}
-              />
-            </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', fontWeight: 500 }}>
-              * Otasi yoki onasining telefon raqamidan kamida bittasi qat'iy kiritilishi shart
-            </p>
-          </div>
-
-          {/* Fan tanlash */}
-          <SubjectSelect
-            label="Qaysi fanga keladi? (Fan)"
+          {/* Ota-onasining telefoni */}
+          <Input
+            label="Ota-onasining telefoni"
+            placeholder="+998 90 123 45 67"
             required
-            value={probaForm.subject}
-            onChange={(subj) => setProbaForm({ ...probaForm, subject: subj })}
+            value={formatPhone(probaForm.fatherPhone)}
+            onChange={(e) => setProbaForm({ ...probaForm, fatherPhone: unmaskPhone(e.target.value) })}
           />
-
-          {/* Jinsi */}
-          <Select
-            label="Jinsi"
-            required
-            options={[
-              { label: 'Erkak', value: 'ERKAK' },
-              { label: 'Ayol', value: 'AYOL' },
-            ]}
-            value={probaForm.gender}
-            onChange={(e) => setProbaForm({ ...probaForm, gender: e.target.value as any })}
-          />
-
-          {/* Maktab o'quvchisi toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
-            <Toggle
-              checked={probaForm.isSchoolStudent}
-              onChange={(checked) => setProbaForm({ ...probaForm, isSchoolStudent: checked })}
-              label="Maktab o'quvchisi"
-            />
-          </div>
-
           {/* Modal buttons */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsAddProbaModalOpen(false)}>
@@ -1836,14 +1751,6 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <Input
-            label="Tug'ilgan kun"
-            type="date"
-            required
-            value={editProbaForm.birthDate}
-            onChange={(e) => setEditProbaForm({ ...editProbaForm, birthDate: e.target.value })}
-          />
-
-          <Input
             label="Telefon raqam"
             placeholder="+998 90 123 45 67"
             required
@@ -1851,53 +1758,13 @@ export const Dashboard: React.FC = () => {
             onChange={(e) => setEditProbaForm({ ...editProbaForm, phone: unmaskPhone(e.target.value) })}
           />
 
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <Input
-                label="Otasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(editProbaForm.fatherPhone)}
-                onChange={(e) => setEditProbaForm({ ...editProbaForm, fatherPhone: unmaskPhone(e.target.value) })}
-              />
-              <Input
-                label="Onasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(editProbaForm.motherPhone)}
-                onChange={(e) => setEditProbaForm({ ...editProbaForm, motherPhone: unmaskPhone(e.target.value) })}
-              />
-            </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', fontWeight: 500 }}>
-              * Otasi yoki onasining telefon raqamidan kamida bittasi qat'iy kiritilishi shart
-            </p>
-          </div>
-
-          {/* Fan tanlash */}
-          <SubjectSelect
-            label="Qaysi fanga keladi? (Fan)"
+          <Input
+            label="Ota-onasining telefoni"
+            placeholder="+998 90 123 45 67"
             required
-            value={editProbaForm.subject}
-            onChange={(subj) => setEditProbaForm({ ...editProbaForm, subject: subj })}
+            value={formatPhone(editProbaForm.fatherPhone)}
+            onChange={(e) => setEditProbaForm({ ...editProbaForm, fatherPhone: unmaskPhone(e.target.value) })}
           />
-
-          <Select
-            label="Jinsi"
-            required
-            options={[
-              { label: 'Erkak', value: 'ERKAK' },
-              { label: 'Ayol', value: 'AYOL' },
-            ]}
-            value={editProbaForm.gender}
-            onChange={(e) => setEditProbaForm({ ...editProbaForm, gender: e.target.value as any })}
-          />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
-            <Toggle
-              checked={editProbaForm.isSchoolStudent}
-              onChange={(checked) => setEditProbaForm({ ...editProbaForm, isSchoolStudent: checked })}
-              label="Maktab o'quvchisi"
-            />
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsEditProbaModalOpen(false)}>
               Bekor qilish

@@ -10,10 +10,7 @@ import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Input } from '../components/ui/Input/Input';
-import { Select } from '../components/ui/Select/Select';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
-import { SubjectSelect, validateSubjectName } from '../components/ui/SubjectSelect/SubjectSelect';
-import { Toggle } from '../components/ui/Toggle/Toggle';
 import { Badge } from '../components/ui/Badge/Badge';
 import { useToast } from '../components/ui/Toast/Toast';
 import { usePagination } from '../hooks/usePagination';
@@ -40,15 +37,13 @@ export const Students: React.FC = () => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    birthDate: '2005-01-01',
     phone: '',
-    fatherPhone: '',
-    motherPhone: '',
-    subject: '',
-    gender: 'ERKAK' as 'ERKAK' | 'AYOL',
-    isSchoolStudent: false,
+    parentPhone: '',
     groupId: '',
   });
+  // Which parent field the single "parent phone" input edits, and the group the student had when the form opened
+  const [parentField, setParentField] = useState<'fatherPhone' | 'motherPhone'>('fatherPhone');
+  const [originalGroupId, setOriginalGroupId] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['students', pagination.page, pagination.limit, debouncedSearch, pagination.sortBy, pagination.order],
@@ -138,29 +133,23 @@ export const Students: React.FC = () => {
       setFormData({
         firstName: student.firstName || '',
         lastName: student.lastName || '',
-        birthDate: student.birthDate ? student.birthDate.split('T')[0] : '2005-01-01',
         phone: student.phone || '',
-        fatherPhone: student.fatherPhone || '',
-        motherPhone: student.motherPhone || '',
-        subject: getStudentSubject(student as any),
-        gender: student.gender || 'ERKAK',
-        isSchoolStudent: !!student.isSchoolStudent,
+        parentPhone: student.fatherPhone || student.motherPhone || '',
         groupId: currentGroupId,
       });
+      setParentField(student.fatherPhone ? 'fatherPhone' : student.motherPhone ? 'motherPhone' : 'fatherPhone');
+      setOriginalGroupId(currentGroupId);
     } else {
       setSelectedStudent(null);
       setFormData({
         firstName: '',
         lastName: '',
-        birthDate: '2005-01-01',
         phone: '',
-        fatherPhone: '',
-        motherPhone: '',
-        subject: '',
-        gender: 'ERKAK',
-        isSchoolStudent: false,
+        parentPhone: '',
         groupId: '',
       });
+      setParentField('fatherPhone');
+      setOriginalGroupId('');
     }
     setIsModalOpen(true);
   };
@@ -177,30 +166,26 @@ export const Students: React.FC = () => {
       return;
     }
 
-    const cleanFatherPhone = unmaskPhone(formData.fatherPhone);
-    const cleanMotherPhone = unmaskPhone(formData.motherPhone);
-    if (!cleanFatherPhone && !cleanMotherPhone) {
-      error("Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi)!");
+    const cleanParentPhone = unmaskPhone(formData.parentPhone);
+    if (!cleanParentPhone) {
+      error("Ota-onasining telefon raqamini kiriting");
       return;
     }
 
-    const validSubj = validateSubjectName(formData.subject);
-    if (!validSubj.isValid) {
-      error(validSubj.error || "Iltimos, o'quvchi qaysi fanga kelishini tanlang yoki kiriting");
-      return;
-    }
-
-    saveMutation.mutate({
-      ...formData,
-      subject: formData.subject.trim(),
-      passportSeries: formData.subject.trim(),
+    const payload: any = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       phone: unmaskPhone(formData.phone),
-      fatherPhone: formData.fatherPhone ? unmaskPhone(formData.fatherPhone) : undefined,
-      motherPhone: formData.motherPhone ? unmaskPhone(formData.motherPhone) : undefined,
-      groupId: formData.groupId || '',
-    });
-  };
+      [parentField]: cleanParentPhone,
+    };
+    // Editing must not touch the student's groups unless the group was actually changed:
+    // one student may attend several groups, and changing the group replaces the others
+    if (!selectedStudent || formData.groupId !== originalGroupId) {
+      payload.groupId = formData.groupId || '';
+    }
 
+    saveMutation.mutate(payload);
+  };
   const columns: Column<Student>[] = [
     {
       key: 'name',
@@ -618,14 +603,6 @@ export const Students: React.FC = () => {
           </div>
 
           <Input
-            label="Tug'ilgan kun"
-            type="date"
-            required
-            value={formData.birthDate}
-            onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-          />
-
-          <Input
             label="Telefon raqam"
             required
             placeholder="+998 90 123 45 67"
@@ -635,51 +612,13 @@ export const Students: React.FC = () => {
             }}
           />
 
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <Input
-                label="Otasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(formData.fatherPhone)}
-                onChange={(e) => setFormData({ ...formData, fatherPhone: unmaskPhone(e.target.value) })}
-              />
-              <Input
-                label="Onasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(formData.motherPhone)}
-                onChange={(e) => setFormData({ ...formData, motherPhone: unmaskPhone(e.target.value) })}
-              />
-            </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', fontWeight: 500 }}>
-              * Otasi yoki onasining telefon raqamidan kamida bittasi qat'iy kiritilishi shart
-            </p>
-          </div>
-
-          {/* Fan tanlash */}
-          <SubjectSelect
-            label="Qaysi fanga keladi? (Fan)"
+          <Input
+            label="Ota-onasining telefoni"
             required
-            value={formData.subject}
-            onChange={(subj) => setFormData({ ...formData, subject: subj })}
+            placeholder="+998 90 123 45 67"
+            value={formatPhone(formData.parentPhone)}
+            onChange={(e) => setFormData({ ...formData, parentPhone: unmaskPhone(e.target.value) })}
           />
-
-          <Select
-            label="Jinsi"
-            required
-            options={[
-              { label: 'Erkak', value: 'ERKAK' },
-              { label: 'Ayol', value: 'AYOL' },
-            ]}
-            value={formData.gender}
-            onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
-          />
-
-          <Toggle
-            label="Maktab o'quvchisi"
-            checked={formData.isSchoolStudent}
-            onChange={(checked) => setFormData({ ...formData, isSchoolStudent: checked })}
-          />
-
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
               Bekor qilish

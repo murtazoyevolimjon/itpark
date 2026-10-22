@@ -835,8 +835,8 @@ export const GroupDetail: React.FC = () => {
         firstName: st.firstName || '',
         lastName: st.lastName || '',
         phone: st.phone ? formatPhone(st.phone) : '',
-        fatherPhone: st.fatherPhone ? formatPhone(st.fatherPhone) : '',
-        motherPhone: st.motherPhone ? formatPhone(st.motherPhone) : '',
+        fatherPhone: formatPhone(st.fatherPhone || st.motherPhone || ''),
+        motherPhone: '',
         subject: getStudentSubject(st),
         passportSeries: getStudentSubject(st),
         birthDate: st.birthDate ? st.birthDate.split('T')[0] : '2005-01-01',
@@ -855,43 +855,36 @@ export const GroupDetail: React.FC = () => {
       return;
     }
 
-    const cleanFather = unmaskPhone(studentForm.fatherPhone);
-    const cleanMother = unmaskPhone(studentForm.motherPhone);
-    if (!cleanFather && !cleanMother) {
-      error("Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi)!");
+    const cleanParent = unmaskPhone(studentForm.fatherPhone);
+    if (!cleanParent) {
+      error("Ota-onasining telefon raqamini kiriting");
       return;
     }
 
     if (selectedProbaId) {
-      // Update student details if modified, then attach to group
+      // Update the shown details if modified (subject, gender, birth date stay as they are), then attach to group
+      const probaStudent: any = probaStudents.find((p: any) => p.id === selectedProbaId);
+      const parentField = !probaStudent?.fatherPhone && probaStudent?.motherPhone ? 'motherPhone' : 'fatherPhone';
       try {
         await studentsApi.update(selectedProbaId, {
           firstName: studentForm.firstName,
           lastName: studentForm.lastName,
           phone: unmaskPhone(studentForm.phone),
-          fatherPhone: studentForm.fatherPhone ? unmaskPhone(studentForm.fatherPhone) : null,
-          motherPhone: studentForm.motherPhone ? unmaskPhone(studentForm.motherPhone) : null,
-          subject: studentForm.subject || group?.course?.name || null,
-          passportSeries: studentForm.subject || group?.course?.name || null,
-          birthDate: studentForm.birthDate ? new Date(studentForm.birthDate).toISOString() : undefined,
-          gender: studentForm.gender,
-          isSchoolStudent: studentForm.isSchoolStudent,
+          [parentField]: cleanParent,
         });
       } catch (_) {}
 
       addExistingStudentMutation.mutate(selectedProbaId);
     } else {
       addStudentMutation.mutate({
-        ...studentForm,
+        firstName: studentForm.firstName,
+        lastName: studentForm.lastName,
         phone: unmaskPhone(studentForm.phone),
-        fatherPhone: studentForm.fatherPhone ? unmaskPhone(studentForm.fatherPhone) : null,
-        motherPhone: studentForm.motherPhone ? unmaskPhone(studentForm.motherPhone) : null,
-        birthDate: studentForm.birthDate ? new Date(studentForm.birthDate).toISOString() : new Date().toISOString(),
+        fatherPhone: cleanParent,
         groupId: id,
       });
     }
   };
-
   // Open Accept Payment Modal for specific student
   const handleOpenPayModal = (student: any, remainingDebt?: number) => {
     const coursePrice = group?.course?.price || 0;
@@ -2899,14 +2892,6 @@ export const GroupDetail: React.FC = () => {
           </div>
 
           <Input
-            label="Tug'ilgan kun"
-            type="date"
-            required
-            value={studentForm.birthDate}
-            onChange={(e) => setStudentForm({ ...studentForm, birthDate: e.target.value })}
-          />
-
-          <Input
             label="Telefon raqam"
             required
             placeholder="+998 90 123 45 67"
@@ -2914,53 +2899,13 @@ export const GroupDetail: React.FC = () => {
             onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
           />
 
-          <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-              <Input
-                label="Otasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(studentForm.fatherPhone)}
-                onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
-              />
-              <Input
-                label="Onasining telefoni *"
-                placeholder="+998 90 123 45 67"
-                value={formatPhone(studentForm.motherPhone)}
-                onChange={(e) => setStudentForm({ ...studentForm, motherPhone: unmaskPhone(e.target.value) })}
-              />
-            </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#f59e0b', fontWeight: 500 }}>
-              * Otasi yoki onasining telefon raqamidan kamida bittasi qat'iy kiritilishi shart
-            </p>
-          </div>
-
-          {/* Fan tanlash */}
-          <SubjectSelect
-            label="Qaysi fanga keladi? (Fan)"
+          <Input
+            label="Ota-onasining telefoni"
             required
-            value={studentForm.subject || group?.course?.name || ''}
-            onChange={(subj) => setStudentForm({ ...studentForm, subject: subj })}
+            placeholder="+998 90 123 45 67"
+            value={formatPhone(studentForm.fatherPhone)}
+            onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
           />
-
-          <Select
-            label="Jinsi"
-            required
-            options={[
-              { label: 'Erkak', value: 'ERKAK' },
-              { label: 'Ayol', value: 'AYOL' },
-            ]}
-            value={studentForm.gender}
-            onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value as any })}
-          />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-            <Toggle
-              checked={studentForm.isSchoolStudent}
-              onChange={(checked) => setStudentForm({ ...studentForm, isSchoolStudent: checked })}
-              label="Maktab o'quvchisi"
-            />
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsAddStudentModalOpen(false)}>
               Bekor qilish
