@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
-import { parseStudentCreds, getStudentSubject } from '../lib/credentials';
+import { parseStudentCreds } from '../lib/credentials';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
 import { ExportDropdown } from '../components/ui/ExportDropdown/ExportDropdown';
@@ -20,7 +20,6 @@ import { groupsApi } from '../api/groups.api';
 import { askAddExistingStudent } from '../utils/existingStudent';
 import { Student } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
-import { formatDate } from '../utils/formatDate';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Students: React.FC = () => {
@@ -244,36 +243,6 @@ export const Students: React.FC = () => {
       },
     },
     {
-      key: 'subject' as any,
-      header: 'FAN',
-      render: (row: any) => (
-        getStudentSubject(row) ? (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              backgroundColor: 'rgba(59, 130, 246, 0.12)',
-              color: '#93c5fd',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
-            }}
-          >
-            {getStudentSubject(row)}
-          </span>
-        ) : (
-          <span style={{ color: 'var(--text-muted)' }}>-</span>
-        )
-      ),
-    },
-    {
-      key: 'birthDate',
-      header: "TUG'ILGAN YIL",
-      render: (row) => formatDate(row.birthDate),
-    },
-    {
       key: 'phones',
       header: 'TELEFONLAR',
       render: (row) => (
@@ -459,12 +428,9 @@ export const Students: React.FC = () => {
     const exportColumns = [
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Guruh', key: 'group' },
-      { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi telefoni", key: 'phone' },
       { header: 'Otasining telefoni', key: 'fatherPhone' },
       { header: 'Onasining telefoni', key: 'motherPhone' },
-      { header: 'Fan', key: 'subject' },
-      { header: 'Jinsi', key: 'gender' },
       { header: "To'lov holati", key: 'paymentStatus' },
     ];
 
@@ -474,12 +440,9 @@ export const Students: React.FC = () => {
         .map((sg: any) => sg.group?.name)
         .filter(Boolean)
         .join(', ') || '-',
-      birthDate: formatDate(s.birthDate),
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
       motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
-      subject: getStudentSubject(s as any) || '-',
-      gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
       paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
     }));
 
@@ -501,11 +464,9 @@ export const Students: React.FC = () => {
     const exportColumns = [
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Guruh', key: 'group' },
-      { header: "Tug'ilgan sana", key: 'birthDate' },
       { header: "O'quvchi tel", key: 'phone' },
       { header: 'Otasi tel', key: 'fatherPhone' },
       { header: 'Onasi tel', key: 'motherPhone' },
-      { header: 'Jinsi', key: 'gender' },
       { header: "To'lov holati", key: 'paymentStatus' },
     ];
 
@@ -515,11 +476,9 @@ export const Students: React.FC = () => {
         .map((sg: any) => sg.group?.name)
         .filter(Boolean)
         .join(', ') || '-',
-      birthDate: formatDate(s.birthDate),
       phone: formatPhone(s.phone),
       fatherPhone: s.fatherPhone ? formatPhone(s.fatherPhone) : '-',
       motherPhone: s.motherPhone ? formatPhone(s.motherPhone) : '-',
-      gender: s.gender === 'ERKAK' ? 'Erkak' : 'Ayol',
       paymentStatus: s.paymentStatus === 'TOLANGAN' ? "TO'LANGAN" : s.paymentStatus === 'QISMAN' ? 'QISMAN' : "TO'LANMAGAN",
     }));
 
