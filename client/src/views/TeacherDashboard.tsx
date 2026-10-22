@@ -283,29 +283,9 @@ export const TeacherDashboard: React.FC = () => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                  Mening Oylik Maoshim & To'lovlar
+                  {dict.paymentsTotal}
                 </h3>
-                {salaryData?.teacher && (
-                  <span
-                    style={{
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      color: '#34d399',
-                      border: '1px solid rgba(16, 185, 129, 0.35)',
-                    }}
-                  >
-                    {salaryData.teacher.salaryType === 'PERCENT'
-                      ? `Stavka: ${salaryData.teacher.salaryValue}% (Foiz)`
-                      : `Stavka: ${salaryData.teacher.salaryValue >= 1000000 ? formatMoney(salaryData.teacher.salaryValue) : `${formatMoney(salaryData.teacher.salaryValue)}/o'quvchi`}`}
-                  </span>
-                )}
               </div>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                O'quvchilaringiz qilgan to'lovlari va sizga hisoblangan oylik maosh summasi
-              </p>
             </div>
           </div>
 
@@ -382,13 +362,13 @@ export const TeacherDashboard: React.FC = () => {
             }}
           >
             <div style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: 700 }}>
-              💰 Mening Hisoblangan Maoshim
+              💰 {dict.paymentsTotal}
             </div>
             <div style={{ fontSize: '22px', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
-              {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.calculatedSalary || 0)}
+              {isSalaryLoading ? '...' : formatMoney(salaryData?.summary?.totalCollected || 0)}
             </div>
             <div style={{ fontSize: '11px', color: '#6ee7b7', marginTop: '2px' }}>
-              Hozirgi to'lovlar va stavka asosida
+              {salaryData?.filter?.selectedMonthLabel || ''}
             </div>
           </div>
         </div>

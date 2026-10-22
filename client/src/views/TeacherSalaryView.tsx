@@ -129,29 +129,9 @@ export const TeacherSalaryView: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                Mening Oylik Maoshim
+                {dict.paymentsTotal}
               </h1>
-              {teacher && (
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    padding: '3px 10px',
-                    borderRadius: '8px',
-                    background: 'rgba(16, 185, 129, 0.2)',
-                    color: '#34d399',
-                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                  }}
-                >
-                  {teacher.salaryType === 'PERCENT'
-                    ? `Stavka: ${teacher.salaryValue}% (To'lovlardan foiz)`
-                    : `Stavka: ${teacher.salaryValue >= 1000000 ? formatMoney(teacher.salaryValue) : `${formatMoney(teacher.salaryValue)} / to'lagan o'quvchi`}`}
-                </span>
-              )}
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
-              Guruhlaringizdagi o'quvchilar to'lovlari va sizning hisoblangan oylik maoshingiz
-            </p>
           </div>
         </div>
 
@@ -370,44 +350,17 @@ export const TeacherSalaryView: React.FC = () => {
           </div>
           <div>
             <div style={{ fontSize: '13px', color: '#a7f3d0', fontWeight: 700 }}>
-              💰 Mening Hisoblangan Maoshim
+              💰 {dict.paymentsTotal}
             </div>
             <div style={{ fontSize: '24px', fontWeight: 900, color: '#10b981', marginTop: '2px' }}>
-              {isLoading ? '...' : formatMoney(summary?.calculatedSalary || 0)}
+              {isLoading ? '...' : formatMoney(summary?.totalCollected || 0)}
             </div>
             <div style={{ fontSize: '11.5px', color: '#a7f3d0', marginTop: '2px' }}>
-              {teacher?.salaryType === 'PERCENT'
-                ? `Tushumdan ${teacher.salaryValue}% stavka`
-                : `${summary?.paidStudentsCount || 0} ta o'quvchi to'lovi bo'yicha`}
+              {summary?.paidStudentsCount || 0} / {summary?.totalStudents || 0}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Formula & Explanation Box */}
-      {summary && (
-        <div
-          style={{
-            background: 'rgba(59, 130, 246, 0.08)',
-            border: '1px solid rgba(59, 130, 246, 0.25)',
-            borderRadius: '14px',
-            padding: '14px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-          }}
-        >
-          <span style={{ fontSize: '20px' }}>💡</span>
-          <div>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#60a5fa' }}>
-              Maosh qanday hisoblandi:
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text)', marginLeft: '8px' }}>
-              {summary.calculationFormula}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Tabs Switcher */}
       <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>

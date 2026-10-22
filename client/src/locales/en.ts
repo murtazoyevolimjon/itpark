@@ -148,6 +148,7 @@ export const en = {
   takeAttendance: 'Take Attendance',
   attendanceStats: 'Attendance Statistics',
   attendanceSubtitle: 'General attendance statistics and absence analysis in the educational center',
+  paymentsTotal: "Total payments",
   archiveTitle: "Old attendance archive",
   archiveHint: "Attendance for the months below is past its retention period. Download it as Excel and PDF; it is then deleted from the database.",
   archiveDownload: "Download and delete",

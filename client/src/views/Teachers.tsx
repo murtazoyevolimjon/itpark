@@ -335,7 +335,7 @@ export const Teachers: React.FC = () => {
     },
     {
       key: 'salary',
-      header: dict.teachersPage.colSalary,
+      header: dict.paymentsTotal,
       render: (row) => {
         const rateText =
           row.salaryType === 'FIXED'
@@ -374,7 +374,7 @@ export const Teachers: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: 800, color: '#10b981' }}>
-                {stats?.calculatedSalary !== undefined ? formatMoney(stats.calculatedSalary) : rateText}
+                {formatMoney(stats?.totalCollected ?? 0)}
               </span>
             </div>
             <div
@@ -386,10 +386,8 @@ export const Teachers: React.FC = () => {
                 gap: '4px',
               }}
             >
-              <span>{rateText}</span>
               {stats && (
                 <>
-                  <span>•</span>
                   <span
                     style={{
                       color: stats.paidStudents > 0 ? '#34d399' : '#94a3b8',
@@ -524,8 +522,7 @@ export const Teachers: React.FC = () => {
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
       { header: 'Pasport seriyasi', key: 'passportSeries' },
-      { header: 'Maosh stavkasi', key: 'salaryType' },
-      { header: 'Hisoblangan maosh', key: 'salary' },
+      { header: "Jami to'lovlar", key: 'salary' },
       { header: 'To\'lagan talabalar', key: 'paidCount' },
       { header: 'Guruhlar soni', key: 'groupsCount' },
       { header: 'Holati', key: 'status' },
@@ -535,8 +532,7 @@ export const Teachers: React.FC = () => {
       name: `${t.firstName} ${t.lastName}`,
       phone: formatPhone(t.phone),
       passportSeries: t.passportSeries || '-',
-      salaryType: t.salaryType === 'FIXED' ? (t.salaryValue >= 1000000 ? formatMoney(t.salaryValue) : `${formatMoney(t.salaryValue)}/o'quvchi`) : `${t.salaryValue}% (Foiz)`,
-      salary: t.salaryStats ? formatMoney(t.salaryStats.calculatedSalary) : '-',
+      salary: t.salaryStats ? formatMoney(t.salaryStats.totalCollected) : '-',
       paidCount: t.salaryStats ? `${t.salaryStats.paidStudents} ta` : '-',
       groupsCount: `${t._count?.groups || 0} ta`,
       status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
@@ -560,8 +556,7 @@ export const Teachers: React.FC = () => {
     const exportColumns = [
       { header: 'Ism Familiya', key: 'name' },
       { header: 'Telefon', key: 'phone' },
-      { header: 'Maosh stavkasi', key: 'salaryType' },
-      { header: 'Hisoblangan maosh', key: 'salary' },
+      { header: "Jami to'lovlar", key: 'salary' },
       { header: 'Guruhlar soni', key: 'groupsCount' },
       { header: 'Holati', key: 'status' },
     ];
@@ -569,8 +564,7 @@ export const Teachers: React.FC = () => {
     const exportRows = data.data.map((t) => ({
       name: `${t.firstName} ${t.lastName}`,
       phone: formatPhone(t.phone),
-      salaryType: t.salaryType === 'FIXED' ? (t.salaryValue >= 1000000 ? formatMoney(t.salaryValue) : `${formatMoney(t.salaryValue)}/o'quvchi`) : `${t.salaryValue}%`,
-      salary: t.salaryStats ? formatMoney(t.salaryStats.calculatedSalary) : '-',
+      salary: t.salaryStats ? formatMoney(t.salaryStats.totalCollected) : '-',
       groupsCount: `${t._count?.groups || 0} ta`,
       status: t.status === 'FAOL' ? 'FAOL' : 'NOFAOL',
     }));

@@ -111,11 +111,10 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
           { header: 'Jami talaba', key: 'totalStudents' },
           { header: "To'laganlar", key: 'paidCount' },
           { header: 'Tushum', key: 'totalCollected' },
-          { header: 'Ustoz maoshi', key: 'calculatedSalary' },
         ],
         data: [
           ...groups,
-          { groupName: 'JAMI', courseName: '', totalStudents: summary?.totalStudents ?? 0, paidCount: summary?.paidStudentsCount ?? 0, totalCollected: summary?.totalCollected ?? 0, calculatedSalary: summary?.calculatedSalary ?? 0 },
+          { groupName: 'JAMI', courseName: '', totalStudents: summary?.totalStudents ?? 0, paidCount: summary?.paidStudentsCount ?? 0, totalCollected: summary?.totalCollected ?? 0 },
         ],
       });
       return;
@@ -167,22 +166,6 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
               </h3>
               <div className={styles.teacherSub}>
                 {teacher?.phone && <span>📞 {formatPhone(teacher.phone)}</span>}
-                {teacher?.salaryType && (
-                  <span
-                    style={{
-                      background: 'rgba(59, 130, 246, 0.15)',
-                      color: '#60a5fa',
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontWeight: 700,
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                    }}
-                  >
-                    {teacher.salaryType === 'PERCENT'
-                      ? `Stavka: ${teacher.salaryValue}% (Guruh to'lovlaridan foiz)`
-                      : `Stavka: ${formatMoney(teacher.salaryValue)} (To'lov qilgan o'quvchi boshiga)`}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -278,37 +261,19 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                 {/* 4. O'qituvchining Hisoblangan Oyligi */}
                 <div className={`${styles.statCard} ${styles.statCardSalary}`}>
                   <div className={styles.statHeader}>
-                    <span className={styles.statLabel} style={{ color: '#60a5fa' }}>O'qituvchi Maoshi</span>
+                    <span className={styles.statLabel} style={{ color: '#60a5fa' }}>Qarzdorlik</span>
                     <div className={styles.statIcon} style={{ background: 'rgba(99, 102, 241, 0.25)', color: '#818cf8' }}>
                       <Sparkles size={18} />
                     </div>
                   </div>
                   <div className={styles.statValueSalary}>
-                    {formatMoney(summary?.calculatedSalary ?? 0)}
+                    {formatMoney(students.reduce((sum: number, s: any) => sum + (Number(s.remainingDebt) || 0), 0))}
                   </div>
                   <div className={styles.statSub} style={{ color: '#93c5fd' }}>
-                    <span>Joriy hisoblangan yakuniy daromad</span>
+                    <span>Shu oy bo'yicha to'lanmagan summa</span>
                   </div>
                 </div>
               </div>
-
-              {/* Salary Calculation Formula Box */}
-              {summary?.salaryFormula && (
-                <div className={styles.formulaBox}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8' }}>Hisob-kitob formulasi:</span>
-                    <span className={styles.formulaText}>
-                      <span className={styles.formulaHighlight}>{summary.salaryFormula}</span> ={' '}
-                      <strong style={{ color: '#10b981', fontSize: '14px' }}>
-                        {formatMoney(summary.calculatedSalary)}
-                      </strong>
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>
-                    Davr: <strong>{filter?.selectedMonthLabel || 'Barcha vaqt'}</strong>
-                  </div>
-                </div>
-              )}
 
               {/* Tabs */}
               <div className={styles.tabsBar}>
@@ -342,13 +307,12 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                         <th>To'laganlar</th>
                         <th>To'lamaganlar</th>
                         <th>Guruhdan Tushum</th>
-                        <th>Ustoz Maoshi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {groups.length === 0 ? (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: 'center', padding: '28px', color: '#94a3b8' }}>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '28px', color: '#94a3b8' }}>
                             Ushbu o'qituvchiga biriktirilgan guruhlar topilmadi
                           </td>
                         </tr>
@@ -403,9 +367,6 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
                             </td>
                             <td style={{ fontWeight: 700, color: '#fbbf24' }}>
                               {formatMoney(g.totalCollected)}
-                            </td>
-                            <td style={{ fontWeight: 800, color: '#38bdf8' }}>
-                              {formatMoney(g.calculatedSalary)}
                             </td>
                           </tr>
                         ))
@@ -544,9 +505,9 @@ export const TeacherSalaryModal: React.FC<TeacherSalaryModalProps> = ({
         {/* Footer */}
         <div className={styles.modalFooter}>
           <div className={styles.footerTotal}>
-            <span className={styles.footerTotalLabel}>O'qituvchiga to'lanadigan jami summa:</span>
+            <span className={styles.footerTotalLabel}>Jami yig'ilgan to'lov:</span>
             <span className={styles.footerTotalValue}>
-              {formatMoney(summary?.calculatedSalary ?? 0)}
+              {formatMoney(summary?.totalCollected ?? 0)}
             </span>
           </div>
 

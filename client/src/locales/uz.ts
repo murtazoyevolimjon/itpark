@@ -148,6 +148,7 @@ export const uz = {
   takeAttendance: 'Davomat olish',
   attendanceStats: 'Davomat ko\'rsatkichlari',
   attendanceSubtitle: 'O\'quv markazidagi umumiy davomat statistikasi va dars qoldirganlar tahlili',
+  paymentsTotal: "Jami to'lovlar",
   archiveTitle: "Eski davomat arxivi",
   archiveHint: "Quyidagi oylarning davomati saqlash muddatidan o'tgan. Excel va PDF qilib yuklab oling, shundan keyin ular bazadan o'chiriladi.",
   archiveDownload: "Yuklab olish va o'chirish",
