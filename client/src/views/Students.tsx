@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
@@ -43,6 +43,9 @@ export const Students: React.FC = () => {
   // Which parent field the single "parent phone" input edits, and the group the student had when the form opened
   const [parentField, setParentField] = useState<'fatherPhone' | 'motherPhone'>('fatherPhone');
   const [originalGroupId, setOriginalGroupId] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
+  // New students are saved in the background: the form is cleared at once so the next one can be typed
+  const [pendingSaves, setPendingSaves] = useState(0);
 
   const { data, isLoading } = useQuery({
     queryKey: ['students', pagination.page, pagination.limit, debouncedSearch, pagination.sortBy, pagination.order],
@@ -100,6 +103,48 @@ export const Students: React.FC = () => {
       }
     },
   });
+
+  const refreshStudentQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+    queryClient.invalidateQueries({ queryKey: ['studentsSelect'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
+    queryClient.invalidateQueries({ queryKey: ['group'] });
+    queryClient.invalidateQueries({ queryKey: ['groupsSelect'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+    queryClient.invalidateQueries({ queryKey: ['studentProfile'] });
+  };
+
+  // Creates a student without blocking the form. `snapshot` is what was typed, so a rejected save can bring it back.
+  const createInBackground = (payload: any, snapshot: typeof formData) => {
+    const fullName = `${snapshot.firstName} ${snapshot.lastName}`.trim();
+    setPendingSaves((n) => n + 1);
+    studentsApi
+      .create(payload)
+      .then(() => {
+        success(`${fullName} qo'shildi`);
+        refreshStudentQueries();
+      })
+      .catch(async (err: any) => {
+        // The same person already exists: offer to put that student into the chosen group instead
+        const existingId = askAddExistingStudent(err, payload.groupId);
+        if (existingId) {
+          try {
+            await groupsApi.addStudent(payload.groupId, existingId);
+            success(`${fullName} mavjud talaba sifatida guruhga qo'shildi`);
+            refreshStudentQueries();
+          } catch (e: any) {
+            error(`${fullName}: ${e.response?.data?.message || "Guruhga qo'shishda xatolik"}`);
+          }
+          return;
+        }
+        error(`${fullName}: ${err.response?.data?.message || 'Saqlashda xatolik'}`);
+        // Give the typed data back if the user has not started the next student yet
+        setFormData((cur) =>
+          !cur.firstName && !cur.lastName && !cur.phone && !cur.parentPhone ? { ...snapshot, groupId: cur.groupId } : cur
+        );
+      })
+      .finally(() => setPendingSaves((n) => Math.max(0, n - 1)));
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => studentsApi.delete(id),
@@ -183,7 +228,19 @@ export const Students: React.FC = () => {
       payload.groupId = formData.groupId || '';
     }
 
-    saveMutation.mutate(payload);
+    if (selectedStudent) {
+      saveMutation.mutate(payload);
+      return;
+    }
+
+    // New student: save in the background and leave a clean form (same group) ready for the next one
+    const snapshot = formData;
+    setFormData({ firstName: '', lastName: '', phone: '', parentPhone: '', groupId: formData.groupId });
+    createInBackground(payload, snapshot);
+    setTimeout(() => {
+      const first = formRef.current?.querySelector('input');
+      (first as HTMLInputElement | null)?.focus();
+    }, 0);
   };
   const columns: Column<Student>[] = [
     {
@@ -534,7 +591,7 @@ export const Students: React.FC = () => {
         onClose={handleCloseModal}
         title={selectedStudent ? 'Talabani tahrirlash' : 'Yangi Talaba Qo\'shish'}
       >
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <GroupCardSelect
             label="Guruh"
             groups={groups?.data || []}
@@ -579,10 +636,15 @@ export const Students: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, parentPhone: unmaskPhone(e.target.value) })}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+            {pendingSaves > 0 && (
+              <span style={{ alignSelf: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                Saqlanmoqda: {pendingSaves}
+              </span>
+            )}
             <Button type="button" variant="secondary" onClick={handleCloseModal}>
-              Bekor qilish
+              {selectedStudent ? 'Bekor qilish' : 'Yopish'}
             </Button>
-            <Button type="submit" isLoading={saveMutation.isPending}>
+            <Button type="submit" isLoading={!!selectedStudent && saveMutation.isPending}>
               Saqlash
             </Button>
           </div>
