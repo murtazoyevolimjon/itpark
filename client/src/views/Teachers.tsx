@@ -64,11 +64,8 @@ export const Teachers: React.FC = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    passportSeries: '',
     login: '',
     password: '',
-    salaryType: 'FIXED' as 'FIXED' | 'PERCENT',
-    salaryValue: '',
     status: 'FAOL',
   });
 
@@ -134,11 +131,8 @@ export const Teachers: React.FC = () => {
         firstName: teacher.firstName,
         lastName: teacher.lastName,
         phone: teacher.phone,
-        passportSeries: teacher.passportSeries || '',
         login: teacher.login || '',
         password: teacher.password || '',
-        salaryType: teacher.salaryType,
-        salaryValue: teacher.salaryValue.toString(),
         status: teacher.status,
       });
     } else {
@@ -148,11 +142,8 @@ export const Teachers: React.FC = () => {
         firstName: '',
         lastName: '',
         phone: '',
-        passportSeries: '',
         login: '',
         password: randPin,
-        salaryType: 'FIXED',
-        salaryValue: '',
         status: 'FAOL',
       });
     }
@@ -167,14 +158,14 @@ export const Teachers: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.salaryValue) {
+    if (!formData.firstName || !formData.lastName || !formData.phone) {
       error('Barcha majburiy maydonlarni to\'ldiring');
       return;
     }
+    // Salary and passport are no longer entered here: a new teacher gets the defaults and an edited one keeps its values
     const payload: any = {
       ...formData,
       phone: unmaskPhone(formData.phone),
-      salaryValue: Number(formData.salaryValue),
     };
     if (formData.login) {
       payload.login = formData.login.trim().toLowerCase();
@@ -185,7 +176,28 @@ export const Teachers: React.FC = () => {
       delete payload.password;
     }
 
-    saveMutation.mutate(payload);
+    if (selectedTeacher) {
+      saveMutation.mutate(payload);
+      return;
+    }
+
+    // New teacher: close the form at once and save in the background; if it is rejected the form comes back filled in
+    const snapshot = formData;
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    handleCloseModal();
+    teachersApi
+      .create(payload)
+      .then((created: any) => {
+        success(`${fullName} qo'shildi. Login: ${created?.login || payload.login || '-'}, parol: ${created?.password || payload.password || '-'}`);
+        queryClient.invalidateQueries({ queryKey: ['teachers'] });
+        queryClient.invalidateQueries({ queryKey: ['teachersSelect'] });
+      })
+      .catch((err: any) => {
+        error(`${fullName}: ${err.response?.data?.message || 'Saqlashda xatolik'}`);
+        setSelectedTeacher(null);
+        setFormData(snapshot);
+        setIsModalOpen(true);
+      });
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -634,33 +646,6 @@ export const Teachers: React.FC = () => {
             placeholder="+998 90 123 45 67"
             value={formatPhone(formData.phone)}
             onChange={(e) => setFormData({ ...formData, phone: unmaskPhone(e.target.value) })}
-          />
-
-          <Input
-            label="Pasport seriyasi (AD XXXXXXX)"
-            placeholder="AD 1234567"
-            value={formData.passportSeries}
-            onChange={(e) => setFormData({ ...formData, passportSeries: e.target.value })}
-          />
-
-          <Select
-            label="Maosh turi"
-            required
-            options={[
-              { label: 'Belgilangan (Fixed - so\'mda)', value: 'FIXED' },
-              { label: 'Foiz (Percent - %)', value: 'PERCENT' },
-            ]}
-            value={formData.salaryType}
-            onChange={(e) => setFormData({ ...formData, salaryType: e.target.value as any })}
-          />
-
-          <Input
-            label={formData.salaryType === 'FIXED' ? 'Maosh summasi (so\'m)' : 'Foiz stavkasi (%)'}
-            type="number"
-            required
-            placeholder={formData.salaryType === 'FIXED' ? '4500000' : '50'}
-            value={formData.salaryValue}
-            onChange={(e) => setFormData({ ...formData, salaryValue: e.target.value })}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

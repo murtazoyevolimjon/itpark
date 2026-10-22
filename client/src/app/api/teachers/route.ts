@@ -72,18 +72,31 @@ export async function GET(req: NextRequest) {
             .range(from, to)
         );
 
-        // Read the center's payments page by page and match in memory: listing every enrolled student id
-        // in the URL breaks for big groups, and a single request is cut off at 1000 rows
-        paymentsList = await fetchAll<any>((from, to) =>
-          supabase
-            .from('payments')
-            .select('id, studentId, groupId, amount, status, paymentDate')
-            .eq('centerId', authUser.centerId)
-            .neq('status', 'BEKOR_QILINGAN')
-            .order('id')
-            .range(from, to)
-        );
-      }
+        // Only this page's groups are needed (page by page past the 1000-row cap). Payments saved without a
+        // group are matched through the students, so those few are read separately.
+        const [groupPayments, ungroupedPayments] = await Promise.all([
+          fetchAll<any>((from, to) =>
+            supabase
+              .from('payments')
+              .select('id, studentId, groupId, amount, status, paymentDate')
+              .eq('centerId', authUser.centerId)
+              .neq('status', 'BEKOR_QILINGAN')
+              .in('groupId', grpIds)
+              .order('id')
+              .range(from, to)
+          ),
+          fetchAll<any>((from, to) =>
+            supabase
+              .from('payments')
+              .select('id, studentId, groupId, amount, status, paymentDate')
+              .eq('centerId', authUser.centerId)
+              .neq('status', 'BEKOR_QILINGAN')
+              .is('groupId', null)
+              .order('id')
+              .range(from, to)
+          ),
+        ]);
+        paymentsList = [...groupPayments, ...ungroupedPayments];      }
     }
 
     const formattedData = (data || []).map((item: any) => {
@@ -187,20 +200,20 @@ export async function POST(req: NextRequest) {
       trimmedLogin = cleanPhone || `ustoz_${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    const uniquenessCheck = await checkLoginUniqueness(supabase, trimmedLogin, { type: 'teacher' });
+    const rawPassword = (password || '').trim() || (cleanPhone && cleanPhone.length >= 6 ? cleanPhone.slice(-6) : '123456');
+
+    // Hashing the password takes a good part of a second of CPU: do it while the login check waits for the database
+    const bcrypt = await import('bcryptjs');
+    const [uniquenessCheck, hashedPassword] = await Promise.all([
+      checkLoginUniqueness(supabase, trimmedLogin, { type: 'teacher' }),
+      bcrypt.default.hash(rawPassword, 10),
+    ]);
     if (!uniquenessCheck.available) {
       return NextResponse.json(
         { message: uniquenessCheck.conflictMessage || 'Bu login allaqachon band qilingan' },
         { status: 400 }
       );
     }
-
-    let hashedPassword: string | null = null;
-    const rawPassword = (password || '').trim() || (cleanPhone && cleanPhone.length >= 6 ? cleanPhone.slice(-6) : '123456');
-
-    const bcrypt = await import('bcryptjs');
-    hashedPassword = await bcrypt.default.hash(rawPassword, 10);
-
     const serializedPassport = serializeTeacherCreds(rawPassword, passportSeries);
     const id = crypto.randomUUID();
 
