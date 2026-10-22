@@ -12,7 +12,6 @@ import {
   GraduationCap,
   CalendarCheck,
   BookOpen,
-  Video,
   Bell,
   Moon,
   Sun,
@@ -68,14 +67,12 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   const isProfileActive = pathname.startsWith('/teacher/profile');
   const isAttendanceActive = pathname.startsWith('/teacher/attendance');
   const isHomeworkActive = pathname.startsWith('/teacher/homework');
-  const isVideosActive = pathname.startsWith('/teacher/videos');
   const isAiActive = pathname.startsWith('/teacher/ai') || pathname === '/ai-assistant';
   const isSalaryActive = pathname.startsWith('/teacher/salary');
   const isGroupsActive =
     (pathname.startsWith('/teacher/groups') || pathname === '/teacher') &&
     !isAttendanceActive &&
     !isHomeworkActive &&
-    !isVideosActive &&
     !isProfileActive &&
     !isAiActive &&
     !isSalaryActive;
@@ -119,24 +116,17 @@ export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
       isActive: isHomeworkActive,
     },
     {
-      label: dict.teacher?.videos || 'Videolar',
-      href: '/teacher/videos',
-      icon: Video,
-      number: '05',
-      isActive: isVideosActive,
-    },
-    {
       label: dict.teacher?.aiAssistant || 'AI Yordamchi',
       href: '/teacher/ai',
       icon: Sparkles,
-      number: '06',
+      number: '05',
       isActive: isAiActive,
     },
     {
       label: dict.teacher?.salary || 'Mening maoshim',
       href: '/teacher/salary',
       icon: Wallet,
-      number: '07',
+      number: '06',
       isActive: isSalaryActive,
     },
   ];

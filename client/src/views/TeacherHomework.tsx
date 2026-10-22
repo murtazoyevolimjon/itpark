@@ -255,6 +255,11 @@ export const TeacherHomework: React.FC = () => {
     }
 
     const targetGroup = allGroups.find((g) => g.id === targetGroupId) || allGroups[0];
+    if (!targetGroup) {
+      // A homework always belongs to one of the teacher's own groups
+      setErrorMessage(dict.teacher?.noGroups || 'Sizga hali guruh biriktirilmagan');
+      return;
+    }
     setIsSaving(true);
     setErrorMessage('');
 
