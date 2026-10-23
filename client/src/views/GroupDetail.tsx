@@ -30,14 +30,12 @@ import {
   Lock,
   AlertCircle,
   BookOpen,
-  Video,
   Download,
   ExternalLink,
   FileText,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { getVideoBlob } from '../utils/videoStorage';
 import { getTashkentDateString, checkAttendanceTimeEligibility } from '../utils/attendanceTime';
 import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
@@ -58,6 +56,7 @@ import { studentsApi } from '../api/students.api';
 import { paymentsApi } from '../api/payments.api';
 import { dashboardApi } from '../api/dashboard.api';
 import { homeworkApi } from '../api/homework.api';
+import { HOMEWORK_ENABLED, HOMEWORK_OFF_NOTICE } from '../lib/featureFlags';
 import { formatDate } from '../utils/formatDate';
 import { formatMoney } from '../utils/formatMoney';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
@@ -83,13 +82,12 @@ export const GroupDetail: React.FC = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'homework' | 'videos' | 'payments'>('attendanceTake');
+  const [activeTab, setActiveTab] = useState<'attendanceTake' | 'students' | 'attendanceHistory' | 'homework' | 'payments'>('attendanceTake');
   const [selectedDate, setSelectedDate] = useState<string>(getTashkentDateString());
   const [historyDate, setHistoryDate] = useState<string>(getTashkentDateString());
   const [groupHomeworks, setGroupHomeworks] = useState<any[]>([]);
   const [groupSubmissions, setGroupSubmissions] = useState<any[]>([]);
   const [expandedHwSubmissions, setExpandedHwSubmissions] = useState<Record<string, boolean>>({});
-  const [groupVideos, setGroupVideos] = useState<any[]>([]);
   const [groupLessons, setGroupLessons] = useState<any[]>([]);
   const [selectedPaymentMonth, setSelectedPaymentMonth] = useState<string>(currentMonthStr);
   const [attendanceTopic, setAttendanceTopic] = useState<string>('');
@@ -313,36 +311,6 @@ export const GroupDetail: React.FC = () => {
     };
 
     loadHomeworksAndSubmissions();
-
-    // Load videos
-    const loadVideos = async () => {
-      try {
-        const savedVideos = localStorage.getItem('all_teacher_videos');
-        if (savedVideos) {
-          const parsed = JSON.parse(savedVideos);
-          if (Array.isArray(parsed)) {
-            const filtered = parsed.filter(
-              (v: any) => v.groupId === id || (group?.name && v.groupName === group.name)
-            );
-            const resolved = await Promise.all(
-              filtered.map(async (v: any) => {
-                if (v.videoType === 'file') {
-                  try {
-                    const blob = await getVideoBlob(v.id);
-                    if (blob) {
-                      return { ...v, blobUrl: URL.createObjectURL(blob) };
-                    }
-                  } catch (_) {}
-                }
-                return v;
-              })
-            );
-            setGroupVideos(resolved);
-          }
-        }
-      } catch (_) {}
-    };
-    loadVideos();
 
     // Load lessons
     try {
@@ -1360,24 +1328,6 @@ export const GroupDetail: React.FC = () => {
               >
                 <BookOpen size={12} /> {groupHomeworks.length} ta vazifa
               </span>
-              <span
-                onClick={() => setActiveTab('videos')}
-                style={{
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  color: '#10b981',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-                title="Video darslarni ko'rish"
-              >
-                <Video size={12} /> {groupVideos.length} ta video
-              </span>
             </div>
           </div>
         </div>
@@ -1410,12 +1360,6 @@ export const GroupDetail: React.FC = () => {
             onClick={() => setActiveTab('homework')}
           >
             <BookOpen size={16} /> Uyga Vazifalar {groupHomeworks.length > 0 ? `(${groupHomeworks.length})` : ''}
-          </Button>
-          <Button
-            variant={activeTab === 'videos' ? 'primary' : 'outline'}
-            onClick={() => setActiveTab('videos')}
-          >
-            <Video size={16} /> Video Darslar {groupVideos.length > 0 ? `(${groupVideos.length})` : ''}
           </Button>
           <Button
             variant={activeTab === 'payments' ? 'primary' : 'outline'}
@@ -2150,6 +2094,11 @@ export const GroupDetail: React.FC = () => {
         {/* TAB 4: O'QITUVCHI UYGA VAZIFALARI (TEACHER HOMEWORKS MONITORING) */}
         {activeTab === 'homework' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {!HOMEWORK_ENABLED && (
+              <div style={{ padding: '12px 16px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', color: '#f59e0b', fontSize: '13px', fontWeight: 600 }}>
+                {HOMEWORK_OFF_NOTICE}
+              </div>
+            )}
             {/* Header Info */}
             <div
               style={{
@@ -2492,204 +2441,6 @@ export const GroupDetail: React.FC = () => {
                         </div>
                       );
                     })()}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 5: O'QITUVCHI VIDEO DARSLARI (TEACHER VIDEOS MONITORING) */}
-        {activeTab === 'videos' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Header Info */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'var(--card-subtle)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    background: 'rgba(16, 185, 129, 0.12)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#10b981',
-                  }}
-                >
-                  <Video size={20} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
-                    O'qituvchi yuklagan video darslar ({groupVideos.length} ta)
-                  </h3>
-                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-                    {group.teacher ? `Ustoz: ${group.teacher.firstName} ${group.teacher.lastName}` : "O'qituvchi"} tomonidan ushbu guruh uchun joylangan video darslar va yozuvlar
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Videos list */}
-            {groupVideos.length === 0 ? (
-              <div
-                style={{
-                  padding: '40px 20px',
-                  textAlign: 'center',
-                  borderRadius: '12px',
-                  background: 'var(--card-subtle)',
-                  border: '1px dashed var(--border)',
-                }}
-              >
-                <Video size={36} color="var(--text-muted)" style={{ marginBottom: '12px', opacity: 0.6 }} />
-                <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text)' }}>
-                  Hali video dars yuklanmagan
-                </h4>
-                <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-                  O'qituvchi bu guruh uchun hali video darslik yoki havola joylamagan.
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '18px' }}>
-                {groupVideos.map((v: any, idx: number) => (
-                  <div
-                    key={v.id || idx}
-                    style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      background: 'var(--card)',
-                      border: '1px solid var(--border)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    {/* Video Player or Link Preview */}
-                    {v.videoType === 'file' && v.blobUrl ? (
-                      <video
-                        controls
-                        src={v.blobUrl}
-                        style={{
-                          width: '100%',
-                          borderRadius: '8px',
-                          maxHeight: '220px',
-                          backgroundColor: '#000000',
-                        }}
-                      />
-                    ) : v.videoUrl ? (
-                      <div
-                        style={{
-                          position: 'relative',
-                          paddingTop: '56.25%',
-                          borderRadius: '8px',
-                          overflow: 'hidden',
-                          background: '#090d16',
-                        }}
-                      >
-                        {v.videoUrl.includes('youtube.com') || v.videoUrl.includes('youtu.be') ? (
-                          <iframe
-                            src={
-                              v.videoUrl.includes('watch?v=')
-                                ? v.videoUrl.replace('watch?v=', 'embed/')
-                                : v.videoUrl.replace('youtu.be/', 'youtube.com/embed/')
-                            }
-                            title={v.title}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              width: '100%',
-                              height: '100%',
-                              border: 'none',
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '8px',
-                            }}
-                          >
-                            <Video size={36} color="var(--primary)" />
-                            <a
-                              href={v.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 14px',
-                                borderRadius: '6px',
-                                background: 'var(--primary)',
-                                color: '#ffffff',
-                                fontSize: '12.5px',
-                                fontWeight: 600,
-                                textDecoration: 'none',
-                              }}
-                            >
-                              <ExternalLink size={14} /> Videoni ko'rish
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            background: v.videoType === 'file' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                            color: v.videoType === 'file' ? '#10b981' : '#3b82f6',
-                          }}
-                        >
-                          {v.videoType === 'file' ? 'Fayl yuklangan' : 'Havola'}
-                        </span>
-                        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                          {v.createdAt || '-'}
-                        </span>
-                      </div>
-
-                      <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', margin: '0 0 6px 0', lineHeight: 1.4 }}>
-                        {v.title}
-                      </h4>
-
-                      {v.desc && (
-                        <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                          {v.desc}
-                        </p>
-                      )}
-
-                      {v.fileName && (
-                        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                          Fayl: {v.fileName} {v.fileSize ? `(${(v.fileSize / (1024 * 1024)).toFixed(1)} MB)` : ''}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>

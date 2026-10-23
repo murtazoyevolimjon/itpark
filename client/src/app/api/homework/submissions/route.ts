@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { forbidden, isStaff, isTeacher } from '@/lib/authz';
 import { safeHttpUrl } from '@/lib/safeContent';
+import { HOMEWORK_ENABLED, HOMEWORK_OFF_NOTICE } from '@/lib/featureFlags';
 
 const STORAGE_BUCKET = 'homework_storage';
 const SUBMISSIONS_FILE = 'submissions.json';
@@ -105,6 +106,9 @@ export async function GET(req: NextRequest) {
 // There is no student login any more: staff record a submission on behalf of a student of their own center.
 export async function POST(req: NextRequest) {
   try {
+    if (!HOMEWORK_ENABLED) {
+      return NextResponse.json({ success: false, message: HOMEWORK_OFF_NOTICE }, { status: 503 });
+    }
     const authUser = getAuthUser(req);
     if (!authUser) return unauthorized();
     if (!isStaff(authUser) && !isTeacher(authUser)) return forbidden();
@@ -191,6 +195,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    if (!HOMEWORK_ENABLED) {
+      return NextResponse.json({ success: false, message: HOMEWORK_OFF_NOTICE }, { status: 503 });
+    }
     const authUser = getAuthUser(req);
     if (!authUser) return unauthorized();
     if (!isStaff(authUser) && !isTeacher(authUser)) return forbidden();

@@ -6,6 +6,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { groupsApi } from '../api/groups.api';
 import { studentsApi } from '../api/students.api';
 import { homeworkApi } from '../api/homework.api';
+import { HOMEWORK_ENABLED, HOMEWORK_OFF_NOTICE } from '../lib/featureFlags';
 import { Group, Student } from '../types';
 import {
   BookOpen,
@@ -239,7 +240,7 @@ export const TeacherHomework: React.FC = () => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (file && HOMEWORK_ENABLED) processFile(file);
   };
 
   const handleRemoveFile = () => {
@@ -249,6 +250,10 @@ export const TeacherHomework: React.FC = () => {
 
   // Save new homework (sends to server API so student sees it immediately)
   const handleSaveHomework = async () => {
+    if (!HOMEWORK_ENABLED) {
+      setErrorMessage(HOMEWORK_OFF_NOTICE);
+      return;
+    }
     if (!hwTitle.trim()) {
       setErrorMessage(dict.teacher?.homeworkTitlePlaceholder || 'Vazifa mavzusini kiriting');
       return;
@@ -395,6 +400,13 @@ export const TeacherHomework: React.FC = () => {
         </div>
       </div>
 
+      {!HOMEWORK_ENABLED && (
+        <div className={styles.errorAlert} style={{ marginBottom: '16px' }}>
+          <AlertCircle size={16} />
+          <span>{HOMEWORK_OFF_NOTICE}</span>
+        </div>
+      )}
+
       <div className={styles.contentGrid}>
         {/* Left Col: Create Homework Form */}
         <div className={styles.createCard}>
@@ -498,7 +510,7 @@ export const TeacherHomework: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => HOMEWORK_ENABLED && fileInputRef.current?.click()}
               >
                 <UploadCloud size={28} className={styles.dropZoneIcon} />
                 <div style={{ textAlign: 'center' }}>
@@ -540,7 +552,7 @@ export const TeacherHomework: React.FC = () => {
             type="button"
             className={styles.saveHwBtn}
             onClick={handleSaveHomework}
-            disabled={isSaving}
+            disabled={isSaving || !HOMEWORK_ENABLED}
           >
             {isSaving ? 'Saqlanmoqda...' : 'Vazifani yuborish'}
           </button>
@@ -767,6 +779,7 @@ export const TeacherHomework: React.FC = () => {
                                       type="button"
                                       className={styles.saveGradeBtn}
                                       onClick={() => handleGradeSubmission(sub.id)}
+                                      disabled={!HOMEWORK_ENABLED}
                                     >
                                       Baholash
                                     </button>

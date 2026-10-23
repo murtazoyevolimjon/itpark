@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getAuthUser } from '@/lib/auth';
 import { forbidden, isStaff, isTeacher, teacherOwnsGroup } from '@/lib/authz';
 import { safeAttachment } from '@/lib/safeContent';
+import { HOMEWORK_ENABLED, HOMEWORK_OFF_NOTICE } from '@/lib/featureFlags';
 
 const STORAGE_BUCKET = 'homework_storage';
 const HOMEWORKS_FILE = 'homeworks.json';
@@ -87,6 +88,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!HOMEWORK_ENABLED) {
+      return NextResponse.json({ success: false, message: HOMEWORK_OFF_NOTICE }, { status: 503 });
+    }
     const authUser = getAuthUser(req);
     if (!authUser) return unauthorized();
     if (!isStaff(authUser) && !isTeacher(authUser)) return forbidden();
