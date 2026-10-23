@@ -12,6 +12,7 @@ import { findSamePerson } from '@/lib/studentRules';
 const billingStart = (sg: any): string | null =>
   'billingStartDate' in sg ? sg.billingStartDate || null : sg.joinedAt || null;
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
+import { normalizeUzPhone } from '@/utils/uzPhone';
 import { ENUMS, date, firstError, oneOf, phone as phone_, text } from '@/lib/validation';
 import {
   parseStudentCreds,
@@ -181,9 +182,9 @@ export async function POST(req: NextRequest) {
       firstName,
       lastName,
       birthDate,
-      phone,
-      fatherPhone,
-      motherPhone,
+      phone: rawPhone,
+      fatherPhone: rawFatherPhone,
+      motherPhone: rawMotherPhone,
       passportSeries,
       subject,
       gender,
@@ -192,14 +193,10 @@ export async function POST(req: NextRequest) {
       status,
     } = body;
 
-    const cleanFather = (fatherPhone || '').replace(/\D/g, '');
-    const cleanMother = (motherPhone || '').replace(/\D/g, '');
-    if (!cleanFather && !cleanMother) {
-      return NextResponse.json(
-        { message: "Otasi yoki onasining telefon raqamini kiritish majburiy (kamida bittasi qat'iy kiritilishi shart)" },
-        { status: 400 }
-      );
-    }
+    // Phones are stored as 998XXXXXXXXX whatever way they were typed; the parent phone is optional
+    const phone = normalizeUzPhone(rawPhone);
+    const fatherPhone = normalizeUzPhone(rawFatherPhone);
+    const motherPhone = normalizeUzPhone(rawMotherPhone);
 
     const inputError = firstError(
       text(firstName, 'Ism', 60),

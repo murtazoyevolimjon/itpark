@@ -49,6 +49,8 @@ import { paymentsApi } from '../api/payments.api';
 import { getStudentSubject } from '../lib/credentials';
 import { askAddExistingStudent } from '../utils/existingStudent';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
+import { PhoneInput } from '../components/ui/PhoneInput/PhoneInput';
+import { normalizeUzPhone } from '../utils/uzPhone';
 import { formatMoney } from '../utils/formatMoney';
 import { formatDate } from '../utils/formatDate';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
@@ -350,18 +352,18 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
-    const cleanParent = unmaskPhone(probaForm.fatherPhone);
-    if (!cleanParent) {
-      error("Ota-onasining telefon raqamini kiriting");
+    if (unmaskPhone(probaForm.phone).length !== 12) {
+      error("Telefon raqamni to'liq kiriting: +998 va 9 ta raqam");
       return;
     }
+    const cleanParent = unmaskPhone(probaForm.fatherPhone);
 
     // The same person (phone + name) is rejected by the server and offered as "add the existing student"
     createProbaStudentMutation.mutate({
       firstName: probaForm.firstName,
       lastName: probaForm.lastName,
       phone: unmaskPhone(probaForm.phone),
-      fatherPhone: cleanParent,
+      ...(cleanParent ? { fatherPhone: cleanParent } : {}),
     });
   };
   const handleOpenAssignGroup = (student: any) => {
@@ -390,8 +392,8 @@ export const Dashboard: React.FC = () => {
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       birthDate: student.birthDate ? student.birthDate.split('T')[0] : '2005-01-01',
-      phone: formatPhone(student.phone) || '',
-      fatherPhone: formatPhone(student.fatherPhone || student.motherPhone || ''),
+      phone: normalizeUzPhone(student.phone),
+      fatherPhone: normalizeUzPhone(student.fatherPhone || student.motherPhone),
       motherPhone: '',
       subject: getStudentSubject(student),
       gender: student.gender || 'ERKAK',
@@ -407,11 +409,11 @@ export const Dashboard: React.FC = () => {
       return;
     }
 
-    const cleanEditParent = unmaskPhone(editProbaForm.fatherPhone);
-    if (!cleanEditParent) {
-      error("Ota-onasining telefon raqamini kiriting");
+    if (unmaskPhone(editProbaForm.phone).length !== 12) {
+      error("Telefon raqamni to'liq kiriting: +998 va 9 ta raqam");
       return;
     }
+    const cleanEditParent = unmaskPhone(editProbaForm.fatherPhone);
 
     // Only the shown fields are sent: subject, gender, birth date and the rest of the student stay as they are
     const parentField = !selectedProbaStudent?.fatherPhone && selectedProbaStudent?.motherPhone ? 'motherPhone' : 'fatherPhone';
@@ -1614,21 +1616,18 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Telefon raqam */}
-          <Input
+          <PhoneInput
             label="Telefon raqam"
-            placeholder="+998 90 123 45 67"
             required
-            value={formatPhone(probaForm.phone)}
-            onChange={(e) => setProbaForm({ ...probaForm, phone: unmaskPhone(e.target.value) })}
+            value={probaForm.phone}
+            onChange={(digits) => setProbaForm({ ...probaForm, phone: digits })}
           />
 
-          {/* Ota-onasining telefoni */}
-          <Input
+          {/* Ota-onasining telefoni (ixtiyoriy) */}
+          <PhoneInput
             label="Ota-onasining telefoni"
-            placeholder="+998 90 123 45 67"
-            required
-            value={formatPhone(probaForm.fatherPhone)}
-            onChange={(e) => setProbaForm({ ...probaForm, fatherPhone: unmaskPhone(e.target.value) })}
+            value={probaForm.fatherPhone}
+            onChange={(digits) => setProbaForm({ ...probaForm, fatherPhone: digits })}
           />
           {/* Modal buttons */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
@@ -1750,20 +1749,17 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          <Input
+          <PhoneInput
             label={t('phone')}
-            placeholder="+998 90 123 45 67"
             required
-            value={formatPhone(editProbaForm.phone)}
-            onChange={(e) => setEditProbaForm({ ...editProbaForm, phone: unmaskPhone(e.target.value) })}
+            value={editProbaForm.phone}
+            onChange={(digits) => setEditProbaForm({ ...editProbaForm, phone: digits })}
           />
 
-          <Input
+          <PhoneInput
             label={dict.dash?.colParentPhone || "Ota-onasining telefoni"}
-            placeholder="+998 90 123 45 67"
-            required
-            value={formatPhone(editProbaForm.fatherPhone)}
-            onChange={(e) => setEditProbaForm({ ...editProbaForm, fatherPhone: unmaskPhone(e.target.value) })}
+            value={editProbaForm.fatherPhone}
+            onChange={(digits) => setEditProbaForm({ ...editProbaForm, fatherPhone: digits })}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsEditProbaModalOpen(false)}>

@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { requireStaff } from '@/lib/authz';
 import { dbErrorResponse, serverErrorResponse } from '@/lib/dbErrors';
 import { checkEnrollment, violationResponse } from '@/lib/groupRules';
+import { normalizeUzPhone } from '@/utils/uzPhone';
 import { ENUMS, date, firstError, oneOf, phone as phone_, phoneDigits, text } from '@/lib/validation';
 import {
   parseStudentCreds,
@@ -113,16 +114,6 @@ export async function PATCH(
       return NextResponse.json({ message: inputError }, { status: 400 });
     }
 
-    // At least one parent phone must stay on the student
-    const nextFather = body.fatherPhone !== undefined ? body.fatherPhone : currentStudent.fatherPhone;
-    const nextMother = body.motherPhone !== undefined ? body.motherPhone : currentStudent.motherPhone;
-    if (!phoneDigits(nextFather) && !phoneDigits(nextMother)) {
-      return NextResponse.json(
-        { message: "Otasi yoki onasining telefon raqamini kiritish majburiy" },
-        { status: 400 }
-      );
-    }
-
     // Moving the student into another group: same rules as enrolling (open group, free seat, no clash)
     if (body.groupId) {
       const { data: memberships } = await supabase
@@ -159,9 +150,9 @@ export async function PATCH(
     if (body.firstName !== undefined) updatePayload.firstName = body.firstName;
     if (body.lastName !== undefined) updatePayload.lastName = body.lastName;
     if (body.birthDate !== undefined) updatePayload.birthDate = new Date(body.birthDate).toISOString();
-    if (body.phone !== undefined) updatePayload.phone = body.phone;
-    if (body.fatherPhone !== undefined) updatePayload.fatherPhone = body.fatherPhone || null;
-    if (body.motherPhone !== undefined) updatePayload.motherPhone = body.motherPhone || null;
+    if (body.phone !== undefined) updatePayload.phone = normalizeUzPhone(body.phone);
+    if (body.fatherPhone !== undefined) updatePayload.fatherPhone = normalizeUzPhone(body.fatherPhone) || null;
+    if (body.motherPhone !== undefined) updatePayload.motherPhone = normalizeUzPhone(body.motherPhone) || null;
     if (body.gender !== undefined) updatePayload.gender = body.gender;
     if (body.isSchoolStudent !== undefined) updatePayload.isSchoolStudent = body.isSchoolStudent;
     if (body.status !== undefined) updatePayload.status = body.status;

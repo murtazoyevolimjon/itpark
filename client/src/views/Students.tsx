@@ -3,7 +3,8 @@
 import React, { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Phone, Users, FileSpreadsheet, FileText, Send } from 'lucide-react';
+import { Plus, Pencil, Trash2, Phone, Users, FileSpreadsheet, FileText, Send, Upload } from 'lucide-react';
+import { StudentImportModal } from '../components/StudentImportModal';
 import { parseStudentCreds } from '../lib/credentials';
 import { Table, Column } from '../components/ui/Table/Table';
 import { Button } from '../components/ui/Button/Button';
@@ -21,6 +22,8 @@ import { groupsApi } from '../api/groups.api';
 import { askAddExistingStudent } from '../utils/existingStudent';
 import { Student } from '../types';
 import { formatPhone, unmaskPhone } from '../utils/phoneMask';
+import { PhoneInput } from '../components/ui/PhoneInput/PhoneInput';
+import { normalizeUzPhone } from '../utils/uzPhone';
 import { exportToExcel, exportToPdf } from '../utils/exportData';
 
 export const Students: React.FC = () => {
@@ -32,6 +35,7 @@ export const Students: React.FC = () => {
   const debouncedSearch = useDebounce(pagination.search, 300);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
 
@@ -65,7 +69,7 @@ export const Students: React.FC = () => {
   const { data: groups } = useQuery({
     queryKey: ['groupsSelect'],
     queryFn: () => groupsApi.getAll({ limit: 1000 }),
-    enabled: isModalOpen,
+    enabled: isModalOpen || isImportOpen,
   });
 
   const saveMutation = useMutation({
@@ -179,8 +183,8 @@ export const Students: React.FC = () => {
       setFormData({
         firstName: student.firstName || '',
         lastName: student.lastName || '',
-        phone: student.phone || '',
-        parentPhone: student.fatherPhone || student.motherPhone || '',
+        phone: normalizeUzPhone(student.phone),
+        parentPhone: normalizeUzPhone(student.fatherPhone || student.motherPhone),
         groupId: currentGroupId,
       });
       setParentField(student.fatherPhone ? 'fatherPhone' : student.motherPhone ? 'motherPhone' : 'fatherPhone');
@@ -212,18 +216,19 @@ export const Students: React.FC = () => {
       return;
     }
 
-    const cleanParentPhone = unmaskPhone(formData.parentPhone);
-    if (!cleanParentPhone) {
-      error("Ota-onasining telefon raqamini kiriting");
+    if (unmaskPhone(formData.phone).length !== 12) {
+      error("Telefon raqamni to'liq kiriting: +998 va 9 ta raqam");
       return;
     }
 
+    // The parent phone is optional; when editing, clearing it removes the saved one
+    const cleanParentPhone = unmaskPhone(formData.parentPhone);
     const payload: any = {
       firstName: formData.firstName,
       lastName: formData.lastName,
       phone: unmaskPhone(formData.phone),
-      [parentField]: cleanParentPhone,
     };
+    if (cleanParentPhone || selectedStudent) payload[parentField] = cleanParentPhone;
     // Editing must not touch the student's groups unless the group was actually changed:
     // one student may attend several groups, and changing the group replaces the others
     if (!selectedStudent || formData.groupId !== originalGroupId) {
@@ -564,6 +569,9 @@ export const Students: React.FC = () => {
             onExportExcel={handleExportExcel}
             onExportPdf={handleExportPdf}
           />
+          <Button variant="secondary" icon={<Upload size={16} />} onClick={() => setIsImportOpen(true)}>
+            Excel
+          </Button>
           <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
             {dict.studentsPage.newStudentBtn}
           </Button>
@@ -585,6 +593,13 @@ export const Students: React.FC = () => {
         onSearchChange={pagination.setSearch}
         onSortChange={pagination.handleSortChange}
         onRowClick={(s) => router.push(`/students/${s.id}`)}
+      />
+
+      <StudentImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        groups={groups?.data || []}
+        onImported={refreshStudentQueries}
       />
 
       {/* Modal */}
@@ -620,22 +635,17 @@ export const Students: React.FC = () => {
             />
           </div>
 
-          <Input
+          <PhoneInput
             label={t('phone')}
             required
-            placeholder="+998 90 123 45 67"
-            value={formatPhone(formData.phone)}
-            onChange={(e) => {
-              setFormData({ ...formData, phone: unmaskPhone(e.target.value) });
-            }}
+            value={formData.phone}
+            onChange={(digits) => setFormData({ ...formData, phone: digits })}
           />
 
-          <Input
+          <PhoneInput
             label={dict.studentsPage.parentPhoneLabel}
-            required
-            placeholder="+998 90 123 45 67"
-            value={formatPhone(formData.parentPhone)}
-            onChange={(e) => setFormData({ ...formData, parentPhone: unmaskPhone(e.target.value) })}
+            value={formData.parentPhone}
+            onChange={(digits) => setFormData({ ...formData, parentPhone: digits })}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
             {pendingSaves > 0 && (

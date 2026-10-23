@@ -43,6 +43,8 @@ import { Card } from '../components/ui/Card/Card';
 import { Button } from '../components/ui/Button/Button';
 import { Badge } from '../components/ui/Badge/Badge';
 import { Input } from '../components/ui/Input/Input';
+import { PhoneInput } from '../components/ui/PhoneInput/PhoneInput';
+import { normalizeUzPhone } from '../utils/uzPhone';
 import { Modal } from '../components/ui/Modal/Modal';
 import { Select } from '../components/ui/Select/Select';
 import { GroupCardSelect } from '../components/ui/GroupCardSelect/GroupCardSelect';
@@ -855,11 +857,11 @@ export const GroupDetail: React.FC = () => {
       return;
     }
 
-    const cleanParent = unmaskPhone(studentForm.fatherPhone);
-    if (!cleanParent) {
-      error("Ota-onasining telefon raqamini kiriting");
+    if (unmaskPhone(studentForm.phone).length !== 12) {
+      error("Telefon raqamni to'liq kiriting: +998 va 9 ta raqam");
       return;
     }
+    const cleanParent = unmaskPhone(studentForm.fatherPhone);
 
     if (selectedProbaId) {
       // Update the shown details if modified (subject, gender, birth date stay as they are), then attach to group
@@ -870,7 +872,7 @@ export const GroupDetail: React.FC = () => {
           firstName: studentForm.firstName,
           lastName: studentForm.lastName,
           phone: unmaskPhone(studentForm.phone),
-          [parentField]: cleanParent,
+          ...(cleanParent ? { [parentField]: cleanParent } : {}),
         });
       } catch (_) {}
 
@@ -880,7 +882,7 @@ export const GroupDetail: React.FC = () => {
         firstName: studentForm.firstName,
         lastName: studentForm.lastName,
         phone: unmaskPhone(studentForm.phone),
-        fatherPhone: cleanParent,
+        ...(cleanParent ? { fatherPhone: cleanParent } : {}),
         groupId: id,
       });
     }
@@ -2891,20 +2893,17 @@ export const GroupDetail: React.FC = () => {
             />
           </div>
 
-          <Input
+          <PhoneInput
             label="Telefon raqam"
             required
-            placeholder="+998 90 123 45 67"
-            value={formatPhone(studentForm.phone)}
-            onChange={(e) => setStudentForm({ ...studentForm, phone: unmaskPhone(e.target.value) })}
+            value={studentForm.phone}
+            onChange={(digits) => setStudentForm({ ...studentForm, phone: digits })}
           />
 
-          <Input
+          <PhoneInput
             label="Ota-onasining telefoni"
-            required
-            placeholder="+998 90 123 45 67"
-            value={formatPhone(studentForm.fatherPhone)}
-            onChange={(e) => setStudentForm({ ...studentForm, fatherPhone: unmaskPhone(e.target.value) })}
+            value={studentForm.fatherPhone}
+            onChange={(digits) => setStudentForm({ ...studentForm, fatherPhone: digits })}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
             <Button type="button" variant="secondary" onClick={() => setIsAddStudentModalOpen(false)}>
