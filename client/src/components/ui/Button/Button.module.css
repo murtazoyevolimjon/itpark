@@ -30,14 +30,15 @@
   transform: translateY(0);
 }
 
+/* A translucent tint reads in both themes (a fixed light grey made the text invisible in dark mode) */
 .secondary {
-  background: #f1f5f9;
+  background: rgba(148, 163, 184, 0.16);
   color: var(--text);
   border-color: var(--border);
 }
 
 .secondary:hover:not(:disabled) {
-  background: #e2e8f0;
+  background: rgba(148, 163, 184, 0.3);
 }
 
 .danger {

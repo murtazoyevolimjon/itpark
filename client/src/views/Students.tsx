@@ -569,8 +569,8 @@ export const Students: React.FC = () => {
             onExportExcel={handleExportExcel}
             onExportPdf={handleExportPdf}
           />
-          <Button variant="secondary" icon={<Upload size={16} />} onClick={() => setIsImportOpen(true)}>
-            Excel
+          <Button variant="outline" icon={<Upload size={16} />} onClick={() => setIsImportOpen(true)}>
+            Excel orqali qo'shish
           </Button>
           <Button icon={<Plus size={16} />} onClick={() => handleOpenModal()}>
             {dict.studentsPage.newStudentBtn}
