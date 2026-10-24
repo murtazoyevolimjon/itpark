@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         .from('payments')
         .select('id, amount, course:courses(name)')
         .eq('centerId', authUser.centerId)
-        .eq('status', 'TOLANGAN')
+        .in('status', ['TOLANGAN', 'QISMAN'])
         .order('id')
         .range(from, to)
     );

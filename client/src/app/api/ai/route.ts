@@ -1223,10 +1223,10 @@ function generateBuiltinAnalysis(
   const attendanceRate = totalAtt > 0 ? Math.round((presentAtt / totalAtt) * 100) : 0;
 
   const totalCollected = payments
-    .filter((p: any) => p.status === 'TOLANGAN')
+    .filter((p: any) => p.status === 'TOLANGAN' || p.status === 'QISMAN')
     .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
   const totalDebt = payments
-    .filter((p: any) => p.status === 'TOLANMAGAN' || p.status === 'QISMAN')
+    .filter((p: any) => p.status === 'TOLANMAGAN')
     .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
   const totalExpenses = expenses
     .filter((e: any) => e.status === 'TOLANGAN')

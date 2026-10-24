@@ -104,7 +104,7 @@ export async function GET(
       const monthRange = /^\d{4}-(0[1-9]|1[0-2])$/.test(monthParam) ? monthRange_(monthParam) : null;
       const cols = 'id, studentId, groupId, courseId, amount, paymentDate, method, status';
       const base = () => {
-        let q = supabase.from('payments').select(cols).eq('centerId', authUser.centerId).neq('status', 'BEKOR_QILINGAN');
+        let q = supabase.from('payments').select(cols).eq('centerId', authUser.centerId).in('status', ['TOLANGAN', 'QISMAN']);
         if (monthRange) q = q.gte('paymentDate', monthRange.start).lt('paymentDate', monthRange.end);
         return q;
       };

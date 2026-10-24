@@ -28,9 +28,9 @@ export async function GET(req: NextRequest) {
     let totalIncome = 0;
     let debt = 0;
     (payments || []).forEach((p: any) => {
-      if (p.status === 'TOLANGAN') {
+      if (p.status === 'TOLANGAN' || p.status === 'QISMAN') {
         totalIncome += Number(p.amount) || 0;
-      } else if (p.status === 'TOLANMAGAN' || p.status === 'QISMAN') {
+      } else if (p.status === 'TOLANMAGAN') {
         debt += Number(p.amount) || 0;
       }
     });
